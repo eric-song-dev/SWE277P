@@ -1,0 +1,63 @@
+Project Scope and High-Level Design
+Due: Fri Oct 16, 2026 11:59pm
+100 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+Purpose
+Each team will define the scope and high-level architecture of their sponsored capstone project. This document ensures alignment between the team, sponsor, and instructors before detailed design and implementation begin.
+
+What to Include
+Project Overview
+
+Brief description of the project and its purpose
+
+Target users and key stakeholders
+
+Success criteria or key deliverables
+
+Scope Definition
+
+System boundaries (what’s in / out of scope)
+
+Major features and assumptions
+
+Initial technology stack
+
+High-Level Architecture
+Use either the C4 Model or the 4+1 View Model to describe your system.
+
+If using C4 Model:
+
+Context Diagram
+
+Container Diagram
+
+Component Diagram (optional if early stage)
+
+If using 4+1 Model:
+
+Logical, Development, Process, and Physical Views
+
+A few key scenarios (+1) illustrating system behavior
+
+Design Rationale
+
+Justify major design and technology choices
+
+Mention trade-offs or constraints
+
+Deliverables
+- 4–6 page report in PDF
+- Diagrams labeled and readable
+- Submitted to Canvas by [date]
+
+Rubric
+
+Criteria	Weight
+Scope clarity & completeness	30%
+Architectural soundness	40%
+Design rationale	20%
+Professional presentation	10%
