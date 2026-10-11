@@ -50,7 +50,7 @@ Justify major design and technology choices
 Mention trade-offs or constraints
 
 Deliverables
-- 4–6 page report in PDF
+- 4–12 page report in PDF
 - Diagrams labeled and readable
 - Submitted to Canvas by [date]
 
