@@ -1,0 +1,120 @@
+SWE 277P LEC A: CAP PROJ IN SE (37850)
+Jump to Today
+Modules
+Course Schedule (in grid format)
+
+Meeting Information
+Location: ISEB 1310
+Day & time: Tuesdays 4-6:50pm
+ 
+
+Instructor Information
+Professor Emily Navarro
+Email: emilyo@uci.edu
+Pronouns: she/her/hers
+Office Hours: Thursdays 11am-12pm
+Zoom linkLinks to an external site.
+TA Rakib Hossain 
+Email: mdrh@uci.edu
+Pronouns: he/him/his
+Office Hours: Tuesday 3pm-4pm
+Office Location:https://uci.zoom.us/my/mrhmisuLinks to an external site. 
+ 
+
+Course Information
+Class Structure
+Each lecture period will consist of about an hour of lecture that includes hands-on group activities with your capstone project team. If you cannot make it to class, please contact me ASAP to make arrangements for you to complete the in-class assignments. Otherwise, unexcused absences will result in losing points from your overall course grade.
+The remainder of each lecture period will consist of team meetings with the professor and TA.
+If entire teams are absent, they will lose points on their weekly group assignment.
+You will have weekly homework assignments to complete as a team.
+ 
+
+Technological Requirements/Preferences
+You will need a machine/device with a reliable Internet connection on which you can access Canvas.
+You will need to configure your Canvas settings so that you are notified by email when a new Canvas announcement is posted. And of course that means you also need to read your email. You will be held accountable for all info communicated in Canvas announcements.
+ 
+
+Catalogue Description
+Focuses on designing and implementing a novel software system. Students work on their project while emphasizing communication skills in business and technical settings. Students practice presenting project ideas, developing portfolios.
+
+ 
+
+Overall Course Goals
+Software engineering is a team effort. Planning projects and coordinating the members of the team are critical activities to ensure the success of the projects. This course will teach you the non-technical skills necessary for effective and efficient project execution, going hand-in-hand with your capstone project. We will explore the topics at several scales, from an organizational perspective to a team perspective to an individual perspective. Understanding project management and other “soft skills” such as communication, conflict management, leadership, and ethics will prepare you for leadership and management positions as part of a logical progression in your career.
+
+ 
+
+Learning Objectives
+By the end of the course, students should be able to:
+
+Describe the fundamentals of project management, including its methodologies, processes, and infrastructure
+Successfully follow an agile software development process to complete their capstone project
+Develop a business case
+Develop, review, reflect upon, and continuously improve a detailed project plan, which includes:
+Measurable organizational value
+Project charter
+Work breakdown structure
+Schedule
+Cost
+Identify best practices for project management soft skills such as:
+Teamwork
+Communication
+Time management
+Leadership
+Ethics
+Conflict management
+ 
+
+Grades
+Grades are based on an overall average for each student that is computed at the end of the quarter. The overall average is a weighted average of the following (final grades and assignment grades may be adjusted based on the results of peer evaluations. Unless everyone on your team contributes absolutely equally throughout the semester, in the end you will not all receive the same scores on the team assignments):
+
+Group Assignments: 70%
+In-Class/Pre-Class Exercises/Participation: 30%
+ 
+
+Policies
+Late Work
+I do not have a late policy, but I do understand that life happens, so talk to me if you have a situation.
+
+ 
+
+Regrades
+If you believe a mistake has been made in how your assignment or exam was graded, please follow these guidelines:
+
+First approach the TA who graded it. If, after that, you still have an issue, then approach the professor
+Prepare the following before arranging a meeting with the TA:
+What is the mistake?
+Why is it a mistake?
+Provide support that demonstrates your arguments (e.g., specific text in a lecture slide, assignment description, or reading)
+You have one week from the time the grade is posted to request a regrade
+ 
+Academic Dishonesty
+Learning, research, and scholarship depend upon an environment of academic integrity and honesty. This environment can be maintained only when all participants recognize the importance of upholding the highest ethical standards. All student work, including quizzes, exams, reports, and papers must be the work of the individual receiving credit. Academic dishonesty includes, for example, cheating on examinations or any assignment, plagiarism of any kind (including improper citation of sources), having someone else take an examination or complete an assignment for you (or doing this for someone else), or any activity in which you represent someone else’s work as your own. Violations of academic integrity will be referred to the Office of Academic Integrity and Student Conduct. The impact on your grade will be a 0 on that particular assignment. Please familiarize yourself with UCI’s Academic Integrity Policy (https://aisc.uci.edu/policies/academic-integrity/index.php) and speak to your instructor if you have any questions about what is and is not allowed in this course. 
+
+ 
+
+Students with Disabilities
+Any student who feels he or she may need an accommodation based on the impact of a disability should contact me privately to discuss his or her specific needs. Please also contact the Disability Services Center at (949) 824-7494 as soon as possible to better ensure that such accommodations are implemented in a timely fashion.
+
+ 
+
+Discrimination
+I am 100% opposed to any and all forms of discrimination. Every human being is worthy of respect and deserving of a voice, regardless of race, background, religion, gender, sexuality, disability, age, etc. I am always striving to make my classroom a place in which that this type of acceptance and support is the norm. Therefore, no acts of discrimination, racial slurs, etc. will be tolerated. This applies to all interactions you have with other students, as well as the teaching staff. Please maintain an attitude of respect at all times, and inform me if you witness any such acts.
+
+  
+
+Campus Resources
+Academics
+Academic Honesty policies
+Libraries
+Research resources
+Computing
+Computing labs
+Mental Health & Wellness
+As a student you may experience a range of issues that can cause barriers to learning, such as strained relationships, increased anxiety, alcohol/drug problems, depression, difficulty concentrating and/or lack of motivation. These mental health concerns or stressful events may lead to diminished academic performance or reduce a student's ability to participate in daily activities. UC offers services to assist you with addressing these and other concerns you may be experiencing. If you or someone you know are suffering from any of the aforementioned conditions, consider utilizing the confdential mental health services available on campus. I encourage you to reach out to the Counseling Center for support (http://www.counseling.uci.edu 949-824-6457). An on campus counselor or after-hours clinician is available 24/7.
+Basic Needs
+Any student who has difficulty affording groceries or accessing sufficient food to eat every day, or who lacks a safe and stable place to live, and believes this may affect their performance in the course, is urged to contact the FRESH Basic Needs Hub at fresh@uci.edu, or visit www.basicneeds.uci.edu
+Furthermore, please notify the professor if you are comfortable in doing so. This will enable him/her to provide any resources that he/she may possess.
+
+Immigration Crises
+If you are a student experiencing an immigration crisis that may impact your performance in my class, please contact me, UCI Dreamers Coordinator Ana Miriam Barragan (ambarrag@uci.edu), and/or your School academic counselor/advisor, as soon as possible, to request reasonable accommodations in fulfilling attendance requirements or completing coursework.

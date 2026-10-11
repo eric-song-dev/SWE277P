@@ -1,0 +1,45 @@
+Assignment 2: MOV
+Due: Tue Oct 13, 2026 4:00pm
+100 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+This assignment centers around the important concept of Measurable Organizational Value or the MOV. Most material on project management dictates that a project must have a goal. Often, however, the idea of a project having a goal is left as that – a project must have a goal – with little insight as to what that goal should be or how it should be defined. On the other hand, many authors of books and articles tend to focus on schedule and budget being the primary goal of projects – i.e., the goal of the project should be to spend no more than a certain amount and have the project completed by a certain date.
+
+These tensions are reconciled in the idea of the MOV: a project should have a goal (provide value to an organization and become a measure of success) whereas a set of defined objectives (scope, schedule, budget, and quality) should support that goal.
+
+Follow the six steps to developing the MOV from Lecture 2:
+
+Identify the desired area of impact (customer, strategic, financial, operational, and/or social)
+Identify the desired value of the project (better, faster, cheaper, do more)
+Develop an appropriate metric (money, percentage, numeric values)
+Set a time frame for achieving the MOV
+Verify the MOV and get agreement from the project stakeholders
+Summarize the MOV in a clear, concise statement (This project will be successful if _________________.)
+Submit a document with two parts:
+
+The result of step 6 above (the clear, concise statement of the MOV)
+1-2 paragraphs explaining how achieving the project’s MOV will support the organization’s vision, mission, and strategy
+1 paragraph describing your interaction/communication with your project sponsor about the MOV (how the MOV evolved, their reaction to your proposed MOV, etc.)
+In judging whether your MOV document is defined correctly, we will focus on whether it is:
+
+Metric-based (Is it measurable/verifiable?)
+Supportive of the organization's vision, mission, and strategy
+Clear, focused, and understandable (Will this confuse the project’s stakeholders?)
+Thorough (Have you adequately discussed all the required topics?)
+SWE 272P Assignment 2: MOV
+Criteria	Comments	Points
+Clear, Focused, Understandable
+view longer description
+Comment
+/20 pts
+Metric-Based
+view longer description
+Comment
+/20 pts
+Thorough
+view longer description
+Comment
+/60 pts
