@@ -1,0 +1,77 @@
+erDiagram
+    APP_USER ||--o{ IMPORT_BATCH : uploads
+    APP_USER ||--o{ AUDIT_LOG : performs
+    IMPORT_BATCH ||--|{ SOURCE_RECORD : contains
+    PARTICIPANT |o--o{ SOURCE_RECORD : "resolved from"
+    SOURCE_RECORD ||--o{ MATCH_CANDIDATE : "has"
+    PARTICIPANT ||--o{ MATCH_CANDIDATE : "suggested as"
+    SOURCE_RECORD ||--o| REGISTRATION : "evidence for"
+    SOURCE_RECORD ||--o| ATTENDANCE : "evidence for"
+    EVENT ||--o{ REGISTRATION : has
+    EVENT ||--o{ ATTENDANCE : has
+    EVENT ||--o{ EVENT_OUTCOME : has
+    PARTICIPANT |o--o{ EVENT_OUTCOME : has
+
+    APP_USER {
+        int id PK
+        string email
+        string password_hash "Argon2"
+    }
+    IMPORT_BATCH {
+        int id PK
+        int event_id FK
+        string source_type
+        string file_name
+        string file_sha256
+        datetime uploaded_at
+    }
+    SOURCE_RECORD {
+        int id PK
+        int row_number
+        jsonb raw_values
+        string netid_norm
+        string email_norm
+        int participant_id FK "null until resolved"
+    }
+    PARTICIPANT {
+        int id PK
+        string netid "nullable"
+        string student_or_employee_id "nullable"
+        string email
+        string name
+        string school "nullable"
+        string affiliation "nullable"
+    }
+    MATCH_CANDIDATE {
+        int id PK
+        float score
+        string reasons
+        string decision "pending, same, separate"
+        int decided_by FK
+    }
+    EVENT {
+        int id PK
+        string name
+        date event_date
+        string term
+        string event_type
+        string platform
+    }
+    REGISTRATION {
+        int id PK
+        datetime registered_at
+    }
+    ATTENDANCE {
+        int id PK
+        string evidence_type "platform, check-in, zoom"
+        int duration_min
+    }
+    EVENT_OUTCOME {
+        string status "attended, absent, walk-in, unresolved"
+        int finalized_by FK
+    }
+    AUDIT_LOG {
+        int id PK
+        string action
+        datetime at
+    }

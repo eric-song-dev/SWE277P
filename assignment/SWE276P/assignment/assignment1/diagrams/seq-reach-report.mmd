@@ -1,0 +1,21 @@
+sequenceDiagram
+    autonumber
+    actor S as Staff
+    participant W as Web Client
+    participant R as REST Routers + Auth
+    participant P as Reporting & Export
+    participant A as Audit Logger
+    participant D as Database
+
+    S->>W: Filter reach report (school = Medicine, 2025–26)
+    W->>R: GET /reports/reach?school=...&year=...
+    R->>R: Check login
+    R->>P: Build report
+    P->>D: COUNT(DISTINCT participant) by school
+    D-->>P: Unique and repeat counts
+    P-->>W: Table + chart shown on the page (no student ID column)
+    S->>W: Download CSV
+    W->>R: GET /exports/reach.csv
+    R->>A: Log export
+    A->>D: Save audit entry
+    R-->>W: CSV file (no student ID column)

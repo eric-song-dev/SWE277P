@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    actor S as Staff
+    participant W as Web Client
+    participant R as REST Routers + Auth
+    participant I as Import Pipeline
+    participant M as Identity Resolver
+    participant Q as Review Queue
+    participant E as Reconciliation Engine
+    participant D as Database
+
+    S->>W: Drop registration<br/>+ attendance files
+    W->>R: POST /imports
+    R->>R: Check login
+    R->>I: Parse with adapter
+    alt Missing required columns
+        I-->>W: 422 errors, nothing saved
+    else File is valid
+        I->>D: Save import batch + raw rows
+        I->>M: Normalized records
+        M->>D: Link exact matches (NetID, then email)
+        M->>Q: Rank the rest<br/>(score + reasons)
+        I-->>W: Summary: matched / to review / row errors
+    end
+    S->>W: Compare side<br/>by side
+    W->>R: POST /review/{id}
+    R->>Q: Same person or keep separate
+    Q->>D: Save decision + audit entry
+    S->>W: Finalize event
+    W->>R: POST /finalize
+    R->>E: Compute statuses
+    E->>D: Save 4 statuses
+    E-->>W: Event reconciliation report

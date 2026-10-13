@@ -1,0 +1,28 @@
+flowchart LR
+    user["<b>GPSRC Staff</b><br/><i>[Person]</i>"]
+    files["<b>Export files</b><br/><i>[CSV / XLSX]</i><br/>CampusGroups, 12twenty,<br/>check-in form, Zoom"]
+    out["<b>CSV file</b><br/><i>[Download]</i><br/>Filtered report or<br/>reconciled data"]
+
+    subgraph browser["Staff web browser"]
+        spa["<b>Web Client</b><br/><i>[Container: React + TypeScript SPA]</i><br/>Upload, review queue,<br/>on-page dashboard and reports"]
+    end
+
+    subgraph host["Docker Compose host: laptop or one AWS VM"]
+        nginx["<b>Web Server</b><br/><i>[Container: Nginx]</i><br/>Serves SPA, HTTPS,<br/>proxies /api"]
+        api["<b>API Application</b><br/><i>[Container: FastAPI]</i><br/>Auth, import, matching,<br/>reconciliation, reports"]
+        db[("<b>Database</b><br/><i>[Container: PostgreSQL 16]</i><br/>Participants, events, evidence,<br/>decisions, raw rows, audit log")]
+    end
+
+    user -->|"Uses"| spa
+    files -.->|"Uploaded"| spa
+    spa <-->|"HTTPS<br/>JSON, files"| nginx
+    nginx -->|"/api"| api
+    api -->|"SQL"| db
+    spa -->|"Downloads CSV"| out
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class user person
+    class spa,nginx,api,db container
+    class files,out external

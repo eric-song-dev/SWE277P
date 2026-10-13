@@ -1,0 +1,1 @@
+{"theme": "default", "fontFamily": "Helvetica, Arial, sans-serif", "flowchart": {"htmlLabels": true, "curve": "basis", "wrappingWidth": 320}, "er": {"layoutDirection": "TB"}, "sequence": {"mirrorActors": false, "messageFontSize": 15, "actorFontSize": 15, "noteFontSize": 14, "width": 120, "actorMargin": 30}}

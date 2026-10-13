@@ -1,0 +1,26 @@
+flowchart TB
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i><br/>Upload files, review matches, finalize<br/>events, view reports, download CSV"]
+    students["<b>Graduate Students & Postdocs</b><br/><i>[Person, data subject]</i><br/>Register and attend events"]
+
+    hub["<b>Registration & Attendance Reconciliation Hub</b><br/><i>[Software System]</i><br/>Imports exports, resolves identities,<br/>reconciles attendance, produces reports"]
+
+    subgraph ext["External sources: files only, no live integration with the Hub"]
+        reg["<b>Registration Platforms</b><br/><i>[External Systems]</i><br/>CampusGroups / ZotSpot, 12twenty<br/>registration + attendee exports"]
+        att["<b>Attendance Sources</b><br/><i>[External]</i><br/>GPSRC check-in Google Form,<br/>Zoom participant report"]
+    end
+
+    csv["<b>CSV File</b><br/><i>[Download]</i><br/>Filtered reports<br/>and reconciled data"]
+
+    students -->|"Register"| reg
+    students -->|"Check in / join"| att
+    staff -->|"Downloads exports<br/>(CSV / XLSX)"| reg
+    staff -->|"Downloads check-in<br/>and Zoom files"| att
+    staff -->|"Uploads, reviews, finalizes,<br/>views reports (HTTPS)"| hub
+    hub -->|"Exports CSV"| csv
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class staff,students person
+    class hub system
+    class reg,att,csv external
