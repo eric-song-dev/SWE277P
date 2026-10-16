@@ -4,7 +4,6 @@ sequenceDiagram
     participant W as Web Client
     participant R as REST Routers + Auth
     participant P as Reporting & Export
-    participant A as Audit Logger
     participant D as Database
 
     S->>W: Filter reach report (school = Medicine, 2025–26)
@@ -16,6 +15,5 @@ sequenceDiagram
     P-->>W: Table + chart shown on the page (no student ID column)
     S->>W: Download CSV
     W->>R: GET /exports/reach.csv
-    R->>A: Log export
-    A->>D: Save audit entry
-    R-->>W: CSV file (no student ID column)
+    R->>P: Build CSV
+    P-->>W: CSV file (no student ID column)

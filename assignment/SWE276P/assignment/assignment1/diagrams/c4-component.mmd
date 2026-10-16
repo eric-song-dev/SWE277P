@@ -7,7 +7,6 @@ flowchart TB
         events["<b>Event Manager</b><br/><i>[Component]</i><br/>Events and their metadata"]
         import["<b>Import Pipeline</b><br/><i>[Component]</i><br/>Source adapters (4 templates)<br/>→ Validator → Normalizer"]
         reports["<b>Reporting & Export</b><br/><i>[Component]</i><br/>On-page reports, filters,<br/>CSV export"]
-        audit["<b>Audit Logger</b><br/><i>[Component]</i><br/>Imports, decisions, exports"]
         exact["<b>Exact Matcher</b><br/><i>[Component]</i><br/>NetID → normalized email<br/>(never student ID alone)"]
         ranker["<b>Candidate Ranker</b><br/><i>[Component]</i><br/>Name/email similarity, student ID<br/>as a hint; score + reasons, top 3"]
         review["<b>Review Queue</b><br/><i>[Component]</i><br/>Same person / keep separate"]
@@ -22,7 +21,6 @@ flowchart TB
     routers --> import
     routers -->|"Staff decisions"| review
     routers --> reports
-    routers -.->|"Logs actions"| audit
     import -->|"Source records"| exact
     exact -->|"No exact match"| ranker
     ranker -->|"Candidates"| review
@@ -31,9 +29,8 @@ flowchart TB
     recon --> db
     reports --> db
     events --> db
-    audit --> db
 
     classDef container fill:#438dd5,stroke:#2e6295,color:#fff
     classDef component fill:#85bbf0,stroke:#5d82a8,color:#000
     class spa,db container
-    class routers,auth,events,import,reports,audit,exact,ranker,review,recon component
+    class routers,auth,events,import,reports,exact,ranker,review,recon component

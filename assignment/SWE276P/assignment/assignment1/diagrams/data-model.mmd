@@ -1,6 +1,5 @@
 erDiagram
     APP_USER ||--o{ IMPORT_BATCH : uploads
-    APP_USER ||--o{ AUDIT_LOG : performs
     IMPORT_BATCH ||--|{ SOURCE_RECORD : contains
     PARTICIPANT |o--o{ SOURCE_RECORD : "resolved from"
     SOURCE_RECORD ||--o{ MATCH_CANDIDATE : "has"
@@ -69,9 +68,4 @@ erDiagram
     EVENT_OUTCOME {
         string status "attended, absent, walk-in, unresolved"
         int finalized_by FK
-    }
-    AUDIT_LOG {
-        int id PK
-        string action
-        datetime at
     }

@@ -10,7 +10,7 @@ flowchart LR
     subgraph host["Docker Compose host: laptop or one AWS VM"]
         nginx["<b>Web Server</b><br/><i>[Container: Nginx]</i><br/>Serves SPA, HTTPS,<br/>proxies /api"]
         api["<b>API Application</b><br/><i>[Container: FastAPI]</i><br/>Auth, import, matching,<br/>reconciliation, reports"]
-        db[("<b>Database</b><br/><i>[Container: PostgreSQL 16]</i><br/>Participants, events, evidence,<br/>decisions, raw rows, audit log")]
+        db[("<b>Database</b><br/><i>[Container: PostgreSQL 16]</i><br/>Participants, events, evidence,<br/>decisions, raw rows")]
     end
 
     user -->|"Uses"| spa

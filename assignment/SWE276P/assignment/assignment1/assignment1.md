@@ -69,13 +69,13 @@ Our MOV (Assignment 2) adds four measurable targets:
 
 ### 2.1 System boundaries
 
-| In scope (MVP) | Stretch goals | Out of scope |
+| In scope (MVP) | Stretch goals / backlog | Out of scope |
 |---|---|---|
 | Imports of four known file formats into a common data model | Data-request workbook (identifiers plus blank institutional fields), the preferred first stretch goal | Direct student-information-system (SIS) integration |
 | Exact matching plus staff-reviewed suggestions | Re-import of returned enrichment files; postdoc roster enrichment | Live CampusGroups, 12twenty, or Zoom APIs; arbitrary spreadsheet parsing |
 | One-time events | Import of the historical GPSRC Data Project sheet *(our proposal; to confirm with sponsor)* | UCI SSO, production hosting, and production deployment |
-| Core reports, dashboard, exports, and exception views | Cross-event aliases, record merge/split, richer audit history | Automatic fuzzy merges and predictive analytics |
-| Staff login (one role); basic audit log | Additional dashboards and charts | Certificate and multi-session programs (cohorts, sessions, requirements, awards), removed by the sponsor; writing back to the registration platforms |
+| Core reports, dashboard, exports, and exception views | Cross-event aliases, record merge/split; an audit log of imports, review decisions, finalizations, and CSV exports | Automatic fuzzy merges and predictive analytics |
+| Staff login (one role) | Additional dashboards and charts | Certificate and multi-session programs (cohorts, sessions, requirements, awards), removed by the sponsor; writing back to the registration platforms |
 
 ### 2.2 Major features
 
@@ -90,7 +90,7 @@ Our MOV (Assignment 2) adds four measurable targets:
   - Automatic matches use only NetID (including a NetID derived from a plain `netid@uci.edu` address), then normalized email.
   - Student/employee ID is never enough for an automatic match, because it is self-entered and unreliable (A3). A matching ID only raises a candidate's score and appears as one of the reasons.
   - Records without an exact match get up to three ranked candidates, each with a confidence score and the reasons behind it.
-- **F6. Review queue.** Staff compare records side by side and choose "same person" or "keep separate." Every decision is logged and can be reversed.
+- **F6. Review queue.** Staff compare records side by side and choose "same person" or "keep separate." Every decision is saved with the staff member who made it and can be reversed.
 - **F7. Event reconciliation.** The system assigns each person attended, absent, walk-in, or unresolved, and staff then finalize the event.
 - **F8. Participant directory.** One record per person, with history across events (e.g., how many events a student attended in 2025–26).
 - **F9. Reports and export.**
@@ -98,9 +98,7 @@ Our MOV (Assignment 2) adds four measurable targets:
   - Filters: school, department/program, affiliation, domestic/international, event, event type, and term or date range.
   - On-page view: results appear directly on the web page as a table and chart, e.g., the unique Biological Sciences students who attended either Bagel Breakfast (10/7).
   - Export: CSV, including the existing GPSRC Data Project layout. For example, staff could pull the Bagel Breakfast attendees to invite to the new Donut Breakfast.
-- **F10. Data quality and audit.**
-  - Views of missing IDs, likely duplicates, conflicting student IDs, and unmatched records.
-  - A log of imports, decisions, finalizations, and exports.
+- **F10. Data quality.** Views of missing IDs, likely duplicates, conflicting student IDs, and unmatched records. A full audit log is a backlog item (Section 2.1).
 
 ### 2.3 Supported input files and assumptions
 
@@ -159,7 +157,7 @@ The system has four containers:
 - **Web Client.** A React single-page app (SPA) running in the browser.
 - **Web Server.** Nginx serves the SPA, terminates HTTPS, and forwards `/api` requests.
 - **API Application.** A FastAPI service that holds all of the business logic.
-- **Database.** PostgreSQL stores the participants, events, evidence, review decisions, audit log, and every imported row as JSONB, along with its file name and checksum. Uploaded files are parsed in memory, so there is no separate file store.
+- **Database.** PostgreSQL stores the participants, events, evidence, review decisions, and every imported row as JSONB, along with its file name and checksum. Uploaded files are parsed in memory, so there is no separate file store.
 
 One Docker Compose file runs the same stack on a laptop or on a single cloud VM for the shared sponsor demo.
 
@@ -178,7 +176,7 @@ How one event flows through the components:
 3. The **Exact Matcher** links records to known participants by NetID, then by normalized email. A student/employee ID alone never links a record.
 4. Any leftover record goes to the **Candidate Ranker**. It scores candidates by name and email similarity and treats a matching student ID only as a hint. Its top suggestions wait in the **Review Queue** for a staff decision.
 5. The **Reconciliation Engine** then computes each person's status, and staff finalize the event.
-6. **Reporting & Export** serves the on-page reports and CSV downloads. The **Audit Logger** records each import, decision, finalization, and export.
+6. **Reporting & Export** serves the on-page reports and CSV downloads.
 
 ### 3.4 Core data model
 
@@ -214,14 +212,14 @@ The sequence diagrams below show how the components from Figure 3 interact at ru
 *Figure 6. Scenario 2: on-page reach report and CSV download.*
 
 - **On-page report.** Staff filter the unique-participant report and see the table and chart directly on the page (steps 1–7).
-- **CSV download.** The same filtered result downloads as a CSV file, and the export is written to the audit log (steps 8–12).
+- **CSV download.** The same filtered result downloads as a CSV file (steps 8–11).
 - **Privacy.** The student ID column is left out of both, following the sponsor's FERPA guidance. This covers acceptance criterion 5.
 
 ## 4. Design Rationale
 
 | Decision | Choice (vs. alternative) | Why | Trade-off |
 |---|---|---|---|
-| Deployment model | Shared web app with a server database (vs. a local desktop tool) | The sponsor wants all staff to log in to one tool that builds up data over the year (10/7) | Requires a host and a later UCI security review |
+| Deployment model | A local desktop tool (vs. Shared web app with a server database) | For MVP purposes, and pending confirmation with sponsor regarding OIT requirements (The sponsor wants all staff to log in to one tool that builds up data over the year (10/7)) | Cannot support multiple logins from multiple computers |
 | Architecture style | Modular monolith (vs. microservices) | Four part-time developers and 10 weeks call for one deployable. The modules mirror Figure 3, so they can be split later. | One growing codebase; boundaries are kept by code review |
 | Backend framework | FastAPI (vs. Django) | One set of Pydantic models validates both import rows and API payloads. pandas and RapidFuzz run in the same process. The OpenAPI spec generates a typed React client. It was also the team's initial choice. | No built-in auth or admin, so we write a small auth module with a single staff role |
 | Database | PostgreSQL (vs. DynamoDB or SQLite) | Reports need joins, `COUNT(DISTINCT)`, and group-by. Foreign keys protect evidence links, and JSONB keeps raw rows. Dev and demo use the same engine. | Managed RDS costs money, so the demo runs Postgres in a container with backups |
@@ -229,9 +227,9 @@ The sequence diagrams below show how the components from Figure 3 interact at ru
 | Report output | On-page tables and charts plus CSV download (vs. XLSX or Google Sheets export) | The sponsor wants to filter and see results directly on the page, then download them as CSV (10/7). CSV opens in both Excel and Google Sheets and is simple to test. | No formatting or multiple sheets in a download; files are written as UTF-8 with a BOM so Excel shows names correctly |
 | Identity matching | Exact rules on NetID and email, ranked suggestions, and a human decision (vs. automatic fuzzy merge or ML) | The sponsor wants human review when no record matches, and the proposal forbids auto-merge. The displayed reasons are easy to verify. | Staff handle the edge cases; the exact rules keep their number small |
 | Student/employee ID | A review hint only, never an automatic match (deviates from the proposal's exact-ID list, workflow step 8) | IDs are self-entered and often wrong, and the sponsor said not to rely on them (10/7). A single typo would silently merge two different people, breaking the "no merge without staff confirmation" rule. | Records that share only a student ID always need one staff click |
-| Access model | One staff role (vs. separate Staff and read-only Viewer roles) | The sponsor dropped the read-only role; every user is GPSRC staff | Anyone signed in can change data, so every import, decision, and export is logged and decisions are reversible |
+| Access model | One staff role (vs. separate Staff and read-only Viewer roles) | The sponsor dropped the read-only role; every user is GPSRC staff | Anyone signed in can change data. Each import, match decision, and finalization records who did it, and decisions are reversible; a full audit log, including CSV exports, is in the backlog |
 | Evidence model | Source records kept separate from resolved participants | Traceable, reversible decisions; evidence is never overwritten | More tables and joins |
-| Privacy | Synthetic data; NetID as the cross-platform key; student ID left out of on-page reports and default exports; audit log; HTTPS | Follows the sponsor's FERPA guidance (no name shown together with a student ID) and proposal #19–23 | Student IDs appear only in the review screen and participant record |
+| Privacy | Synthetic data; NetID as the cross-platform key; student ID left out of on-page reports and default exports; HTTPS | Follows the sponsor's FERPA guidance (no name shown together with a student ID) and proposal #19–23 | Student IDs appear only in the review screen and participant record |
 | Processing | Synchronous imports (vs. a task queue) | Files have tens to hundreds of rows and parse in seconds | Very large historical files may later need a background job |
 | Packaging | Docker Compose, with a single-VM demo | Cheap, moves between a laptop and AWS unchanged, and easy to hand off to UCI OIT | Not highly available; acceptable because production hosting is out of scope |
 

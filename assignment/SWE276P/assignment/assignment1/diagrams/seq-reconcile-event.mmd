@@ -25,7 +25,7 @@ sequenceDiagram
     S->>W: Compare side<br/>by side
     W->>R: POST /review/{id}
     R->>Q: Same person or keep separate
-    Q->>D: Save decision + audit entry
+    Q->>D: Save decision + decided_by
     S->>W: Finalize event
     W->>R: POST /finalize
     R->>E: Compute statuses
