@@ -1,0 +1,22 @@
+flowchart TB
+    students["<b>Students & Postdocs</b><br/><i>[Person]</i>"]
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i>"]
+
+    platforms["<b>CampusGroups / 12twenty</b><br/><i>[External System]</i>"]
+    hub["<b>Attendance Data Hub</b><br/><i>[Software System]</i>"]
+    readers["<b>Dean & Partner Schools</b><br/><i>[Report Readers]</i>"]
+
+    llm["<b>LLM Provider</b><br/><i>[External System]</i>"]
+
+    students -->|"register"| platforms
+    staff -->|"download exports"| platforms
+    staff -->|"upload, ask"| hub
+    staff -->|"Excel reports"| readers
+    hub -->|"question → SQL"| llm
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class students,staff,readers person
+    class hub system
+    class platforms,llm external

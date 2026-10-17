@@ -1,0 +1,25 @@
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 40}}}%%
+flowchart LR
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i>"]
+    spa["<b>Web Client</b><br/><i>[React]</i>"]
+
+    subgraph host["Docker Compose"]
+        nginx["<b>Web Server</b><br/><i>[Nginx]</i>"]
+        api["<b>API Application</b><br/><i>[FastAPI]</i>"]
+        db[("<b>Database</b><br/><i>[PostgreSQL]</i>")]
+    end
+
+    llm["<b>LLM Provider</b><br/><i>[External]</i>"]
+
+    staff -->|"uses"| spa
+    spa -->|"HTTP(S)"| nginx
+    nginx -->|"/api"| api
+    api -->|"SQL"| db
+    api -->|"question → SQL"| llm
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class staff person
+    class spa,nginx,api,db container
+    class llm external

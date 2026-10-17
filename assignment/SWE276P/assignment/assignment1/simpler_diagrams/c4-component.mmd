@@ -1,0 +1,47 @@
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 45}}}%%
+flowchart LR
+    llm["<b>LLM Provider</b>"]
+    spa["<b>Web Client</b>"]
+
+    subgraph app["API Application"]
+        routers["<b>Routers + Auth</b>"]
+
+        subgraph intake["Data intake"]
+            import["<b>Import Pipeline</b>"]
+            events["<b>Event Manager</b>"]
+            linker["<b>Identity Linker</b>"]
+        end
+
+        subgraph chat["Chatbot"]
+            prompt["<b>Prompt Builder</b><br/><b>+ LLM Gateway</b>"]
+            guard["<b>SQL Guard</b>"]
+            exec["<b>Read-only Executor</b>"]
+            answer["<b>Answer Builder</b>"]
+        end
+
+        export["<b>Export Service</b>"]
+    end
+
+    db[("<b>Database</b>")]
+
+    spa --> routers
+    prompt <-->|"HTTPS"| llm
+    answer ~~~ llm
+    routers --> import
+    routers --> prompt
+    routers --> export
+    import --> events
+    import --> linker
+    prompt --> guard --> exec --> answer
+    linker -->|"save rows"| db
+    exec -->|"read-only"| db
+    export -->|"read"| db
+
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef safety fill:#c8e6c9,stroke:#2e7d32,color:#000
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class spa,db container
+    class routers,import,events,linker,prompt,answer,export component
+    class guard,exec safety
+    class llm external

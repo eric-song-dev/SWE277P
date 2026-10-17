@@ -1,0 +1,23 @@
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 40}}}%%
+flowchart LR
+    q(["<b>Question</b>"])
+    pb["<b>Prompt Builder</b><br/><i>L4: controlled values</i>"]
+    llm["<b>LLM Provider</b><br/><i>returns SQL</i>"]
+    g["<b>SQL Guard</b><br/><i>L1: one SELECT</i>"]
+    ro["<b>Read-only role</b><br/><i>L2 + L3</i>"]
+    a(["<b>Answer + SQL</b>"])
+    rej(["<b>Refused</b>"])
+    log[("<b>Query log</b><br/><i>L5</i>")]
+
+    q --> pb --> llm --> g -->|"pass"| ro --> a
+    g -.->|"fail"| rej
+    a -.-> log
+
+    classDef step fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef safety fill:#c8e6c9,stroke:#2e7d32,color:#000
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    classDef stop fill:#ffcdd2,stroke:#c62828,color:#000
+    class q,a step
+    class pb,g,ro,log safety
+    class llm external
+    class rej stop

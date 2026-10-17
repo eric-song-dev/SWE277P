@@ -137,13 +137,13 @@ Figure 1 shows the system in its environment.
 - **Only one live external connection.** The Hub calls the LLM provider, sending only the question and a description of the data. The provider returns SQL and never sees student records or results.
 - **Output is controlled by staff.** Results appear on screen and download as Excel. Staff decide what to send to the dean or partner schools. Students and postdocs never use the Hub.
 
-![Figure 1. System context](diagrams/c4-context.png)
+![Figure 1. System context](simpler_diagrams/c4-context.png)
 
 *Figure 1. System context.*
 
 ### 3.2 Container diagram
 
-![Figure 2. Containers](diagrams/c4-container.png)
+![Figure 2. Containers](simpler_diagrams/c4-container.png)
 
 *Figure 2. Containers.*
 
@@ -156,7 +156,7 @@ The four containers in Figure 2:
 
 ### 3.3 Component diagram
 
-![Figure 3. Components of the API Application](diagrams/c4-component.png)
+![Figure 3. Components of the API Application](simpler_diagrams/c4-component.png)
 
 *Figure 3. Components of the API Application. The green components are the two layers that stop harmful SQL.*
 
@@ -203,9 +203,9 @@ On the sample data the answer is 6.
 | 4. Controlled values | Only drop-down and staff-entered values reach the prompt, never free text that students typed. This blocks hidden instructions in student text (prompt injection) |
 | 5. Query log | Every question, its SQL, the user, and the outcome are recorded for review |
 
-![Figure 4. Chatbot query pipeline and safety layers](diagrams/chatbot-safety.png)
+![Figure 4. Chatbot query pipeline and safety layers](simpler_diagrams/chatbot-safety.png)
 
-*Figure 4. Chatbot query pipeline. Each green step is one of the five safety layers.*
+*Figure 4. Chatbot query pipeline. Green steps are safety layers; L1–L5 match the table above.*
 
 ### 3.5 Data model (summary)
 
