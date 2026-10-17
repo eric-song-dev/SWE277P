@@ -1,63 +1,154 @@
-Project Scope and High-Level Design
-Due: Fri Oct 16, 2026 11:59pm
-100 Points Possible
-Attempt 1
-In Progress
-NEXT UP: Submit Assignment
+# Program Registration & Attendance Data Hub
 
-Unlimited Attempts Allowed
-Purpose
-Each team will define the scope and high-level architecture of their sponsored capstone project. This document ensures alignment between the team, sponsor, and instructors before detailed design and implementation begin.
+**Team:** Brandon Y Lau, Molly Tran, Jennifer Sun, Zhenyu (Eric) Song
+**Sponsor:** Kayleigh Anderson-Natale, PhD, Director of Postdoc and Professional Development, UCI Graduate Division
+**Version:** 2.0, October 16, 2026. Replaces the scope in `deprecated_assignment1.md`. Based on the sponsor proposal, the 10/7 and 10/14 sponsor meetings, the 10/16 instructor meeting, and the sponsor's sample data in `data/`.
 
-What to Include
-Project Overview
+---
 
-Brief description of the project and its purpose
+## 2. Scope Definition
 
-Target users and key stakeholders
+The Hub is a tool that runs locally on one computer. Staff upload each event's attendee export from 12twenty or CampusGroups. The Hub adds every upload to one permanent dataset that keeps growing across academic years. Staff then ask questions in plain English through an AI chatbot and get back numbers, student lists, and email lists that they can download as Excel files.
 
-Success criteria or key deliverables
+### 2.1 Scope changes since the proposal
 
-Scope Definition
+The sponsor narrowed the project in the first two meetings. The table below records each change and who made it.
 
-System boundaries (what’s in / out of scope)
+| Item | Original proposal | Current scope | Decided by |
+|---|---|---|---|
+| Core purpose | Reconcile registration records with attendance evidence | Compile per-event attendee exports into one permanent dataset and query it | Sponsor, 10/14 |
+| Registration–attendance reconciliation | Required | Optional (P2). Student assistants already do it as part of their front-desk work, so it is not a pain point. | Sponsor, 10/14 |
+| Query interface | Fixed filter-based reports | AI chatbot that answers questions in plain English (P0) | Team, 10/16; to present to the sponsor on 10/21 |
+| Certificate and multi-session programs | Required | Removed | Sponsor, 10/7 |
+| Input files | 12twenty, CampusGroups, Zoom, in-person sign-in, certificate cohort | 12twenty and CampusGroups attendee exports only. Zoom and sign-in files return only with P2 reconciliation. | Sponsor, 10/14 |
+| Outputs | Four fixed reports (event, certificate, reach, data quality) | Numbers, student lists, and email lists, exported to Excel. Charts are not needed. | Sponsor, 10/14 |
+| Hosting | Web application; AWS was considered | Local, single computer. Public cloud is excluded for privacy. A UCI OIT server is a possible later phase. | Sponsor, 10/14 |
+| Users and roles | Administrator and read-only roles | One staff login. Login is still required to see any data. | Sponsor, 10/14 |
+| Project name | Program Registration & Attendance Reconciliation Hub | Program Registration & Attendance Data Hub | Team, 10/16 |
 
-Major features and assumptions
+### 2.2 System boundaries
 
-Initial technology stack
+| In scope (P0, MVP) | Should have (P1) and optional (P2) | Out of scope |
+|---|---|---|
+| Import of 12twenty and CampusGroups attendee exports, unchanged | P1: filter table without AI, as a fallback and for checking answers | Public cloud hosting (AWS etc.), UCI SSO, deployment to OIT servers |
+| One permanent, growing dataset in the GPSRC Data Project layout | P1: data-quality view and manual filling of blank fields | Student information system (SIS) integration |
+| One person tracked across events by NetID | P1: chatbot follow-up questions; saved common queries | Live 12twenty, CampusGroups, or Zoom APIs; writing back to these platforms |
+| AI chatbot for plain-English questions, with a pluggable LLM provider | P1: import of the historical GPSRC Data Project sheet | Arbitrary spreadsheet formats |
+| Excel and CSV export of every result | P2: registration–attendance reconciliation | Automatic fuzzy merging of people |
+| Local install with one staff login | P2: proactive AI insights, charts, certificate rules, multiple users and roles | Real student data during the capstone |
 
-High-Level Architecture
-Use either the C4 Model or the 4+1 View Model to describe your system.
+### 2.3 Major features
 
-If using C4 Model:
+**P0: required for the MVP**
 
-Context Diagram
+- **F1. Import platform exports.**
+  - Staff drag and drop one or more files: 12twenty (.xlsx) and CampusGroups (.csv or .xlsx).
+  - Files are used exactly as the platforms export them. Staff do not edit headers, punctuation, or spacing first.
+  - The Hub detects the source from the header row. A file whose headers do not match a known export is rejected, and the message lists the missing columns.
+  - A row with missing values is still imported and is flagged.
+- **F2. Event details.**
+  - Each file is one event. The export files do not contain event details, so staff enter or confirm them at upload: event name (pre-filled from the file name), event date, term, in person/virtual/hybrid, sponsor/host/partners, event type, and who entered the data.
+  - For CampusGroups files, the date can be pre-filled from the Event Registration UID (e.g., `CG-20261007-001`), and staff confirm it. A 12twenty "Registration Date" is not the event date and is not used.
+- **F3. One common layout.**
+  - Every row is converted to the 19 columns of the sponsor's GPSRC Data Project template, the same layout as the sample `GSPRC Compiled Dataset.xlsm`.
+  - 12twenty fields map as follows: College/School to School, Major/Academic Program to Department, and Degree to Affiliation (Doctoral to Doctoral Student, Masters to Master's Student, Postdoctoral to Postdoc).
+  - A 12twenty NetID is derived only from an address of the form `netid@uci.edu`. Dot-name and `@hs.uci.edu` addresses get no NetID and are flagged.
+  - Fields a source does not provide, such as Student ID and domestic/international in 12twenty, stay blank. The Hub never guesses them.
+  - Every stored row keeps its source file name and row number.
+- **F4. Permanent, growing dataset.**
+  - Data is stored in a local database and grows with every upload. It is not split by academic year.
+  - Uploading the same file twice shows a warning and adds no duplicate rows.
+- **F5. One person across events.**
+  - A row is linked to a person by NetID. A row without a NetID is linked by its normalized email to the person with the same email. This is what makes counts of unique students and "events per student" possible.
+  - A row with neither a NetID nor an email is kept but not linked, and is flagged.
+  - Only exact matches link records. Within one event, a person appears once.
+- **F6. AI chatbot query.**
+  - Staff type a question in plain English and get a number, a table, or a list. At minimum, the chatbot answers the kinds of questions the sponsor raised:
+    - How many events did a given student attend in 2026–27?
+    - Which School of Medicine students attended the 9/30 Bagel Breakfast?
+    - How many unique Biological Sciences students attended any event this year?
+    - Attendance counts by school, by event type, or by domestic/international status.
+    - The emails of everyone who attended a Bagel Breakfast, to invite them to the Donut Breakfast.
+    - Which schools have the lowest attendance (to find gaps in service)?
+  - Each answer shows a one-line summary, the result table, how the chatbot read the question (the filters it used), the generated SQL, and the row count. This lets staff check the answer.
+  - When a question is ambiguous, for example whether "this year" means the academic or the calendar year, the chatbot states the assumption it made.
+- **F7. Chatbot privacy and safety.**
+  - The LLM receives only the question, the description of the queryable data (column names and meanings), and lists of non-personal values such as school, department, event, and event-type names. It never receives attendee rows or query results.
+  - The LLM returns SQL, which runs locally. The one-line summary is built locally from the result.
+  - Generated SQL must be a single SELECT on the approved view. It runs under a read-only database account with a time limit.
+- **F8. Pluggable LLM provider.**
+  - All chatbot calls go through one LLM interface. The provider, model, API key, and endpoint are set in a local settings file, and switching providers needs no code change.
+  - The MVP supports three providers: ZotGPT Gateway (UCI OIT), OpenAI, and DeepSeek.
+  - ZotGPT is the recommended default for real data because it is managed by UCI, and a question may contain a student's name.
+- **F9. Export.** Every table or list result downloads as Excel (.xlsx) or CSV. The whole dataset can also be exported in the GPSRC Data Project layout.
+- **F10. Local install and login.** The Hub runs on one computer and is reached only from that computer. There is one staff account. No data can be viewed or exported without signing in.
 
-Container Diagram
+**P1: should have**
 
-Component Diagram (optional if early stage)
+- **F11. Filter table without AI.** Staff filter the dataset by column and export the result. This works when the LLM is wrong or offline and helps staff check chatbot answers.
+- **F12. Data quality.** A view lists rows missing a NetID, email, school, or other field, and people who may be duplicates (same name, different email). Staff can fill in blank fields by hand, as the sponsor asked on 10/7.
+- **F13. Follow-up questions.** The chatbot keeps the context of the conversation, e.g., "Of those, how many are international?"
+- **F14. Saved queries.** Staff save common questions, such as a quarterly report or unique students per school, and run them with one click.
+- **F15. Historical import.** Import last year's GPSRC Data Project sheet so the dataset covers past years. Pending sponsor confirmation.
 
-If using 4+1 Model:
+**P2: optional, if time allows**
 
-Logical, Development, Process, and Physical Views
+- **F16. Registration–attendance reconciliation.** Import registrations plus raw check-in (Google Form) or Zoom files, match them automatically, send uncertain matches to staff review, and assign attended, absent, walk-in, or unresolved. Depends on the mismatched sample data the sponsor offered to provide.
+- **F17. Proactive AI insights.** The chatbot points out trends and gaps without being asked.
+- **F18. Charts.**
+- **F19. Certificate eligibility rules.** Not currently requested by the sponsor.
+- **F20. Multiple users and roles.**
 
-A few key scenarios (+1) illustrating system behavior
+### 2.4 Supported input files
 
-Design Rationale
+The headers below come from the sponsor's templates and sample files, which keep the real exports' headers.
 
-Justify major design and technology choices
+| Source | Format | Identifiers | Notes |
+|---|---|---|---|
+| CampusGroups / ZotSpot attendee export | .csv or .xlsx | Net ID (set by the login), Email, Student ID # (self-entered) | 26 columns. Name and email appear twice; the second copy is what the attendee confirmed at registration. Includes School, Department, affiliation, and domestic/international. Walk-ins added as guests have only name, email, and NetID. |
+| 12twenty attendee export | .xlsx | Email only (usually `netid@uci.edu`) | 16 columns. Has Graduation Term, College/School, Degree, and Major/Academic Program. No NetID, Student ID, or domestic/international. |
+| GPSRC Data Project sheet (P1, F15) | .xlsx | NetID, Email | Already in the target layout |
+| GPSRC check-in Google Form, Zoom participant report (P2, F16) | .xlsx / .csv | Email, when present | Used only for reconciliation |
 
-Mention trade-offs or constraints
+### 2.5 Assumptions
 
-Deliverables
-- 4–12 page report in PDF
-- Diagrams labeled and readable
-- Submitted to Canvas by [date]
+- **A1. Synthetic data.** All sample files are synthetic, with headers identical to the real exports. The sponsor's staff are double-checking the 12twenty sample format (10/14).
+- **A2. Inputs are already reconciled.** Each file lists only the people who attended; every 12twenty sample row has `Attended? = YES`. Student assistants keep doing reconciliation by hand unless F16 is built.
+- **A3. NetID is the person key.** A NetID is unique. A 12twenty email equals `netid@uci.edu` about 99% of the time. The exceptions (dot-name addresses, `@hs.uci.edu`, often postdocs) are flagged rather than guessed, so one such person may be counted twice until staff fix it (F12).
+- **A4. Student ID is never a key.** Students type it in and often get it wrong, and a name shown with a student ID is a FERPA concern. It is stored but not used for matching.
+- **A5. Small volume, one user.** Most events have fewer than 50 attendees. Over several years the dataset reaches hundreds of events and tens of thousands of rows, with one person using the Hub at a time.
+- **A6. The platforms stay the system of record.** The Hub never writes back to 12twenty or CampusGroups.
+- **A7. LLM access.** The chatbot needs an internet connection and an API key for at least one provider. Without them, import, browsing, and export still work.
+  - ZotGPT Gateway is open to UCI faculty, staff, and graduate students through UCInetID sign-in, with $100 of OIT credits for testing, so the team can use it during development.
+  - ZotGPT states that data is not used to train models, that it follows P3 security standards, that P4 data is not permitted, and that data is kept for up to 12 months.
+  - Whether real GPSRC attendance data may be used with ZotGPT must be confirmed with the sponsor and OIT before any real-data use.
 
-Rubric
+### 2.6 Initial technology stack
 
-Criteria	Weight
-Scope clarity & completeness	30%
-Architectural soundness	40%
-Design rationale	20%
-Professional presentation	10%
+| Layer | Choice |
+|---|---|
+| Frontend | React 18 + TypeScript (Vite), MUI + DataGrid, TanStack Query, react-dropzone |
+| Backend API | Python 3.12, FastAPI on Uvicorn, Pydantic v2 |
+| Data processing | pandas + openpyxl (read CSV/XLSX imports, write XLSX/CSV exports); RapidFuzz only if F16 is built |
+| Database | PostgreSQL 16, SQLAlchemy 2.0, Alembic migrations. One flattened view in the GPSRC Data Project layout is the only thing the chatbot can query, through a read-only database account. |
+| LLM integration | One provider interface with adapters for ZotGPT Gateway, OpenAI, and DeepSeek. OpenAI and DeepSeek use the chat-completions format, and ZotGPT Gateway follows the Portkey API specification, which uses the same call. One client is expected to cover all three, to be verified in week 3. |
+| Security | Argon2 password hashing, JWT in an httpOnly cookie, the app bound to localhost, API keys kept in the local settings file and never sent to the browser |
+| Testing | pytest + HTTPX, Vitest + React Testing Library, Playwright (end-to-end demo path), and a chatbot benchmark of questions with known answers |
+| Delivery | Docker Compose (web, API, PostgreSQL) on one computer; GitHub Actions CI |
+
+### 2.7 MVP acceptance criteria
+
+1. Importing the 10 sample files in `data/Example Data` and entering their event details produces the same data as `GSPRC Compiled Dataset.xlsm`: 293 rows and 79 unique NetIDs. Of the two rows without a NetID, the one with an email (Bagel Breakfast, November) links to an existing person, and the one with no email (LinkedIn Info Session) is flagged.
+2. Uploading the same file twice adds no duplicate rows.
+3. The chatbot answers a benchmark set of questions correctly at the agreed rate (proposed: at least 90% of about 25 questions). The correct answers are computed from the compiled sample dataset.
+4. The benchmark runs with each configured provider after only a settings change.
+5. Every table or list result exports to Excel.
+6. A log of every LLM request shows no attendee rows or query results.
+7. Without signing in, no data can be viewed or exported.
+
+### 2.8 Open items to confirm with the sponsor (10/21 meeting)
+
+- Agreement that the AI chatbot is P0 and reconciliation is P2.
+- Whether ZotGPT may be used with real data, given that a question may contain a student's name.
+- Whether last year's GPSRC Data Project sheet should be imported (F15).
+- Who enters the event details at upload (F2): student assistants or staff.
