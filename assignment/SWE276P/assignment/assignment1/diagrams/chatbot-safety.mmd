@@ -1,0 +1,30 @@
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 34}}}%%
+flowchart TB
+    q(["<b>Staff question</b><br/>in plain English"])
+    pb["<b>Prompt Builder</b> · <i>Layer 4</i><br/>question, view description,<br/>controlled values only"]
+    llm["<b>LLM provider</b> (outside the Hub)<br/>receives no student rows, no results.<br/>Returns JSON: SQL, interpretation,<br/>assumptions"]
+    v["<b>Reply check</b><br/>Pydantic: expected JSON shape"]
+    g["<b>SQL Guard</b> (sqlglot) · <i>Layer 1</i><br/>one statement, SELECT only,<br/>attendance_view only,<br/>allowed functions, LIMIT added"]
+    c["<b>Separate connection</b> · <i>Layer 3</i><br/>chatbot_ro, never the app's<br/>read-write connection"]
+    r["<b>PostgreSQL role</b> · <i>Layer 2</i><br/>SELECT on attendance_view only,<br/>read-only transaction, timeout.<br/><b>The real guarantee</b>"]
+    a["<b>Answer</b><br/>summary built locally,<br/>table, interpretation, SQL"]
+    rej(["<b>Refused</b> with a clear message.<br/>One retry sends the<br/>error text only"])
+    log[("<b>Query log</b> · <i>Layer 5</i><br/>question, SQL, user, outcome")]
+
+    q --> pb --> llm --> v --> g
+    g -->|"pass"| c --> r
+    r -->|"rows stay<br/>on the Hub"| a
+    v -->|"fail"| rej
+    g -->|"fail"| rej
+    r -.->|"writes, other tables,<br/>slow queries refused"| rej
+    a -.-> log
+    rej -.-> log
+
+    classDef step fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef safety fill:#c8e6c9,stroke:#2e7d32,color:#000
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    classDef stop fill:#ffcdd2,stroke:#c62828,color:#000
+    class q,a,v step
+    class pb,g,c,r,log safety
+    class llm external
+    class rej stop

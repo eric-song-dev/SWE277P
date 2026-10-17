@@ -1,0 +1,24 @@
+flowchart TB
+    students["<b>Graduate Students & Postdocs</b><br/><i>[Person, data subject]</i><br/>Register for and attend events.<br/>Never use the Hub"]
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i><br/>Program staff and student assistants.<br/>Upload exports, enter event details,<br/>ask questions, download Excel files"]
+
+    platforms["<b>Registration Platforms</b><br/><i>[External Systems]</i><br/>CampusGroups / ZotSpot, 12twenty"]
+    hub["<b>Program Registration &<br/>Attendance Data Hub</b><br/><i>[Software System]</i><br/>Compiles per-event attendee exports<br/>into one permanent dataset and answers<br/>plain-English questions"]
+
+    llm["<b>LLM Provider</b><br/><i>[External System]</i><br/>ZotGPT Gateway (UCI OIT),<br/>OpenAI, or DeepSeek"]
+    files["<b>Excel / CSV Files</b><br/><i>[Output]</i><br/>Counts, student lists,<br/>email lists"]
+    readers["<b>Report Readers</b><br/><i>[Person]</i><br/>Graduate Division dean and<br/>leadership, partner schools.<br/>No login"]
+
+    students -->|"Register,<br/>check in"| platforms
+    staff -->|"Download attendee<br/>exports as files<br/>(no live link)"| platforms
+    staff -->|"Upload files,<br/>ask questions"| hub
+    hub -->|"Question + data<br/>description only,<br/>returns SQL (HTTPS)"| llm
+    hub -->|"Exports"| files
+    files -->|"Sent by staff"| readers
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef system fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class staff,students,readers person
+    class hub system
+    class platforms,files,llm external

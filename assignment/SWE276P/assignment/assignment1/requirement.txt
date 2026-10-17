@@ -19,11 +19,11 @@ The sponsor narrowed the project in the first two meetings. The table below reco
 | Core purpose | Reconcile registration records with attendance evidence | Compile per-event attendee exports into one permanent dataset and query it | Sponsor, 10/14 |
 | Registration–attendance reconciliation | Required | Optional (P2). Student assistants already do it as part of their front-desk work, so it is not a pain point. | Sponsor, 10/14 |
 | Query interface | Fixed filter-based reports | AI chatbot that answers questions in plain English (P0) | Team, 10/16; to present to the sponsor on 10/21 |
-| Certificate and multi-session programs | Required | Removed | Sponsor, 10/7 |
+| Certificate and multi-session programs | Required | Out of scope for now; the sponsor will revisit them only if time allows. Certificate rules remain a P2 idea (F20). | Sponsor, 10/7 |
 | Input files | 12twenty, CampusGroups, Zoom, in-person sign-in, certificate cohort | 12twenty and CampusGroups attendee exports only. Zoom and sign-in files return only with P2 reconciliation. | Sponsor, 10/14 |
 | Outputs | Four fixed reports (event, certificate, reach, data quality) | Numbers, student lists, and email lists, exported to Excel. Charts are not needed. | Sponsor, 10/14 |
 | Hosting | Web application; AWS was considered | Local, single computer. Public cloud is excluded for privacy. A UCI OIT server is a possible later phase. | Sponsor, 10/14 |
-| Users and roles | Administrator and read-only roles | One staff login. Login is still required to see any data. | Sponsor, 10/14 |
+| Users and roles | Administrator and read-only roles | Login is required to see any data. The MVP has one staff account. Multiple staff accounts come next (P1), in case the Hub later moves to a shared server. Permission roles are optional (P2). | Sponsor, 10/14; team, 10/16 |
 | Project name | Program Registration & Attendance Reconciliation Hub | Program Registration & Attendance Data Hub | Team, 10/16 |
 
 ### 2.2 System boundaries
@@ -35,7 +35,7 @@ The sponsor narrowed the project in the first two meetings. The table below reco
 | One person tracked across events by NetID | P1: chatbot follow-up questions; saved common queries | Live 12twenty, CampusGroups, or Zoom APIs; writing back to these platforms |
 | AI chatbot for plain-English questions, with a pluggable LLM provider | P1: import of the historical GPSRC Data Project sheet | Arbitrary spreadsheet formats |
 | Excel and CSV export of every result | P2: registration–attendance reconciliation | Automatic fuzzy merging of people |
-| Local install with one staff login | P2: proactive AI insights, charts, certificate rules, multiple users and roles | Real student data during the capstone |
+| Local install with one staff login | P1: multiple staff accounts. P2: proactive AI insights, charts, certificate rules, permission roles | Real student data during the capstone |
 
 ### 2.3 Major features
 
@@ -73,14 +73,22 @@ The sponsor narrowed the project in the first two meetings. The table below reco
   - Each answer shows a one-line summary, the result table, how the chatbot read the question (the filters it used), the generated SQL, and the row count. This lets staff check the answer.
   - When a question is ambiguous, for example whether "this year" means the academic or the calendar year, the chatbot states the assumption it made.
 - **F7. Chatbot privacy and safety.**
-  - The LLM receives only the question, the description of the queryable data (column names and meanings), and lists of non-personal values such as school, department, event, and event-type names. It never receives attendee rows or query results.
+  - The LLM receives only the question, the description of the queryable data (column names and meanings), and lists of values from controlled fields: school (a drop-down on CampusGroups) and the staff-entered event names, event types, and terms. It never receives attendee rows, query results, or free text that students typed, such as Department. This keeps instructions hidden in student-entered text out of the prompt.
   - The LLM returns SQL, which runs locally. The one-line summary is built locally from the result.
-  - Generated SQL must be a single SELECT on the approved view. It runs under a read-only database account with a time limit.
+  - Generated SQL is treated as untrusted input and passes five layers of protection:
+    1. **SQL check (sqlglot).** Exactly one statement, of type SELECT, reading only the approved view and using only allow-listed functions. A row limit is added for the on-screen answer (for example, 1,000 rows, with a notice when it is reached); exports re-run the same SQL with a higher cap. Anything else is rejected with a clear message.
+    2. **Read-only database role.** The query runs as a dedicated role that can SELECT from the approved view and nothing else, inside a read-only transaction with a time limit. Even if a statement slips past the check, the database refuses any write, any other table (such as user accounts), and any long-running query. This layer is the real guarantee; the prompt's instructions are not relied on.
+    3. **Separate connection.** The chatbot uses only that role's connection, never the application's read-write connection.
+    4. **Controlled values only** (first bullet above).
+    5. **Query log.** Each question, generated SQL, user, and outcome is logged for later review.
+  - All other application SQL, including imports and the filter table (F11), uses bound parameters. Column names, which cannot be bound, come from a fixed allow-list.
 - **F8. Pluggable LLM provider.**
   - All chatbot calls go through one LLM interface. The provider, model, API key, and endpoint are set in a local settings file, and switching providers needs no code change.
   - The MVP supports three providers: ZotGPT Gateway (UCI OIT), OpenAI, and DeepSeek.
   - ZotGPT is the recommended default for real data because it is managed by UCI, and a question may contain a student's name.
-- **F9. Export.** Every table or list result downloads as Excel (.xlsx) or CSV. The whole dataset can also be exported in the GPSRC Data Project layout.
+- **F9. Export.**
+  - Every table or list result downloads as Excel (.xlsx) or CSV. The whole dataset can also be exported in the GPSRC Data Project layout.
+  - Exports are protected against formula injection. A value that starts with `=`, `+`, `-`, or `@` (for example, a department name a student typed) is written as plain text, so Excel never runs it as a formula. This matters for .xlsx because openpyxl treats a string starting with `=` as a formula by default.
 - **F10. Local install and login.** The Hub runs on one computer and is reached only from that computer. There is one staff account. No data can be viewed or exported without signing in.
 
 **P1: should have**
@@ -90,14 +98,15 @@ The sponsor narrowed the project in the first two meetings. The table below reco
 - **F13. Follow-up questions.** The chatbot keeps the context of the conversation, e.g., "Of those, how many are international?"
 - **F14. Saved queries.** Staff save common questions, such as a quarterly report or unique students per school, and run them with one click.
 - **F15. Historical import.** Import last year's GPSRC Data Project sheet so the dataset covers past years. Pending sponsor confirmation.
+- **F16. Multiple staff accounts.** Each staff member signs in with their own account, and an administrator adds or disables accounts. This prepares the Hub for a shared server later. The uploader is then recorded automatically at upload (F2).
 
 **P2: optional, if time allows**
 
-- **F16. Registration–attendance reconciliation.** Import registrations plus raw check-in (Google Form) or Zoom files, match them automatically, send uncertain matches to staff review, and assign attended, absent, walk-in, or unresolved. Depends on the mismatched sample data the sponsor offered to provide.
-- **F17. Proactive AI insights.** The chatbot points out trends and gaps without being asked.
-- **F18. Charts.**
-- **F19. Certificate eligibility rules.** Not currently requested by the sponsor.
-- **F20. Multiple users and roles.**
+- **F17. Registration–attendance reconciliation.** Import registrations plus raw check-in (Google Form) or Zoom files, match them automatically, send uncertain matches to staff review, and assign attended, absent, walk-in, or unresolved. Depends on the mismatched sample data the sponsor offered to provide.
+- **F18. Proactive AI insights.** The chatbot points out trends and gaps without being asked.
+- **F19. Charts.**
+- **F20. Certificate eligibility rules.** Not currently requested by the sponsor.
+- **F21. Permission roles,** such as a read-only account.
 
 ### 2.4 Supported input files
 
@@ -108,15 +117,15 @@ The headers below come from the sponsor's templates and sample files, which keep
 | CampusGroups / ZotSpot attendee export | .csv or .xlsx | Net ID (set by the login), Email, Student ID # (self-entered) | 26 columns. Name and email appear twice; the second copy is what the attendee confirmed at registration. Includes School, Department, affiliation, and domestic/international. Walk-ins added as guests have only name, email, and NetID. |
 | 12twenty attendee export | .xlsx | Email only (usually `netid@uci.edu`) | 16 columns. Has Graduation Term, College/School, Degree, and Major/Academic Program. No NetID, Student ID, or domestic/international. |
 | GPSRC Data Project sheet (P1, F15) | .xlsx | NetID, Email | Already in the target layout |
-| GPSRC check-in Google Form, Zoom participant report (P2, F16) | .xlsx / .csv | Email, when present | Used only for reconciliation |
+| GPSRC check-in Google Form, Zoom participant report (P2, F17) | .xlsx / .csv | Email, when present | Used only for reconciliation |
 
 ### 2.5 Assumptions
 
 - **A1. Synthetic data.** All sample files are synthetic, with headers identical to the real exports. The sponsor's staff are double-checking the 12twenty sample format (10/14).
-- **A2. Inputs are already reconciled.** Each file lists only the people who attended; every 12twenty sample row has `Attended? = YES`. Student assistants keep doing reconciliation by hand unless F16 is built.
+- **A2. Inputs are already reconciled.** Each file lists only the people who attended; every 12twenty sample row has `Attended? = YES`. Student assistants keep doing reconciliation by hand unless F17 is built.
 - **A3. NetID is the person key.** A NetID is unique. A 12twenty email equals `netid@uci.edu` about 99% of the time. The exceptions (dot-name addresses, `@hs.uci.edu`, often postdocs) are flagged rather than guessed, so one such person may be counted twice until staff fix it (F12).
 - **A4. Student ID is never a key.** Students type it in and often get it wrong, and a name shown with a student ID is a FERPA concern. It is stored but not used for matching.
-- **A5. Small volume, one user.** Most events have fewer than 50 attendees. Over several years the dataset reaches hundreds of events and tens of thousands of rows, with one person using the Hub at a time.
+- **A5. Small volume, few users.** Most events have fewer than 50 attendees. Over several years the dataset reaches hundreds of events and tens of thousands of rows. Only a few staff use the Hub, usually one at a time.
 - **A6. The platforms stay the system of record.** The Hub never writes back to 12twenty or CampusGroups.
 - **A7. LLM access.** The chatbot needs an internet connection and an API key for at least one provider. Without them, import, browsing, and export still work.
   - ZotGPT Gateway is open to UCI faculty, staff, and graduate students through UCInetID sign-in, with $100 of OIT credits for testing, so the team can use it during development.
@@ -129,12 +138,12 @@ The headers below come from the sponsor's templates and sample files, which keep
 |---|---|
 | Frontend | React 18 + TypeScript (Vite), MUI + DataGrid, TanStack Query, react-dropzone |
 | Backend API | Python 3.12, FastAPI on Uvicorn, Pydantic v2 |
-| Data processing | pandas + openpyxl (read CSV/XLSX imports, write XLSX/CSV exports); RapidFuzz only if F16 is built |
-| Database | PostgreSQL 16, SQLAlchemy 2.0, Alembic migrations. One flattened view in the GPSRC Data Project layout is the only thing the chatbot can query, through a read-only database account. |
-| LLM integration | One provider interface with adapters for ZotGPT Gateway, OpenAI, and DeepSeek. OpenAI and DeepSeek use the chat-completions format, and ZotGPT Gateway follows the Portkey API specification, which uses the same call. One client is expected to cover all three, to be verified in week 3. |
-| Security | Argon2 password hashing, JWT in an httpOnly cookie, the app bound to localhost, API keys kept in the local settings file and never sent to the browser |
+| Data processing | pandas + openpyxl (read CSV/XLSX imports, write XLSX/CSV exports); RapidFuzz only if F17 is built |
+| Database | PostgreSQL 16, SQLAlchemy 2.0, Alembic migrations. The chatbot can query only one flattened view in the GPSRC Data Project layout, without Student ID. It connects through a separate read-only database role that can SELECT from that view and nothing else. |
+| LLM integration | Our own text-to-SQL pipeline instead of a text-to-SQL framework. The official `openai` Python SDK sits behind our provider interface, with settings for ZotGPT Gateway, OpenAI, and DeepSeek. OpenAI and DeepSeek use the chat-completions format, and ZotGPT Gateway follows the Portkey API specification, which uses the same call (to be verified by October 28). sqlglot checks every generated SQL statement, and Pydantic validates the LLM's JSON reply. |
+| Security | Argon2 password hashing, JWT in an httpOnly, SameSite=Strict cookie (also marked Secure under HTTPS), Nginx as the only container exposed to the network, API keys kept in the server-side settings file and never sent to the browser |
 | Testing | pytest + HTTPX, Vitest + React Testing Library, Playwright (end-to-end demo path), and a chatbot benchmark of questions with known answers |
-| Delivery | Docker Compose (web, API, PostgreSQL) on one computer; GitHub Actions CI |
+| Delivery | Docker Compose with three containers: Nginx, the FastAPI app, and PostgreSQL. Nginx serves the built React files, forwards `/api` requests to FastAPI, and handles HTTPS. On one computer it listens only on localhost. On an OIT server it serves HTTPS with a UCI-issued certificate, so outside clients can connect. The same containers run in both places. GitHub Actions CI. |
 
 ### 2.7 MVP acceptance criteria
 
@@ -145,6 +154,8 @@ The headers below come from the sponsor's templates and sample files, which keep
 5. Every table or list result exports to Excel.
 6. A log of every LLM request shows no attendee rows or query results.
 7. Without signing in, no data can be viewed or exported.
+8. A test set of harmful SQL (DROP, DELETE, multiple statements, reading the user-account table, `pg_sleep`) is refused by the SQL check, and is refused again by the database role when the check is switched off for the test.
+9. An exported value starting with `=` opens in Excel as text, not as a formula.
 
 ### 2.8 Open items to confirm with the sponsor (10/21 meeting)
 
@@ -152,3 +163,4 @@ The headers below come from the sponsor's templates and sample files, which keep
 - Whether ZotGPT may be used with real data, given that a question may contain a student's name.
 - Whether last year's GPSRC Data Project sheet should be imported (F15).
 - Who enters the event details at upload (F2): student assistants or staff.
+- Which computer the Hub will run on: Mac or Windows, and whether Docker Desktop can be installed on it (this may need administrator rights).

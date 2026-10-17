@@ -1,0 +1,54 @@
+%%{init: {"themeVariables": {"fontSize": "18px"}, "flowchart": {"nodeSpacing": 28, "rankSpacing": 38, "subGraphTitleMargin": {"top": 6, "bottom": 14}}}}%%
+flowchart TB
+    spa["<b>Web Client</b><br/><i>[Container: React SPA]</i>"]
+
+    subgraph apiapp["API Application"]
+        routers["<b>REST Routers + Auth</b><br/><i>[Components]</i><br/>JWT cookie on every route"]
+
+        subgraph intake["Data intake"]
+            pipeline["<b>Import Pipeline</b><br/><i>[Component]</i><br/>detect, adapt,<br/>validate, normalize"]
+            events["<b>Event Manager</b><br/><i>[Component]</i><br/>event details,<br/>duplicate check"]
+            linker["<b>Identity Linker</b><br/><i>[Component]</i><br/>NetID, then email"]
+        end
+
+        subgraph chat["Chatbot query"]
+            prompt["<b>Prompt Builder</b><br/><i>[Component]</i>"]
+            gateway["<b>LLM Gateway</b><br/><i>[Component]</i><br/>ZotGPT, OpenAI,<br/>DeepSeek"]
+            guard["<b>SQL Guard</b><br/><i>[Component: sqlglot]</i>"]
+            executor["<b>Read-only Executor</b><br/><i>[Component]</i>"]
+            answer["<b>Answer Builder</b><br/><i>[Component]</i>"]
+        end
+
+        export["<b>Export Service</b><br/><i>[Component]</i><br/>XLSX / CSV"]
+    end
+
+    llm["<b>LLM Provider</b><br/><i>[External]</i>"]
+    dbrw[("<b>Tables</b><br/><i>app role:<br/>read-write</i>")]
+    dbro[("<b>attendance_view</b><br/><i>chatbot_ro:<br/>read-only</i>")]
+
+    spa -->|"JSON"| routers
+    routers -->|"Files"| pipeline
+    pipeline --> events
+    pipeline -->|"Rows"| linker
+    routers -->|"Question"| prompt
+    prompt --> gateway
+    gateway <-->|"HTTPS"| llm
+    gateway -->|"SQL"| guard
+    guard -->|"Approved"| executor
+    executor --> answer
+    routers -->|"Export"| export
+    events --> dbrw
+    linker --> dbrw
+    answer -->|"Log"| dbrw
+    executor --> dbro
+    export -->|"Re-run SQL"| dbro
+    export -.->|"Full dataset"| dbrw
+
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef component fill:#85bbf0,stroke:#5d82a8,color:#000
+    classDef safety fill:#c8e6c9,stroke:#2e7d32,color:#000
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class spa,dbrw,dbro container
+    class routers,pipeline,events,linker,prompt,gateway,answer,export component
+    class guard,executor safety
+    class llm external

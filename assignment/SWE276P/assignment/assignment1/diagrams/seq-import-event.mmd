@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor S as Staff
+    participant W as Web<br/>Client
+    participant R as Routers<br/>+ Auth
+    participant I as Import<br/>Pipeline
+    participant E as Event<br/>Manager
+    participant L as Identity<br/>Linker
+    participant D as PostgreSQL
+
+    S->>W: Drop "Bagel Breakfast<br/>- November.csv"
+    W->>R: POST /api/imports
+    R->>R: Check login
+    R->>I: Detect source<br/>from header row
+    alt Headers match no known export
+        I-->>W: 422: lists the missing columns
+    else CampusGroups or 12twenty export
+        I->>E: File SHA-256
+        E->>D: Imported before?
+        alt Same file already imported
+            E-->>W: 409: already imported, nothing added
+        else New file
+            I->>I: Validate rows,<br/>flag missing values
+            I->>D: Save as pending import
+            E-->>W: Preview + pre-filled event details
+            S->>W: Confirm date,<br/>term, type, host
+            W->>R: POST .../commit
+            R->>I: Normalize to<br/>GPSRC layout
+            I->>L: Normalized<br/>rows
+            L->>D: Find person:<br/>NetID, then email
+            L->>D: One transaction:<br/>event, file, rows
+            L-->>W: Summary: added, linked, flagged
+        end
+    end

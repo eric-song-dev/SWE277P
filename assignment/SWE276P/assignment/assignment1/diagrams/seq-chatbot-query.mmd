@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor S as Staff
+    participant R as Routers<br/>+ Auth
+    participant P as Prompt Builder<br/>+ LLM Gateway
+    participant X as LLM<br/>Provider
+    participant Q as SQL<br/>Guard
+    participant E as Read-only<br/>Executor
+    participant A as Answer<br/>Builder
+    participant D as PostgreSQL
+
+    Note over S,R: "How many unique Biological<br/>Sciences students came to a<br/>Bagel Breakfast in Fall 2026?"
+    S->>R: POST /api/chat
+    R->>R: Check login
+    R->>P: Question
+    P->>D: Read controlled values (schools, events, types, terms)
+    P->>X: Question + view<br/>description only
+    X-->>P: JSON: SQL,<br/>interpretation,<br/>assumptions
+    P->>Q: Reply passed<br/>Pydantic check
+    alt Not one SELECT on attendance_view
+        Q-->>P: Refused,<br/>reason only
+        Note over P,X: One retry with the<br/>reason, then "cannot<br/>answer safely"
+    else Approved
+        Q->>E: SQL +<br/>LIMIT
+        E->>D: As chatbot_ro:<br/>read-only, timeout
+        D-->>E: Rows (stay on<br/>this computer)
+        E->>A: Rows
+        A->>D: Query log
+        A-->>S: "6 unique students" + table + interpretation + SQL
+    end
+    S->>R: GET /api/exports/{id}.xlsx
+    R->>E: Re-run the logged SQL
+    E-->>R: Rows
+    Note over R: Export Service:<br/>= + - @ values<br/>saved as text
+    R-->>S: .xlsx file

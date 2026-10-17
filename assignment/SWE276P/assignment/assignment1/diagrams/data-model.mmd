@@ -1,0 +1,73 @@
+%%{init: {"themeVariables": {"fontSize": "17px"}}}%%
+erDiagram
+    APP_USER ||--o{ IMPORT_FILE : uploads
+    APP_USER ||--o{ CHAT_QUERY_LOG : asks
+    EVENT ||--|{ IMPORT_FILE : "built from"
+    IMPORT_FILE ||--|{ ATTENDANCE : contains
+    EVENT ||--o{ ATTENDANCE : has
+    PERSON |o--o{ ATTENDANCE : "linked to"
+
+    APP_USER {
+        int id PK
+        string username UK
+        string password_hash
+        bool is_admin
+        bool is_active
+    }
+    EVENT {
+        int id PK
+        string name
+        date event_date
+        string term
+        string modality
+        string sponsors_hosts
+        string event_type
+        string platform
+        string entered_by
+    }
+    IMPORT_FILE {
+        int id PK
+        int event_id FK
+        string source_type
+        string file_name
+        string file_sha256 UK
+        string status "pending, committed"
+        int row_count
+        int uploaded_by FK
+        datetime uploaded_at
+    }
+    PERSON {
+        int id PK
+        string netid UK "nullable"
+        string email_norm UK "nullable"
+    }
+    ATTENDANCE {
+        int id PK
+        int event_id FK
+        int import_file_id FK
+        int person_id FK "null if unlinked"
+        int source_row
+        string first_name
+        string last_name
+        string email
+        string affiliation
+        string student_id "not in chatbot view"
+        string netid
+        bool netid_derived
+        string domestic_international
+        string school
+        string department
+        string flags
+        jsonb raw_row
+    }
+    CHAT_QUERY_LOG {
+        int id PK
+        int user_id FK
+        string question
+        string interpretation
+        string generated_sql
+        string status
+        int row_count
+        string provider_model
+        datetime asked_at
+    }

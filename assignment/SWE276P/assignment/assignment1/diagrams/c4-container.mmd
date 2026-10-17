@@ -1,0 +1,37 @@
+flowchart TB
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i>"]
+    filesIn["<b>Attendee exports</b><br/><i>[CSV / XLSX]</i><br/>CampusGroups, 12twenty"]
+
+    subgraph browser["Staff web browser"]
+        spa["<b>Web Client</b><br/><i>[Container: React + TypeScript]</i><br/>Upload and event form, chat,<br/>result tables, export buttons"]
+    end
+
+    filesOut["<b>Excel / CSV</b><br/><i>[Download]</i><br/>Results, full dataset"]
+
+    subgraph host["Docker Compose host"]
+        nginx["<b>Web Server</b><br/><i>[Container: Nginx]</i><br/>Serves the SPA, proxies /api,<br/>HTTPS on a server"]
+        cfg["<b>Settings file</b><br/><i>[.env, not in git]</i><br/>LLM provider, model,<br/>API key, DB passwords"]
+        api["<b>API Application</b><br/><i>[Container: Python 3.12 + FastAPI]</i><br/>Auth, import, identity linking,<br/>chatbot pipeline, export"]
+        db[("<b>Database</b><br/><i>[Container: PostgreSQL 16]</i><br/>Events, files, people, attendance,<br/>users, query log, attendance_view")]
+    end
+
+    llm["<b>LLM Provider API</b><br/><i>[External System]</i><br/>ZotGPT Gateway,<br/>OpenAI, or DeepSeek"]
+
+    staff -->|"Uses"| spa
+    filesIn -.->|"Dragged in"| spa
+    spa -->|"Saves"| filesOut
+    spa <-->|"JSON and files<br/>HTTP on localhost,<br/>HTTPS on a server"| nginx
+    nginx -->|"/api/*"| api
+    cfg -.->|"Read at start-up"| api
+    api -->|"App role:<br/>read-write"| db
+    api -->|"chatbot_ro role:<br/>SELECT on<br/>attendance_view only"| db
+    api -->|"HTTPS: question +<br/>data description,<br/>reply: SQL"| llm
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    classDef config fill:#fff4d6,stroke:#c9a227,color:#000
+    class staff person
+    class spa,nginx,api,db container
+    class filesIn,filesOut,llm external
+    class cfg config

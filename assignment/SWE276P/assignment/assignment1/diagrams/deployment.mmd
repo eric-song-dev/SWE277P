@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph later["Later: UCI OIT server"]
+        b2["<b>Staff browsers,<br/>other clients</b>"] -->|"HTTPS 443,<br/>UCI certificate"| n2["<b>Nginx</b><br/><i>container</i><br/>TLS, HTTP to HTTPS"]
+        n2 --> a2["<b>FastAPI app</b><br/><i>container</i>"]
+        a2 --> p2[("<b>PostgreSQL</b><br/><i>container, volume,<br/>backups</i>")]
+    end
+
+    subgraph now["MVP: one staff computer"]
+        b1["<b>Browser</b><br/>on the same computer"] -->|"HTTP,<br/>127.0.0.1 only"| n1["<b>Nginx</b><br/><i>container</i><br/>serves SPA, proxies /api"]
+        n1 --> a1["<b>FastAPI app</b><br/><i>container</i>"]
+        a1 --> p1[("<b>PostgreSQL</b><br/><i>container,<br/>data volume</i>")]
+    end
+
+    llm["<b>LLM Provider API</b><br/>ZotGPT Gateway,<br/>OpenAI, DeepSeek"]
+    a1 -->|"HTTPS,<br/>outbound"| llm
+    a2 -->|"HTTPS,<br/>outbound"| llm
+
+    classDef container fill:#438dd5,stroke:#2e6295,color:#fff
+    classDef client fill:#08427b,stroke:#052e56,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class n1,a1,p1,n2,a2,p2 container
+    class b1,b2 client
+    class llm external
+    style later fill:#f7f7f7,stroke:#9a9a9a,stroke-dasharray: 5 5
