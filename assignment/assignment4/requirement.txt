@@ -1,0 +1,25 @@
+Assignment 4: Project Charter
+Due: Tue Oct 20, 2026 4:00pm
+75 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+The project charter is similar to a contract between the project manager and the organization sponsoring the project.  It outlines the project infrastructure and resources and summarizes the project schedule and budget.  It formally recognizes the existence of a project and provides direction on the project's objectives and management.  
+Start with this templateDownload this template, and fill in the info for your project. Remember the samples shown and discussed in class this week. Use the sections in the template, and the samples as guides, but do bring your creativity into it, as always, in a professional, clear, and organized manner.
+
+SWE 272P Assignment 3: Project Charter
+Criteria	Comments	Points
+Clear, Focused, Understandable
+view longer description
+Comment
+/15 pts
+Thorough, Detailed
+view longer description
+Comment
+/50 pts
+Professional
+view longer description
+Comment
+/10 pts

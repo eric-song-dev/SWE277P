@@ -1,0 +1,35 @@
+Assignment 3: Business Case
+Due: Tue Oct 20, 2026 4:00pm
+100 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+Project selection is an important organizational decision. We want to fund or take on projects that provide the most value to the organization, while blocking projects that will only drain the organization of valuable time and resources. 
+
+A business case provides management with all the information needed to make an informed decision as to whether the project should receive funding in order to continue on to the next phase. It provides an analysis of the organizational value, feasibility, costs, benefits, and risks of several proposed alternatives or options.
+
+Even though you won't be presenting this document to management for a decision about funding, the process of thinking through why a particular project is being taken on and how it might bring value to an organization is still worthwhile, important for you to understand, and provides direction for the project and a measure of success for later on.
+
+Start with this templateDownload this template, which dictates which high-level sections should be in your document. But this does not mean you cannot be creative in how the information is presented. In fact, creativity, as long as it is done in a professional, clear, and organized manner, is welcome! 
+
+In judging whether a business case is defined correctly, we will focus on whether the document is:
+
+Metric-based (Is it quantifiable?)
+Clear, focused, and understandable (Will this confuse the project’s stakeholders?)
+Thorough (Have you adequately considered, analyzed and compared all of the major alternatives?)
+SWE 272P Assignment 2: Business Case
+Criteria	Comments	Points
+Clear, Focused, Understandable
+view longer description
+Comment
+/20 pts
+Metric-Based
+view longer description
+Comment
+/20 pts
+Thorough
+view longer description
+Comment
+/60 pts
