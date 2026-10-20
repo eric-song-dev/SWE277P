@@ -21,29 +21,35 @@ The app is a web app that runs locally on one GPSRC computer:
 
 1. Staff upload one event's attendee export (CampusGroups or 12twenty) exactly as the platform produced it, and enter the event details in a form.
 2. The app normalizes the rows into one permanent dataset in the GPSRC Data Project format and links the same person across events.
-3. Staff ask questions in plain English. An LLM turns the question into SQL, the app runs it locally, then shows both the SQL and the result table.
+3. Staff ask questions in plain English, with follow-ups. An LLM turns the question into SQL, the app runs it locally, then shows the SQL and the result table. If the selected LLM profile allows it, the LLM also analyzes the query result.
 4. Staff can download any result as Excel or CSV.
+
+The full design is in `docs/specs/2026-10-20-data-hub-design.md`. It is the source of truth for the build; where it differs from assignment1 or the charter, the spec wins.
 
 ## Tech stack
 
-- Frontend: React
-- Backend: FastAPI (Python)
-- Database: PostgreSQL
-- Packaging: Docker Compose. The whole app must start with one command on the sponsor's machine.
-- LLM: ZotGPT Gateway (UCI OIT) as the main provider, with OpenAI or DeepSeek as alternatives. Keep providers behind one interface and select the provider through config or env vars.
+- Frontend: React 19 + TypeScript (Vite), MUI v7 + MUI X DataGrid, TanStack Query
+- Backend: FastAPI (Python 3.12, uv), SQLAlchemy 2, Alembic, Pydantic v2
+- Database: PostgreSQL 16
+- Packaging: Docker Compose (nginx, api, db). The whole app must start with one command on the sponsor's machine.
+- Chatbot: a custom LangGraph `StateGraph` (not LangChain's prebuilt SQL agent), sqlglot for the SQL guard.
+- LLM: OpenAI-compatible providers only, through `langchain-openai` `ChatOpenAI` with a `base_url`. Presets: ZotGPT Gateway, OpenAI, DeepSeek, Custom. Staff manage LLM profiles (base URL, model, API key) in the web UI and pick one per question. API keys are stored encrypted in PostgreSQL (Fernet, master key `HUB_SECRET_KEY` in `.env`) and never returned to the browser.
 
 Planned layout (update this once the scaffold exists):
 
 ```
 project/
-  backend/             FastAPI app, import pipeline, text-to-SQL
-  frontend/            React UI: upload, chat, results and export
-  docker-compose.yml
+  CLAUDE.md  PROGRESS.md  docker-compose.yml  .env.example
+  docs/specs/          design specs
+  docs/plans/          implementation plans
+  backend/             FastAPI app: imports, dataset, chat (LangGraph), llm, export
+  frontend/            React UI: upload, chat, settings, dataset
 ```
 
 ## Non-negotiables
 
-- **Privacy:** the LLM only receives the schema, column descriptions, and the user's question. Never send row values (names, emails, NetIDs, student IDs) to the LLM: not in prompts, few-shot examples, or error-retry messages. Don't log them to external services either.
+- **Privacy (provisional, pending sponsor confirmation):** the SQL-generation prompt only gets the schema, column descriptions, controlled values, prior questions and SQL, and the user's question. It never gets row values. The only exception is the analysis step: when the selected LLM profile has `share_results_with_llm` on, the LLM receives the rows returned by its own guarded query against `attendance_view`, capped by `LLM_RESULT_MAX_ROWS` and `LLM_RESULT_MAX_CHARS`. The LLM must never see Student IDs, other tables, or the rest of the database. Error-retry messages go through the error sanitizer and never carry row values. Never log row values to external services. If the sponsor rejects result sharing, it is switched off per profile, not by changing code.
+- **Secrets:** API keys are encrypted at rest, never returned by the API, and never logged.
 - **SQL safety:** generated SQL must be a single read-only `SELECT`, run through a read-only database role with a statement timeout and a row limit. Always show the SQL to the user.
 - **Imports:** accept native export files unmodified. Staff must not have to clean files by hand. Uploading the same file twice must not create duplicates.
 - **Identity matching:** match people by NetID first, then by email (12twenty exports have no NetID). Flag uncertain matches for staff instead of silently merging them.
@@ -51,13 +57,15 @@ project/
 
 ## Scope
 
-In scope: importing 12twenty and CampusGroups exports, entering event details at upload, one unified dataset, cross-event identity matching, a chatbot that shows its SQL, and Excel/CSV export.
+In scope (P0): importing 12twenty and CampusGroups exports, entering event details at upload, one unified dataset, cross-event identity matching, a chatbot that shows its SQL (multi-turn follow-ups, clarifying questions, automatic repair retries, streamed progress, optional result analysis), LLM profiles managed in the UI, and Excel/CSV export.
+
+P1 features (F11 filter table, F12 data quality, F14 saved queries, F15 historical import, F16 multiple accounts) are not built, but the P0 code must keep the extension points listed in spec Section 12. Don't add stub endpoints for them.
 
 Out of scope (don't build these unless the user changes scope): registration/attendance reconciliation, certificates and multi-session programs, charts and dashboards, multiple accounts or roles, cloud or UCI server hosting, UCI SSO, live connections to 12twenty, CampusGroups, or Zoom.
 
 ### Login: in the backlog, but design for it now
 
-Login is not part of the MVP. The charter (Oct 18) lists one staff login, but the team moved it to the backlog. Don't build login screens, password storage, or sessions yet.
+Login is not part of the MVP. The charter (Oct 18) lists one staff login, but the team moved it to the backlog, so acceptance criterion 7 ("no data without signing in") is deferred too. Don't build login screens, password storage, or sessions yet.
 
 The code must still make login easy to add later, ideally without editing every endpoint or page:
 
