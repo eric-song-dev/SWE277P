@@ -4,7 +4,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 ## Current status
 
-- **Session:** S1 of 5 (2026-10-20) is complete apart from the user's plan review.
+- **Session:** S1 of 5 (2026-10-20) is complete. The user has not reviewed the plans line by line; raise any plan concern at the start of S2.
 - **Phase:** design done. No application code yet.
 
 ## Done
@@ -23,8 +23,9 @@ Nothing to run yet. Local tooling is present: Docker 29.8 and Compose v5.6, Node
 
 ## Next session: S2
 
+- **Start:** open a new Claude Code conversation in the repo root (`SWE277P/`, where `.claude/settings.json` enables the plugins) and say: "Read project/CLAUDE.md, then follow Rule #2 and start S2."
 - **Read:** `CLAUDE.md`, this file, the spec, and `docs/plans/2026-10-20-s2-foundation-import.md`. Don't read the other plans.
-- **Do:** execute the S2 plan task by task. The execution method is in "Decisions" below.
+- **Do:** execute the S2 plan task by task with `superpowers:subagent-driven-development` (see "Decisions").
 - **First step:** S2 Task 1 (backend skeleton). Before Task 2, the user must create `project/.env` from `.env.example`: Postgres passwords and a generated `HUB_SECRET_KEY`.
 - **Exit:** A1, A2, A9 and the role tests pass, and `docker compose up` serves the placeholder UI.
 
@@ -39,8 +40,8 @@ Nothing to run yet. Local tooling is present: Docker 29.8 and Compose v5.6, Node
 
 - Spec D1–D10 (spec Section 2).
 - The plans are split per session. Sample exports are copied into `backend/sample_data/` (synthetic), so the team repo is self-contained.
-- Execution method: chosen by the user at the end of S1 (see the Session log).
+- Execution method for S2–S5: Subagent-driven (`superpowers:subagent-driven-development`). Each task gets a fresh implementer subagent and a fresh reviewer, so the session's main context holds only dispatches and reports. Recommended at the end of S1; the user can switch to Native (`superpowers:executing-plans`) at the start of any session.
 
 ## Session log
 
-- S1 (2026-10-20): explored the course materials, brainstormed, wrote and got approval for the spec, and wrote the S2–S5 plans.
+- S1 (2026-10-20): explored the course materials, brainstormed, wrote and got approval for the spec, wrote the S2–S5 plans, and chose subagent-driven execution.
