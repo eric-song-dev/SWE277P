@@ -103,7 +103,7 @@ Module rules:
 
 ### 4.3 Frontend
 
-React 19, TypeScript, Vite, MUI v7, MUI X DataGrid (MIT edition), TanStack Query, react-dropzone. Layout:
+React 19, TypeScript, Vite, MUI 9, MUI X DataGrid 9 (MIT edition), TanStack Query, react-dropzone. Layout:
 
 ```
 project/frontend/src/
@@ -120,7 +120,7 @@ All tables live in schema `hub` and are owned by `hub_app`. Migrations use Alemb
 |---|---|---|
 | `app_user` | Acting user. Seeded with one `local` user. | `id`, `username` unique, `display_name`, `created_at` |
 | `import_file` | One uploaded file, pending or committed | `id`, `file_name`, `file_sha256` unique, `source` (`campusgroups` \| `twelvetwenty`), `status` (`pending` \| `committed`), `content` bytea (original bytes), `row_count`, `skipped_count`, `event_id` null until commit, `uploaded_by` → `app_user`, `uploaded_at`, `committed_at` |
-| `event` | One event; one per committed file | `id`, `name`, `event_date` (nullable), `term` (`Fall 2026` format), `academic_year` (generated, e.g. `2026-27`), `modality` (`In Person` \| `Virtual` \| `Hybrid`), `sponsors_hosts`, `event_type`, `on_campus_groups` (derived from source), `attendance_source_note`, `student_worker` (the form's "entered by"), `created_by` → `app_user` |
+| `event` | One event; one per committed file | `id`, `name`, `event_date` (nullable), `term` (`Fall 2026` format), `academic_year` (derived from `term` at insert, e.g. `2026-27`), `modality` (`In Person` \| `Virtual` \| `Hybrid`), `sponsors_hosts`, `event_type`, `on_campus_groups` (derived from source), `attendance_source_note`, `student_worker` (the form's "entered by"), `created_by` → `app_user` |
 | `person` | Identity only | `id`, `created_at` |
 | `person_identifier` | A person's NetIDs and emails | `person_id`, `kind` (`netid` \| `email`), `value` (normalized); unique (`kind`, `value`) |
 | `attendance` | One row per person per event, stored as that export recorded it (after the normalization in Section 6; never overwritten from other sources) | `id`, `event_id`, `person_id` (nullable), `import_file_id`, `source_row`, `first_name`, `last_name`, `email`, `netid`, `student_id`, `affiliation`, `domestic_international`, `school`, `department`, `match_method` (`netid` \| `email` \| `none`), `raw_row` jsonb; unique (`event_id`, `person_id`) |
@@ -170,7 +170,7 @@ Files are read as raw cell grids (`csv` module, openpyxl) rather than with panda
 **12twenty adapter:**
 
 - Only `Attended? = YES` rows are kept. Other rows are skipped and counted.
-- School comes from `College/School` and Department from `Major/Academic Program`. Affiliation comes from `Degree`: Doctoral → Doctoral Student, Masters → Master's Student, Postdoctoral → Postdoc.
+- School comes from `College/School` and Department from `Major/Academic Program`. Affiliation comes from `Degree`: Doctoral → Doctoral Student, Masters → Master’s Student (U+2019, as in CampusGroups), Postdoctoral → Postdoc.
 - NetID is derived only from emails matching `^[a-z0-9]+@uci\.edu$` after normalization. Other addresses get no NetID and a `non_standard_email` flag.
 - Student ID and domestic/international stay blank. `Registration Date` is never used as the event date.
 
@@ -210,7 +210,7 @@ load_context ─► generate ─► route ─┬─► clarify ─────�
 
 | Node | Does | LLM call? |
 |---|---|---|
-| `load_context` | Loads controlled values through `chatbot_ro`: distinct `school`, `event_name`, `event_type`, `term`, `academic_year`. Loads prior turns of this conversation from `chat_turn`. Adds today's date and the current term. | No |
+| `load_context` | Loads controlled values through `chatbot_ro`: distinct `school`, `event_name`, `event_type`, `term`, `academic_year`, `affiliation` (a CampusGroups drop-down; the exact spelling matters, e.g. `Master’s Student` with U+2019). Loads prior turns of this conversation from `chat_turn`. Adds today's date and the current term. | No |
 | `generate` | Asks for a JSON object `LlmDraft {kind: "sql" \| "clarify", sql, interpretation, assumptions[], clarification_question}` and validates it with Pydantic. A validation failure counts as a failed attempt and goes to `repair`. | Yes |
 | `route` | Sends `clarify` drafts to `clarify` and `sql` drafts to `guard` | No |
 | `clarify` | Emits the clarifying question. The turn ends with `kind = clarification`. The user's reply is simply the next turn, and the history carries the context. | No |
@@ -341,6 +341,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 - **Key handling:** API responses never include the key or its ciphertext. `PATCH` without `api_key` keeps the stored key. The key is decrypted only inside `llm/` when building a chat model.
 - **Endpoints:**
   - `GET` and `POST /api/llm-profiles`
+  - `GET /api/llm-profiles/presets` (the preset list; `fake` only when enabled)
   - `PATCH` and `DELETE /api/llm-profiles/{id}`
   - `POST /api/llm-profiles/{id}/default`
   - `POST /api/llm-profiles/{id}/test`, which sends a tiny prompt with no data, detects `json_mode`, and also returns the provider's `/models` list when it has one, for the model field's suggestions

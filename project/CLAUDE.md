@@ -46,7 +46,7 @@ The full design is in `docs/specs/2026-10-20-data-hub-design.md`. It is the sour
 
 ## Tech stack
 
-- Frontend: React 19 + TypeScript (Vite), MUI v7 + MUI X DataGrid, TanStack Query
+- Frontend: React 19 + TypeScript (Vite), MUI 9 + MUI X DataGrid 9, TanStack Query
 - Backend: FastAPI (Python 3.12, uv), SQLAlchemy 2, Alembic, Pydantic v2
 - Database: PostgreSQL 16
 - Packaging: Docker Compose (nginx, api, db). The whole app must start with one command on the sponsor's machine.
