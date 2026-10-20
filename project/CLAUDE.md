@@ -55,7 +55,16 @@ In scope: importing 12twenty and CampusGroups exports, entering event details at
 
 Out of scope (don't build these unless the user changes scope): registration/attendance reconciliation, certificates and multi-session programs, charts and dashboards, multiple accounts or roles, cloud or UCI server hosting, UCI SSO, live connections to 12twenty, CampusGroups, or Zoom.
 
-Login: the charter (Oct 18) lists one staff login, but the team removed login from scope in the Oct 19 meeting. Ask before building auth.
+### Login: in the backlog, but design for it now
+
+Login is not part of the MVP. The charter (Oct 18) lists one staff login, but the team moved it to the backlog. Don't build login screens, password storage, or sessions yet.
+
+The code must still make login easy to add later, ideally without editing every endpoint or page:
+
+- **Backend:** every API route that touches data depends on a single `get_current_user` FastAPI dependency. For now it returns a fixed local user. Adding auth should mean changing only that dependency (plus adding login routes). Don't add any route that bypasses it.
+- **Who did what:** write records that come from user actions, such as uploads, with the acting user's id (e.g. `uploaded_by`), taken from `get_current_user`.
+- **Frontend:** send every API call through one shared API client, so auth headers or tokens can be attached in one place. Keep one top-level wrapper around the routes where a login gate can go later.
+- **Config:** keep auth settings in env/config so login can be switched on without code changes elsewhere.
 
 ## Success criteria (MOV, due 2026-12-04)
 
