@@ -13,6 +13,24 @@ Every time you finish a change, commit it before ending your turn. Never leave u
 - Commit on the current branch. Don't push, create branches, rebase, amend, or force-push unless the user asks.
 - Never commit secrets (`.env`, API keys) or real student data.
 
+## Rule #2: work in sessions, keep state in PROGRESS.md
+
+The MVP is built over five separate Claude Code conversations, S1–S5. Spec Section 15 lists what each one covers. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
+
+At the start of a session:
+
+1. Read this file, then `PROGRESS.md`, then the spec (`docs/specs/`) and the current plan (`docs/plans/`).
+2. Work on what `PROGRESS.md` lists under "Next session", unless the user says otherwise.
+3. Don't re-read large reference material (assignments, meeting notes, sample data) unless the task needs it. The spec already summarizes it.
+
+Before the session ends, or as soon as the user says they are about to start a new conversation:
+
+1. Update `PROGRESS.md`. Cover what was done, the state of the code (what works, how to run it, test results), the next session's scope and first steps, open issues and blockers, and any decisions made this session.
+2. A decision that changes the design goes into the spec too, in the same commit.
+3. Commit (`docs(progress): ...`). `PROGRESS.md` must always describe the committed state, so the next session can start from it alone.
+
+Keep `PROGRESS.md` short. Rewrite the status sections each time instead of appending, and keep only a one-line-per-session log at the bottom.
+
 ## What we are building
 
 **Program Registration & Attendance Data Hub** for UCI's Graduate & Postdoctoral Scholar Resource Center (GPSRC). SWE 277P capstone, Fall 2026. Sponsor and main user: Kayleigh Anderson-Natale, PhD, Director of Postdoc and Professional Development.
