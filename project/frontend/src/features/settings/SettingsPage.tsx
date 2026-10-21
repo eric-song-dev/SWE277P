@@ -26,7 +26,7 @@ export default function SettingsPage() {
           ) : undefined
         }
       />
-      <Stack spacing={2} sx={{ maxWidth: 720, px: "40px", py: "28px" }}>
+      <Stack spacing={2.5} sx={{ maxWidth: 720, px: "40px", py: "28px" }}>
         {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
         {profiles.data && profiles.data.length === 0 && (
           <Stack spacing={2} sx={{ alignItems: "flex-start" }}>

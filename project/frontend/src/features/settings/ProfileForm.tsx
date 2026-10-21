@@ -14,6 +14,7 @@ import TextField from "@mui/material/TextField";
 import { useState } from "react";
 import { ApiError } from "../../api/client";
 import type { LlmProfileIn, LlmProfileOut, LlmProfilePatch, PresetOut } from "../../api/types";
+import { tokens } from "../../app/theme";
 import { usePresets, useProbeResult, useSaveProfile } from "./useProfiles";
 
 interface Props {
@@ -24,8 +25,8 @@ interface Props {
 export default function ProfileForm({ profile, onClose }: Props) {
   const presets = usePresets();
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{profile ? "Edit AI model" : "Add AI model"}</DialogTitle>
+    <Dialog open onClose={onClose} fullWidth maxWidth="sm" slotProps={{ paper: { sx: { borderRadius: "12px" } } }}>
+      <DialogTitle sx={{ fontWeight: 700, color: tokens.navy }}>{profile ? "Edit AI model" : "Add AI model"}</DialogTitle>
       {presets.data ? (
         <FormBody profile={profile} presets={presets.data} onClose={onClose} />
       ) : (
@@ -172,7 +173,9 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="outlined" onClick={onClose} sx={{ borderColor: tokens.control }}>
+          Cancel
+        </Button>
         <Button variant="contained" onClick={submit} disabled={!valid || save.isPending}>
           Save
         </Button>

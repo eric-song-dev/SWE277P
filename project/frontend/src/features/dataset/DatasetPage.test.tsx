@@ -105,6 +105,17 @@ describe("DatasetPage", () => {
     expect(screen.getByText(new Date("2026-10-08T17:30:00Z").toLocaleString())).toBeInTheDocument();
   });
 
+  it("has a level 1 Dataset heading and download icons on both downloads", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    expect(screen.getByRole("heading", { level: 1, name: "Dataset" })).toBeInTheDocument();
+    for (const name of ["Download full dataset (.xlsx)", "Download full dataset (.csv)"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button.querySelector('svg[data-testid="DownloadIcon"]')).not.toBeNull();
+    }
+  });
+
   it("downloads the full dataset in either format", async () => {
     vi.mocked(apiGet).mockResolvedValueOnce(imports);
     vi.mocked(apiDownload).mockResolvedValue({ fileName: "d.xlsx", truncated: false, rowCap: null });

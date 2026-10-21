@@ -106,6 +106,13 @@ function importRow(id: number, status: "pending" | "committed"): ImportFileOut {
 const csv = (name: string) => new File(["a"], name, { type: "text/csv" });
 
 describe("UploadPage", () => {
+  it("has a level 1 Upload heading and the drop zone copy", () => {
+    vi.mocked(apiGet).mockResolvedValue([]);
+    renderUpload();
+    expect(screen.getByRole("heading", { level: 1, name: "Upload" })).toBeInTheDocument();
+    expect(screen.getByText("Drop CSV or Excel files here, or click to choose. (.csv, .xlsx, .xlsm)")).toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(apiGet).mockResolvedValue([]);

@@ -1,6 +1,7 @@
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import type { CommitSummary } from "../../api/types";
+import { tokens } from "../../app/theme";
 
 const COUNTS: [keyof CommitSummary, string][] = [
   ["linked_by_netid", "Linked by NetID"],
@@ -15,7 +16,7 @@ const COUNTS: [keyof CommitSummary, string][] = [
 export default function CommitSummaryView({ summary }: { summary: CommitSummary }) {
   return (
     <Stack spacing={1}>
-      <Typography variant="h6" component="p">
+      <Typography variant="h6" component="p" sx={{ fontWeight: 700, color: tokens.navy }}>
         {summary.inserted} rows imported
       </Typography>
       <Stack component="dl" spacing={0.5} sx={{ m: 0 }}>

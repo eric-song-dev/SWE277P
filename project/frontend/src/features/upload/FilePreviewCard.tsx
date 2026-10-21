@@ -7,6 +7,7 @@ import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { Link as RouterLink } from "react-router";
+import { tokens } from "../../app/theme";
 import type { CommitSummary, ImportPreview } from "../../api/types";
 import CommitSummaryView from "./CommitSummaryView";
 import EventDetailsForm from "./EventDetailsForm";
@@ -63,10 +64,10 @@ export default function FilePreviewCard({ preview, summary, onCommitted, onRemov
 
   return (
     <Card variant="outlined" data-testid="preview-card">
-      <CardContent>
+      <CardContent sx={{ p: 3, "&:last-child": { pb: 3 } }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-            <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1 }}>
+            <Typography variant="subtitle1" component="h2" sx={{ flexGrow: 1, fontWeight: 700, color: tokens.navy }}>
               {preview.file_name}
             </Typography>
             <Chip size="small" label={summary ? "Committed" : chip.label} color={summary ? "success" : chip.color} />
@@ -118,10 +119,11 @@ export default function FilePreviewCard({ preview, summary, onCommitted, onRemov
               <EventDetailsForm importId={preview.id} draft={preview.event_draft} onCommitted={onCommitted} />
               {discard.isError && <Alert severity="error">{discard.error.message}</Alert>}
               <Button
+                variant="outlined"
                 color="inherit"
                 onClick={handleDiscard}
                 disabled={discard.isPending}
-                sx={{ alignSelf: "flex-start" }}
+                sx={{ alignSelf: "flex-start", borderColor: tokens.control }}
               >
                 Discard
               </Button>

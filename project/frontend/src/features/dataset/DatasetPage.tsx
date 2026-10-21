@@ -1,6 +1,7 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import DownloadIcon from "@mui/icons-material/Download";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -10,6 +11,7 @@ import { Link as RouterLink } from "react-router";
 import { ApiError, apiDownload } from "../../api/client";
 import type { ImportFileOut } from "../../api/types";
 import PageHeader from "../../app/PageHeader";
+import { gridSx, tokens } from "../../app/theme";
 import { useImportHistory } from "../upload/useImports";
 
 const PLATFORMS: Record<string, string> = { campusgroups: "CampusGroups", twelvetwenty: "12twenty" };
@@ -77,10 +79,21 @@ export default function DatasetPage() {
         title="Dataset"
         actions={
           <>
-            <Button variant="contained" disabled={downloading} onClick={() => download("xlsx")}>
+            <Button
+              variant="contained"
+              startIcon={<DownloadIcon />}
+              disabled={downloading}
+              onClick={() => download("xlsx")}
+            >
               Download full dataset (.xlsx)
             </Button>
-            <Button variant="outlined" disabled={downloading} onClick={() => download("csv")}>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              disabled={downloading}
+              onClick={() => download("csv")}
+              sx={{ borderColor: tokens.control }}
+            >
               Download full dataset (.csv)
             </Button>
           </>
@@ -106,6 +119,7 @@ export default function DatasetPage() {
               pageSizeOptions={[100]}
               initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
               disableRowSelectionOnClick
+              sx={gridSx}
             />
           </Box>
         )}

@@ -13,6 +13,7 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type { LlmProfileOut } from "../../api/types";
+import { tokens } from "../../app/theme";
 import {
   useDeleteProfile,
   usePresets,
@@ -20,6 +21,8 @@ import {
   useProbeResult,
   useSetDefault,
 } from "./useProfiles";
+
+const outlinedSx = { borderColor: tokens.control };
 
 interface Props {
   profiles: LlmProfileOut[];
@@ -45,8 +48,12 @@ export default function ProfileList({ profiles, onEdit }: Props) {
           onDelete={() => setToDelete(profile)}
         />
       ))}
-      <Dialog open={toDelete !== null} onClose={closeDelete}>
-        <DialogTitle>Delete AI model</DialogTitle>
+      <Dialog
+        open={toDelete !== null}
+        onClose={closeDelete}
+        slotProps={{ paper: { sx: { borderRadius: "12px" } } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, color: tokens.navy }}>Delete AI model</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Delete "{toDelete?.name}"? Its saved API key is removed too.
@@ -54,7 +61,9 @@ export default function ProfileList({ profiles, onEdit }: Props) {
           {remove.isError && <Alert severity="error" sx={{ mt: 1 }}>{remove.error.message}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeDelete}>Cancel</Button>
+          <Button variant="outlined" onClick={closeDelete} sx={outlinedSx}>
+            Cancel
+          </Button>
           <Button
             color="error"
             disabled={remove.isPending}
@@ -87,13 +96,15 @@ function ProfileCard({
 
   return (
     <Card component="article" aria-label={profile.name} variant="outlined">
-      <CardContent>
+      <CardContent sx={{ p: 3, pb: 1 }}>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-          <Typography variant="h6" component="h2">
+          <Typography variant="h6" component="h2" sx={{ fontWeight: 700, color: tokens.navy }}>
             {profile.name}
           </Typography>
-          {profile.is_default && <Chip size="small" color="primary" label="Default" />}
-          {profile.share_results_with_llm && <Chip size="small" label="Can receive results" />}
+          {profile.is_default && (
+            <Chip size="small" label="Default" sx={{ bgcolor: tokens.primary, color: "#FFFFFF", fontWeight: 600 }} />
+          )}
+          {profile.share_results_with_llm && <Chip size="small" variant="outlined" label="Can receive results" sx={{ borderColor: tokens.control }} />}
         </Stack>
         <Typography variant="body2">{presetLabel}</Typography>
         <Typography variant="body2">{profile.model}</Typography>
@@ -107,15 +118,27 @@ function ProfileCard({
         />
         {setDefault.isError && <Alert severity="error" sx={{ mt: 1 }}>{setDefault.error.message}</Alert>}
       </CardContent>
-      <CardActions>
-        <Button size="small" onClick={() => probe.mutate(profile.id)} disabled={probe.isPending}>
+      <CardActions sx={{ px: 3, pb: 2, gap: 1 }}>
+        <Button
+          size="small"
+          variant="outlined"
+          onClick={() => probe.mutate(profile.id)}
+          disabled={probe.isPending}
+          sx={outlinedSx}
+        >
           Test
         </Button>
-        <Button size="small" onClick={onEdit}>
+        <Button size="small" variant="outlined" onClick={onEdit} sx={outlinedSx}>
           Edit
         </Button>
         {!profile.is_default && (
-          <Button size="small" onClick={() => setDefault.mutate(profile.id)} disabled={setDefault.isPending}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setDefault.mutate(profile.id)}
+            disabled={setDefault.isPending}
+            sx={outlinedSx}
+          >
             Make default
           </Button>
         )}

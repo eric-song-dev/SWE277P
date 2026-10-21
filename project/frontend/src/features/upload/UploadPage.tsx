@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileRejection } from "react-dropzone";
 import PageHeader from "../../app/PageHeader";
+import { tokens } from "../../app/theme";
 import FilePreviewCard from "./FilePreviewCard";
 import { useUploadStore } from "./uploadStore";
 import { useImportHistory, usePendingPreviews, usePreviewUpload } from "./useImports";
@@ -60,11 +61,14 @@ export default function UploadPage() {
           sx={{
             border: 2,
             borderStyle: "dashed",
-            borderColor: isDragActive ? "primary.main" : "divider",
-            borderRadius: 1,
+            borderColor: isDragActive ? tokens.primary : tokens.control,
+            bgcolor: isDragActive ? tokens.selected : "#FFFFFF",
+            borderRadius: "12px",
             p: 4,
             textAlign: "center",
             cursor: "pointer",
+            transition: "border-color 120ms, background-color 120ms",
+            "&:hover": { borderColor: tokens.primary },
           }}
         >
           <input {...getInputProps()} />
