@@ -64,3 +64,26 @@ CHATBOT_GRANTS = text(
 def test_chatbot_ro_can_only_select_the_view(db_session):
     """Covers every relation in schema hub, including tables added by later migrations."""
     assert db_session.execute(CHATBOT_GRANTS).all() == [("attendance_view", "SELECT")]
+
+
+def test_chatbot_ro_session_settings(chatbot_engine):
+    with chatbot_engine.connect() as c:
+        assert c.execute(text("SHOW default_transaction_read_only")).scalar() == "on"
+        assert c.execute(text("SHOW statement_timeout")).scalar() == "5s"
+
+
+def test_chatbot_ro_has_no_sequence_privileges(db_session):
+    rows = db_session.execute(
+        text(
+            """
+            SELECT c.relname, p.priv
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            CROSS JOIN unnest(ARRAY['USAGE', 'SELECT', 'UPDATE']) AS p(priv)
+            WHERE n.nspname = 'hub' AND c.relkind = 'S'
+              AND has_sequence_privilege('chatbot_ro', c.oid, p.priv)
+            ORDER BY c.relname, p.priv
+            """
+        )
+    ).all()
+    assert rows == []
