@@ -20,13 +20,13 @@ UserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 
 @router.post("/imports", response_model=ImportPreviewBatch)
-async def upload_imports(
+def upload_imports(
     files: list[UploadFile], session: SessionDep, user: UserDep
 ) -> ImportPreviewBatch:
     limit = get_settings().max_upload_bytes
     previews = []
     for f in files:
-        content = await f.read(limit + 1)
+        content = f.file.read(limit + 1)
         previews.append(service.preview_upload(session, f.filename or "upload", content, user))
     return ImportPreviewBatch(files=previews)
 
