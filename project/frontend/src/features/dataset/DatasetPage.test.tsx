@@ -1,0 +1,107 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ApiError, apiDownload, apiGet } from "../../api/client";
+import type { ImportFileOut } from "../../api/types";
+import DatasetPage from "./DatasetPage";
+
+// Keep the real ApiError class; automocking would blank its constructor.
+vi.mock("../../api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../api/client")>()),
+  apiGet: vi.fn(),
+  apiDownload: vi.fn(),
+}));
+
+const imports: ImportFileOut[] = [
+  {
+    id: 1,
+    file_name: "career-fair.csv",
+    source: "campusgroups",
+    status: "committed",
+    row_count: 38,
+    skipped_count: 0,
+    event: { id: 4, name: "Career Fair", term: "Fall 2026" },
+    flag_count: 3,
+    uploaded_by: { id: 1, display_name: "Ada Lovelace" },
+    uploaded_at: "2026-10-01T17:30:00Z",
+    committed_at: "2026-10-01T17:35:00Z",
+  },
+  {
+    id: 2,
+    file_name: "mixer.xlsx",
+    source: "twelvetwenty",
+    status: "pending",
+    row_count: 12,
+    skipped_count: 1,
+    event: null,
+    flag_count: 0,
+    uploaded_by: { id: 1, display_name: "Ada Lovelace" },
+    uploaded_at: "2026-10-02T17:30:00Z",
+    committed_at: null,
+  },
+];
+
+function renderPage() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <DatasetPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("DatasetPage", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("lists the import history", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    expect(await screen.findByText("career-fair.csv")).toBeInTheDocument();
+    expect(screen.getByText("Career Fair")).toBeInTheDocument();
+    expect(screen.getByText("CampusGroups")).toBeInTheDocument();
+    expect(screen.getByText("12twenty")).toBeInTheDocument();
+    expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
+    expect(apiGet).toHaveBeenCalledWith("/api/imports");
+  });
+
+  it("downloads the full dataset in either format", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    vi.mocked(apiDownload).mockResolvedValue({ fileName: "d.xlsx", truncated: false, rowCap: null });
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    await userEvent.click(screen.getByRole("button", { name: "Download full dataset (.xlsx)" }));
+    await waitFor(() => expect(apiDownload).toHaveBeenCalledWith("/api/dataset/export?format=xlsx"));
+    await userEvent.click(screen.getByRole("button", { name: "Download full dataset (.csv)" }));
+    await waitFor(() => expect(apiDownload).toHaveBeenCalledWith("/api/dataset/export?format=csv"));
+  });
+
+  it("shows a download error and disables both buttons while downloading", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    let reject!: (e: Error) => void;
+    vi.mocked(apiDownload).mockReturnValueOnce(new Promise((_, r) => (reject = r)));
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    await userEvent.click(screen.getByRole("button", { name: "Download full dataset (.xlsx)" }));
+    expect(screen.getByRole("button", { name: "Download full dataset (.csv)" })).toBeDisabled();
+    reject(new ApiError(500, "export_failed", "Export failed."));
+    expect(await screen.findByText("Export failed.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Download full dataset (.csv)" })).toBeEnabled();
+  });
+
+  it("links to Upload when nothing is imported", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce([]);
+    renderPage();
+    expect(await screen.findByText("No files imported yet.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Upload" })).toHaveAttribute("href", "/upload");
+  });
+
+  it("shows the error when the history fails to load", async () => {
+    vi.mocked(apiGet).mockRejectedValueOnce(new ApiError(500, "unavailable", "History unavailable."));
+    renderPage();
+    expect(await screen.findByText("History unavailable.")).toBeInTheDocument();
+  });
+});
