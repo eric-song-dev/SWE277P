@@ -31,16 +31,16 @@ def list_conversations(session: SessionDep, user: UserDep) -> list[ConversationO
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetail)
 def get_conversation(
-    conversation_id: int, session: SessionDep, _user: UserDep
+    conversation_id: int, session: SessionDep, user: UserDep
 ) -> ConversationDetail:
-    return service.get_conversation(session, conversation_id)
+    return service.get_conversation(session, conversation_id, user)
 
 
 @router.post("/conversations/{conversation_id}/messages")
 def post_message(
     conversation_id: int, body: MessageIn, session: SessionDep, user: UserDep
 ) -> StreamingResponse:
-    service.ensure_conversation(session, conversation_id)  # 404 before the stream starts
+    service.ensure_conversation(session, conversation_id, user)  # 404 before the stream starts
     return StreamingResponse(
         service.run_turn(conversation_id, body, user),
         media_type="text/event-stream",
@@ -49,15 +49,15 @@ def post_message(
 
 
 @router.get("/chat/turns/{turn_id}/rerun", response_model=QueryResultOut)
-def rerun_turn(turn_id: int, session: SessionDep, _user: UserDep) -> QueryResultOut:
-    return service.rerun_turn(session, turn_id)
+def rerun_turn(turn_id: int, session: SessionDep, user: UserDep) -> QueryResultOut:
+    return service.rerun_turn(session, turn_id, user)
 
 
 @router.get("/chat/turns/{turn_id}/export")
 def export_turn(
     turn_id: int,
     session: SessionDep,
-    _user: UserDep,
+    user: UserDep,
     fmt: Annotated[Literal["xlsx", "csv"], Query(alias="format")] = "xlsx",
 ) -> Response:
-    return service.export_turn(session, turn_id, fmt)
+    return service.export_turn(session, turn_id, fmt, user)

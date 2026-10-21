@@ -69,17 +69,20 @@ def list_conversations(session: Session, user: CurrentUser) -> list[Conversation
     return [ConversationOut.model_validate(c) for c in rows]
 
 
-def _conversation(session: Session, conversation_id: int) -> Conversation:
+def _conversation(session: Session, conversation_id: int, user_id: int) -> Conversation:
     conversation = session.get(Conversation, conversation_id)
-    if conversation is None:
+    # Someone else's conversation looks the same as a missing one, so its existence is not leaked.
+    if conversation is None or conversation.created_by != user_id:
         raise HubError(
             "conversation_not_found", "That conversation no longer exists.", status_code=404
         )
     return conversation
 
 
-def get_conversation(session: Session, conversation_id: int) -> ConversationDetail:
-    conversation = _conversation(session, conversation_id)
+def get_conversation(
+    session: Session, conversation_id: int, user: CurrentUser
+) -> ConversationDetail:
+    conversation = _conversation(session, conversation_id, user.id)
     turns = session.scalars(
         select(ChatTurn).where(ChatTurn.conversation_id == conversation_id).order_by(ChatTurn.seq)
     )
@@ -89,8 +92,8 @@ def get_conversation(session: Session, conversation_id: int) -> ConversationDeta
     )
 
 
-def ensure_conversation(session: Session, conversation_id: int) -> None:
-    _conversation(session, conversation_id)
+def ensure_conversation(session: Session, conversation_id: int, user: CurrentUser) -> None:
+    _conversation(session, conversation_id, user.id)
 
 
 @dataclass
@@ -105,9 +108,9 @@ class _Prepared:
     history: list[TurnContext]
 
 
-def _prepare(conversation_id: int, profile_id: int | None) -> _Prepared:
+def _prepare(conversation_id: int, profile_id: int | None, user_id: int) -> _Prepared:
     with SessionLocal(bind=get_app_engine()) as session:
-        _conversation(session, conversation_id)
+        _conversation(session, conversation_id, user_id)
         profile, key = get_profile_with_key(session, profile_id)
         history = load_history(session, conversation_id)
         return _Prepared(
@@ -268,7 +271,9 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
         stream = None
         try:
             try:
-                prepared = await asyncio.to_thread(_prepare, conversation_id, body.llm_profile_id)
+                prepared = await asyncio.to_thread(
+                    _prepare, conversation_id, body.llm_profile_id, user.id
+                )
             except HubError as exc:
                 if body.llm_profile_id is not None and exc.code == "profile_missing_key":
                     profile_id = body.llm_profile_id
@@ -345,9 +350,9 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
         raise
 
 
-def _get_turn(session: Session, turn_id: int) -> ChatTurn:
+def _get_turn(session: Session, turn_id: int, user: CurrentUser) -> ChatTurn:
     turn = session.get(ChatTurn, turn_id)
-    if turn is None:
+    if turn is None or turn.created_by != user.id:  # same answer for someone else's turn
         raise HubError("turn_not_found", "That question no longer exists.", status_code=404)
     return turn
 
@@ -369,8 +374,8 @@ def _run_logged_sql(turn: ChatTurn, cap: int) -> QueryResult:
         raise HubError("query_failed", sanitize_db_error(exc).user_message, 422) from exc
 
 
-def rerun_turn(session: Session, turn_id: int) -> QueryResultOut:
-    turn = _get_turn(session, turn_id)
+def rerun_turn(session: Session, turn_id: int, user: CurrentUser) -> QueryResultOut:
+    turn = _get_turn(session, turn_id, user)
     result = _run_logged_sql(turn, get_settings().display_row_cap)
     return QueryResultOut(
         columns=result.columns,
@@ -380,10 +385,10 @@ def rerun_turn(session: Session, turn_id: int) -> QueryResultOut:
     )
 
 
-def export_turn(session: Session, turn_id: int, fmt: str) -> Response:
+def export_turn(session: Session, turn_id: int, fmt: str, user: CurrentUser) -> Response:
     from app.export.writers import export_response
 
-    turn = _get_turn(session, turn_id)
+    turn = _get_turn(session, turn_id, user)
     cap = get_settings().export_row_cap
     result = _run_logged_sql(turn, cap)
     # The file holds at most `cap` rows; the headers tell the UI whether rows were left out.

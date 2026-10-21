@@ -441,6 +441,7 @@ Errors use one JSON shape, `{"error": {"code", "message", "details"}}`.
 ## 11. Login seams (backlog, D8)
 
 - **Backend:** `auth/dependencies.py::get_current_user` returns the seeded `local` user. Every data route depends on it, and a test walks the FastAPI route table to check this. Records carry `uploaded_by` and `created_by`. `AUTH_MODE=none` in config is the switch. Adding login means implementing `AUTH_MODE=password` (adding `password_hash` and `is_active` to `app_user`, plus login and logout routes and an httpOnly cookie) without touching other routes.
+- **Who can see what (before login):** only conversations and chat turns are per-user. The service layer (not the route, and not a bypass of `get_current_user`) returns 404 `conversation_not_found` or `turn_not_found` for a conversation or turn whose `created_by` is not the current user, so existence is not leaked. This covers `GET /api/conversations/{id}`, `POST /api/conversations/{id}/messages`, and the turn rerun and export routes; `GET /api/conversations` lists only the current user's. Imports, the dataset, events and LLM profiles stay shared office resources. (Decided in S5.)
 - **Frontend:** all calls go through `api/client.ts` (one place to attach credentials and handle 401). `AuthGate` wraps the routes and currently renders its children. A login page later goes behind it.
 
 ## 12. P1 extension points (D9)
