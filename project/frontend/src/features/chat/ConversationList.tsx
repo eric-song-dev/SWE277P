@@ -7,6 +7,7 @@ import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import { NavLink, useNavigate } from "react-router";
+import { tokens } from "../../app/theme";
 import { useConversations } from "./useConversations";
 
 export default function ConversationList() {
@@ -14,9 +15,36 @@ export default function ConversationList() {
   const navigate = useNavigate();
 
   return (
-    <Box component="nav" aria-label="Conversations" sx={{ width: 240, flexShrink: 0 }}>
+    <Box component="nav" aria-label="Conversations" 
+      sx={{
+        width: 256,
+        flexShrink: 0,
+        boxSizing: "border-box",
+        bgcolor: "#FFFFFF",
+        borderRight: `1px solid ${tokens.border}`,
+        p: "20px 16px",
+        position: "sticky",
+        top: 0,
+        alignSelf: "flex-start",
+        maxHeight: "100vh",
+        overflowY: "auto",
+      }}
+    >
       {/* /chat is a draft; the first question creates the conversation. */}
-      <Button fullWidth variant="outlined" startIcon={<AddIcon />} onClick={() => void navigate("/chat")}>
+      <Button
+        fullWidth
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={() => void navigate("/chat")}
+        sx={{
+          minHeight: 44,
+          mb: "12px",
+          color: tokens.primary,
+          borderColor: tokens.primary,
+          transition: "background-color 120ms ease, color 120ms ease",
+          "&:hover, &:focus-visible": { bgcolor: tokens.primary, color: "#FFFFFF", borderColor: tokens.primary },
+        }}
+      >
         New chat
       </Button>
       {conversations.isError && (
@@ -29,17 +57,24 @@ export default function ConversationList() {
           No conversations yet.
         </Typography>
       )}
-      <List dense>
+      <List disablePadding sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
         {conversations.data?.map((conversation) => (
           <ListItemButton
             key={conversation.id}
             component={NavLink}
             to={`/chat/${conversation.id}`}
-            sx={{ "&.active": { bgcolor: "action.selected" } }}
+            sx={{
+              p: "10px 12px",
+              borderRadius: "8px",
+              fontSize: 15,
+              color: tokens.ink,
+              "&.active": { bgcolor: tokens.selected, color: tokens.navy, fontWeight: 600 },
+              "&.active .MuiListItemText-primary": { fontWeight: 600 },
+            }}
           >
             <ListItemText
               primary={conversation.title ?? "New conversation"}
-              slotProps={{ primary: { noWrap: true } }}
+              slotProps={{ primary: { noWrap: true, sx: { fontSize: 15 } } }}
             />
           </ListItemButton>
         ))}

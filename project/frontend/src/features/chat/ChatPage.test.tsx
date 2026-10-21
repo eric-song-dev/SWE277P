@@ -504,6 +504,28 @@ describe("ChatPage", () => {
     expect(apiSend).not.toHaveBeenCalled();
   });
 
+  it("shows the empty-draft hint", async () => {
+    renderPage("/chat");
+    expect(await screen.findByText("Ask a question about your data to start.")).toBeInTheDocument();
+  });
+
+  it("shows a visible AI model label and exactly one combobox with that name", async () => {
+    renderPage("/chat");
+    expect(await screen.findAllByText("AI model")).not.toHaveLength(0);
+    expect(screen.getAllByRole("combobox", { name: "AI model" })).toHaveLength(1);
+  });
+
+  it("marks the open conversation and has no Conversations heading", async () => {
+    renderPage("/chat/1");
+    const list = await screen.findByRole("navigation", { name: "Conversations" });
+    expect(await within(list).findByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(list).getByRole("link", { name: "New conversation" })).not.toHaveAttribute("aria-current");
+    expect(screen.queryByRole("heading", { name: "Conversations" })).toBeNull();
+  });
+
   it("says when the conversation no longer exists", async () => {
     details[1] = new ApiError(404, "conversation_not_found", "That conversation no longer exists.");
     renderPage("/chat/1");
@@ -544,6 +566,6 @@ describe("ChatPage", () => {
     expect(screen.getByRole("link", { name: "Go to Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     // One hint, not two competing ones.
-    expect(screen.queryByText(/Ask a question about the attendance data to start/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ask a question about your data to start/)).not.toBeInTheDocument();
   });
 });

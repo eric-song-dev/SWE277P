@@ -33,3 +33,14 @@ test("upload, ask, export", async ({ page }) => {
   await expect(page.getByRole("grid")).toHaveCount(2);
   await expect(page.getByLabel("Let AI see the results")).toBeChecked(); // kept across the follow-up
 });
+
+// Review Focus 1: a long unbroken question wraps and the page never scrolls sideways.
+test("a long unbroken question does not widen the page", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.goto("/chat");
+  await page.getByRole("textbox").fill("x".repeat(300));
+  await page.keyboard.press("Enter");
+  await expect(page.getByText(/only knows its scripted questions/i)).toBeVisible();
+  const fits = await page.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth");
+  expect(fits).toBe(true);
+});

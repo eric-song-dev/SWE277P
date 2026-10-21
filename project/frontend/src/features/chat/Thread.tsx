@@ -7,6 +7,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { apiGet } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
+import { tokens } from "../../app/theme";
 import AnswerCard from "./AnswerCard";
 import { savedErrorText, type LiveTurn } from "./chatStream";
 import SqlAccordion from "./SqlAccordion";
@@ -34,7 +35,7 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
   }
 
   return (
-    <Stack spacing={3}>
+    <Stack spacing="32px">
       {items.map(({ seq, turn }) =>
         "status" in turn ? (
           <TurnItem key={seq} turn={turn} busy={busy} onRetry={onRetryLive} />
@@ -119,7 +120,7 @@ function TurnItem({
   }
 
   return (
-    <Stack spacing={1}>
+    <Stack spacing="12px">
       <Bubble from="user">{turn.question}</Bubble>
       {answer}
     </Stack>
@@ -132,15 +133,16 @@ function Bubble({ from, children }: { from: "user" | "assistant"; children: Reac
     <Box
       sx={{
         alignSelf: mine ? "flex-end" : "flex-start",
-        maxWidth: "80%",
+        maxWidth: "75%",
         px: 2,
-        py: 1,
-        borderRadius: 2,
-        bgcolor: mine ? "primary.main" : "action.hover",
-        color: mine ? "primary.contrastText" : "text.primary",
+        py: "10px",
+        borderRadius: mine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+        bgcolor: mine ? tokens.primary : "#FFFFFF",
+        border: mine ? "none" : `1px solid ${tokens.border}`,
+        color: mine ? "#FFFFFF" : tokens.ink,
       }}
     >
-      <Typography sx={{ whiteSpace: "pre-wrap" }}>{children}</Typography>
+      <Typography sx={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{children}</Typography>
     </Box>
   );
 }

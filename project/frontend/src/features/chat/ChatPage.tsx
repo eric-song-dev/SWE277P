@@ -126,7 +126,7 @@ export default function ChatPage() {
     main = (
       <>
         {conversationId === null && live === null && profile && (
-          <Typography color="text.secondary">Ask a question about the attendance data to start.</Typography>
+          <Typography color="text.secondary">Ask a question about your data to start.</Typography>
         )}
         {/* Turn cards are keyed by seq, which restarts in every conversation, so each one gets
             fresh cards. The draft's remount on its first send comes before any stream event. */}
@@ -143,7 +143,15 @@ export default function ChatPage() {
           <Stack
             direction="row"
             spacing={2}
-            sx={{ position: "sticky", bottom: 0, py: 2, bgcolor: "background.default", alignItems: "flex-start" }}
+            sx={{
+              position: "sticky",
+              bottom: 0,
+              mx: "-40px",
+              px: "40px",
+              py: 2,
+              bgcolor: "#FFFFFF",
+              alignItems: "flex-start",
+            }}
           >
             <Composer disabled={streaming} onSend={ask} />
             <ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />
@@ -163,9 +171,14 @@ export default function ChatPage() {
           ) : undefined
         }
       />
-      <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", px: "40px", py: "28px" }}>
+      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
         <ConversationList />
-        <Stack spacing={2} sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Stack
+          component="section"
+          aria-label="Conversation"
+          spacing={2}
+          sx={{ flex: 1, minWidth: 0, maxWidth: 880 + 80, mx: "auto", boxSizing: "border-box", px: "40px", pt: "28px" }}
+        >
           {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
           {profiles.data?.length === 0 && (
             <Alert severity="info">
