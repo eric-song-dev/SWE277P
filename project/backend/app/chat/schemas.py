@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, JsonValue, StringConstraints
 
 
 class MessageIn(BaseModel):
-    question: Annotated[str, Field(min_length=1, max_length=2000)]
+    question: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)
+    ]
     llm_profile_id: int | None = None
     share_results: bool = False  # the per-question switch (spec D2)
 

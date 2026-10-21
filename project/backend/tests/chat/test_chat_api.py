@@ -488,3 +488,41 @@ async def test_disconnect_after_done_adds_no_second_turn(client, fake_profile, u
     await gen.aclose()
     turn = _only_turn(db_session)
     assert turn.kind == "answer" and turn.error_code is None
+
+
+def test_export_reports_truncation_headers(client, fake_profile, monkeypatch):
+    cid = new_conversation(client)
+    ask(client, cid, EMAILS_Q, llm_profile_id=fake_profile)
+    turn = turns(client, cid)[0]
+    url = f"/api/chat/turns/{turn['id']}/export"
+    full = client.get(f"{url}?format=csv")
+    assert full.headers["x-hub-truncated"] == "false"
+    assert full.headers["x-hub-row-cap"] == "100000"
+    monkeypatch.setenv("EXPORT_ROW_CAP", "3")
+    get_settings.cache_clear()
+    try:
+        cut = client.get(f"{url}?format=csv")
+        assert cut.headers["x-hub-truncated"] == "true" and cut.headers["x-hub-row-cap"] == "3"
+        assert len(cut.text.lstrip("﻿").splitlines()) == 1 + 3
+        monkeypatch.setenv("EXPORT_ROW_CAP", str(turn["row_count"]))
+        get_settings.cache_clear()
+        exact = client.get(f"{url}?format=xlsx")  # exactly at the cap is not truncated
+        assert exact.headers["x-hub-truncated"] == "false"
+    finally:
+        monkeypatch.undo()
+        get_settings.cache_clear()
+
+
+def test_whitespace_only_question_is_422_and_question_is_stripped(client, fake_profile):
+    cid = new_conversation(client)
+    url = f"/api/conversations/{cid}/messages"
+    for blank in ("   ", "\n\t "):
+        res = client.post(url, json={"question": blank})
+        assert res.status_code == 422 and res.json()["error"]["code"] == "validation_error"
+    # the limit applies after stripping: 2,000 characters plus padding is fine
+    padded = f"  {'x' * 2000}  "
+    res = client.post(url, json={"question": padded, "llm_profile_id": fake_profile})
+    assert res.status_code == 200
+    res = client.post(url, json={"question": "x" * 2001 + "  "})
+    assert res.status_code == 422
+    assert turns(client, cid)[0]["question"] == "x" * 2000

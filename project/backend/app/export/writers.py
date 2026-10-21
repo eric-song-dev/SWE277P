@@ -70,6 +70,7 @@ def export_response(
     rows: Iterable[Sequence[object]],
     fmt: Literal["xlsx", "csv"],
     stem: str,
+    extra_headers: dict[str, str] | None = None,
 ) -> Response:
     if fmt == "xlsx":
         body, media = to_xlsx(columns, rows), XLSX_MEDIA
@@ -79,5 +80,5 @@ def export_response(
     return Response(
         content=body,
         media_type=media,
-        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+        headers={"Content-Disposition": f'attachment; filename="{name}"', **(extra_headers or {})},
     )

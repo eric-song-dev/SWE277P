@@ -373,5 +373,16 @@ def export_turn(session: Session, turn_id: int, fmt: str) -> Response:
     from app.export.writers import export_response
 
     turn = _get_turn(session, turn_id)
-    result = _run_logged_sql(turn, get_settings().export_row_cap)
-    return export_response(result.columns, result.rows, fmt, f"turn-{turn.id}")
+    cap = get_settings().export_row_cap
+    result = _run_logged_sql(turn, cap)
+    # The file holds at most `cap` rows; the headers tell the UI whether rows were left out.
+    return export_response(
+        result.columns,
+        result.rows,
+        fmt,
+        f"turn-{turn.id}",
+        extra_headers={
+            "X-Hub-Truncated": "true" if result.truncated else "false",
+            "X-Hub-Row-Cap": str(cap),
+        },
+    )

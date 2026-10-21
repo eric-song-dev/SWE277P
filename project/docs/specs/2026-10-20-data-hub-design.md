@@ -332,6 +332,7 @@ Details settled in S3:
 Details settled in S4:
 
 - If the client disconnects mid-stream, the turn is still logged once, with `kind = error` and `error_code = "client_disconnected"` (what already happened: SQL, row count, attempts, `results_shared` erring toward true). This code is logged only and never sent, since no one is listening. A disconnect after `done` adds nothing.
+- A question is stripped of surrounding whitespace before validation. A whitespace-only question is a 422, like an empty one, and the 2,000-character limit applies to the stripped text.
 
 Other chat endpoints:
 
@@ -387,6 +388,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 - **Chat results:** `GET /api/chat/turns/{id}/export`, as described in 7.6.
 - **Full dataset:** `GET /api/dataset/export?format=xlsx|csv` writes the 19-column GPSRC Data Project layout, with the template's exact headers, including Student ID. It is read through the app role by the `dataset` service. The Notes column is generated from the row's source and flags, in the style of the compiled sheet: `Source: <platform> export`, then `INCOMPLETE: …` for the missing-field flags and `CHECK: …` for the identity and email flags (e.g. `Source: CampusGroups export; INCOMPLETE: email missing`).
 - **Formula guard:** a value starting with `=`, `+`, `-`, `@`, tab, or CR is written as an explicit string cell in XLSX (`data_type = "s"`). In CSV it gets a leading `'`.
+- **Details settled in S4:** a chat export holds at most the export cap (`EXPORT_ROW_CAP`) rows and reports whether rows were left out with the response headers `X-Hub-Truncated: true|false` and `X-Hub-Row-Cap: <cap>`.
 - **File names:** `hub-turn-<turn id>-<YYYYMMDD-HHMM>.<ext>` for a chat result, `hub-dataset-<YYYYMMDD-HHMM>.<ext>` for the full dataset.
 
 ## 10. API summary
