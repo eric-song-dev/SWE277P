@@ -122,6 +122,7 @@ export default function AppShell() {
                   bgcolor: "rgba(255,255,255,0.10)",
                   color: "#FFFFFF",
                   fontWeight: 600,
+                  "&:hover": { bgcolor: "rgba(255,255,255,0.16)" },
                 },
               }}
             >
