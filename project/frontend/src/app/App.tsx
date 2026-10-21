@@ -18,7 +18,12 @@ const queryClient = new QueryClient();
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppShell />,
+    // The gate sits inside the route, so a render error in it reaches errorElement.
+    element: (
+      <AuthGate>
+        <AppShell />
+      </AuthGate>
+    ),
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Navigate to="/chat" replace /> },
@@ -36,11 +41,9 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
-        <AuthGate>
-          {/* Commit navigations right away, not in a transition: otherwise a question sent just
-              after "New chat" or a conversation link goes to the conversation being left. */}
-          <RouterProvider router={router} useTransitions={false} />
-        </AuthGate>
+        {/* Commit navigations right away, not in a transition: otherwise a question sent just
+            after "New chat" or a conversation link goes to the conversation being left. */}
+        <RouterProvider router={router} useTransitions={false} />
       </QueryClientProvider>
     </ThemeProvider>
   );
