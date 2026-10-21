@@ -46,6 +46,8 @@ def _read_csv(content: bytes) -> list[list]:
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
+        # Excel on Windows saves CSV as cp1252. Its five undefined bytes (0x81, 0x8d, 0x8f, 0x90,
+        # 0x9d) become U+FFFD instead of failing the whole upload.
         text = content.decode("cp1252", errors="replace")
     try:
         return list(csv.reader(io.StringIO(text, newline="")))
