@@ -100,8 +100,12 @@ export async function apiDownload(path: string): Promise<DownloadResult> {
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
+  // In the document while clicked, and revoked only after the click has started the download:
+  // Safari can drop a download whose URL is revoked at once.
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
   return {
     fileName,
     truncated: res.headers.get("X-Hub-Truncated") === "true",

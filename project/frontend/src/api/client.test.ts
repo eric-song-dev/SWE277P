@@ -118,14 +118,23 @@ describe("apiDownload", () => {
     const create = vi.fn().mockReturnValue("blob:fake");
     const revoke = vi.fn();
     vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke }));
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-    return { create, revoke, click };
+    const clicked: { href: string; download: string; inDocument: boolean }[] = [];
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clicked.push({ href: this.href, download: this.download, inDocument: document.body.contains(this) });
+    });
+    return { create, revoke, click, clicked };
   }
 
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
 
   it("returns the server file name and clicks an object-URL anchor", async () => {
-    const { create, revoke, click } = stubUrls();
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const { create, revoke, click, clicked } = stubUrls();
     stubFetch(
       new Response("data", {
         status: 200,
@@ -141,6 +150,14 @@ describe("apiDownload", () => {
     });
     expect(create).toHaveBeenCalledTimes(1);
     expect(click).toHaveBeenCalledTimes(1);
+    // Clicked while in the document (Safari), removed after.
+    expect(clicked).toEqual([
+      { href: "blob:fake", download: "hub-turn-3-20261105-1010.xlsx", inDocument: true },
+    ]);
+    expect(document.querySelector("a")).toBeNull();
+    // Revoked only after the click has started the download.
+    expect(revoke).not.toHaveBeenCalled();
+    vi.runAllTimers();
     expect(revoke).toHaveBeenCalledWith("blob:fake");
   });
 
