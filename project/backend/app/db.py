@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from datetime import datetime
 from functools import lru_cache
+from typing import ClassVar
 
 from sqlalchemy import DateTime, MetaData, create_engine
 from sqlalchemy.engine import Engine
@@ -13,7 +14,7 @@ SCHEMA = "hub"
 
 class Base(DeclarativeBase):
     metadata = MetaData(schema=SCHEMA)
-    type_annotation_map = {datetime: DateTime(timezone=True)}
+    type_annotation_map: ClassVar[dict] = {datetime: DateTime(timezone=True)}
 
 
 @lru_cache
