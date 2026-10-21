@@ -12,6 +12,7 @@ import { useProfiles } from "../settings/useProfiles";
 import Composer from "./Composer";
 import ConversationList from "./ConversationList";
 import PageHeader from "../../app/PageHeader";
+import { tokens } from "../../app/theme";
 import ProfileSelect from "./ProfileSelect";
 import ShareResultsSwitch from "./ShareResultsSwitch";
 import Thread from "./Thread";
@@ -142,22 +143,26 @@ export default function ChatPage() {
           />
         </Box>
         {profile && (
-          <Stack
-            direction="row"
-            spacing={2}
+          <Box
             sx={{
               position: "sticky",
               bottom: 0,
               mx: "-40px",
               px: "40px",
-              py: 2,
+              pt: 2,
+              pb: "12px",
               bgcolor: "#FFFFFF",
-              alignItems: "flex-start",
+              borderTop: `1px solid ${tokens.border}`,
             }}
           >
-            <Composer disabled={streaming} onSend={ask} />
-            <ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />
-          </Stack>
+            <Box sx={{ maxWidth: 880, mx: "auto" }}>
+              <Composer
+                disabled={streaming}
+                onSend={ask}
+                toolbar={<ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />}
+              />
+            </Box>
+          </Box>
         )}
       </>
     );

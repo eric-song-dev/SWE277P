@@ -26,6 +26,8 @@ vi.mock("../../api/client", async (importOriginal) => ({
 vi.mock("../../api/sse", () => ({ streamSse: vi.fn() }));
 
 const SHARE = "Let AI see the results";
+const ON_HELP = "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI.";
+const OFF_HELP = "Off: the AI sees only your question. You get the results without an AI summary.";
 
 const lab: LlmProfileOut = {
   id: 1,
@@ -424,9 +426,13 @@ describe("ChatPage", () => {
     const { user } = renderPage("/chat/1");
     const toggle = await screen.findByLabelText(SHARE);
     expect(toggle).toBeChecked();
-    expect(screen.getByText("Off: AI only writes the SQL. Results stay on this computer.")).toBeInTheDocument();
+    expect(screen.getByText(ON_HELP)).toBeInTheDocument();
+    expect(toggle).toHaveAccessibleDescription(ON_HELP);
+    expect(screen.getAllByLabelText(SHARE)).toHaveLength(1);
     await user.click(toggle);
     expect(toggle).not.toBeChecked();
+    expect(screen.getByText(OFF_HELP)).toBeInTheDocument();
+    expect(screen.queryByText(ON_HELP)).not.toBeInTheDocument();
 
     const first = pendingStream();
     await ask(user, "First question");
@@ -455,6 +461,30 @@ describe("ChatPage", () => {
     expect(bodies()[0]).toEqual({ question: "How many came?", llm_profile_id: 3, share_results: false });
     await s.emit({ event: "done", data: { turn_id: null } });
     await s.finish();
+  });
+
+  it("tabs from the question to the switch to Send", async () => {
+    const { user } = renderPage("/chat/1");
+    await user.type(await screen.findByRole("textbox"), "How many came?");
+    await user.tab();
+    expect(screen.getByRole("switch", { name: SHARE })).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Send" })).toHaveFocus();
+  });
+
+  it("switching to a profile that disallows sharing turns the switch off with the Off text", async () => {
+    const { user } = renderPage("/chat/1");
+    expect(await screen.findByLabelText(SHARE)).toBeChecked();
+    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    await user.click(await screen.findByRole("option", { name: "Private model" }));
+    const toggle = screen.getByLabelText(SHARE);
+    expect(toggle).toBeDisabled();
+    expect(toggle).not.toBeChecked();
+    expect(screen.getByText(OFF_HELP)).toBeInTheDocument();
+    await user.hover(screen.getByText(SHARE));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "This AI model isn't allowed to receive results. Change it in Settings.",
+    );
   });
 
   it("share switch resets on profile or conversation change", async () => {
