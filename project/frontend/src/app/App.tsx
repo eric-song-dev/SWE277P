@@ -5,6 +5,7 @@ import { lazy } from "react";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
 import AuthGate from "./AuthGate";
+import NotFoundPage from "./NotFoundPage";
 import { UploadProvider } from "../features/upload/UploadContext";
 import RouteError from "./RouteError";
 import { theme } from "./theme";
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
       { path: "upload", element: <UploadPage /> },
       { path: "dataset", element: <DatasetPage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);
