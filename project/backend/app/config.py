@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     max_generations: int = 3
     hub_enable_fake_llm: bool = False
     max_upload_bytes: int = 10_485_760
+    llm_seed_name: str | None = None
+    llm_seed_preset: str | None = None
+    llm_seed_base_url: str | None = None
+    llm_seed_model: str | None = None
+    llm_seed_api_key: SecretStr | None = None
+    llm_seed_share_results: str | None = None  # parsed by the seed; empty counts as unset
 
     @field_validator("hub_secret_key")
     @classmethod

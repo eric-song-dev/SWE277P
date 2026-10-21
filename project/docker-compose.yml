@@ -38,6 +38,12 @@ services:
       MAX_GENERATIONS: ${MAX_GENERATIONS:-3}
       HUB_ENABLE_FAKE_LLM: ${HUB_ENABLE_FAKE_LLM:-false}
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
+      LLM_SEED_NAME: ${LLM_SEED_NAME:-}
+      LLM_SEED_PRESET: ${LLM_SEED_PRESET:-}
+      LLM_SEED_BASE_URL: ${LLM_SEED_BASE_URL:-}
+      LLM_SEED_MODEL: ${LLM_SEED_MODEL:-}
+      LLM_SEED_API_KEY: ${LLM_SEED_API_KEY:-}
+      LLM_SEED_SHARE_RESULTS: ${LLM_SEED_SHARE_RESULTS:-}
     depends_on:
       db:
         condition: service_healthy

@@ -25,6 +25,16 @@ os.environ["DATABASE_URL"] = _hub_test(_configured("DATABASE_URL"))
 os.environ["CHATBOT_DATABASE_URL"] = _hub_test(_configured("CHATBOT_DATABASE_URL"))
 os.environ["TEST_ADMIN_DATABASE_URL"] = _configured("TEST_ADMIN_DATABASE_URL")
 os.environ["HUB_SECRET_KEY"] = Fernet.generate_key().decode()
+# project/.env may hold a real LLM seed profile; tests must never read or seed it.
+for _name in (
+    "LLM_SEED_NAME",
+    "LLM_SEED_PRESET",
+    "LLM_SEED_BASE_URL",
+    "LLM_SEED_MODEL",
+    "LLM_SEED_API_KEY",
+    "LLM_SEED_SHARE_RESULTS",
+):
+    os.environ[_name] = ""
 
 import pytest
 from fastapi.testclient import TestClient
