@@ -15,7 +15,7 @@ from app.chat.context import MAX_EVENTS, ControlledValues, TurnContext
 from app.chat.executor import QueryResult, to_json_value
 from app.imports.normalize import academic_year, term_for_date
 
-PROMPT_VERSION = "2026-10-29.3"  # bump on every prompt change
+PROMPT_VERSION = "2026-10-29.4"  # bump on every prompt change
 
 REPAIR_PREFIX = "Your previous reply was rejected:"
 EXAMPLE_PREFIX = "Example question: "
@@ -138,10 +138,14 @@ Time
 - Terms are UCI quarters: Winter, Spring, Summer and Fall. An academic year runs from Fall \
 through Summer: Fall 2026, Winter 2027, Spring 2027 and Summer 2027 make up academic year \
 '2026-27'. Filter academic years with the academic_year column.
-- "This year" means the current academic year, {academic_year}; say so in assumptions. "This \
-term" or "this quarter" means {current_term}. "Last year" means the academic year before the \
-current one. A calendar year on its own ("in 2027") means the terms of that calendar year \
-(term LIKE '% 2027'); say so in assumptions.
+- "This year" means the current academic year, {academic_year}; say so in assumptions. "Last \
+year" means the academic year before the current one. A calendar year on its own ("in 2027") \
+means the terms of that calendar year (term LIKE '% 2027'); say so in assumptions.
+- "This term", "this quarter" or "the current term" means {current_term}, even before any of \
+its events are listed. "Last term", "last quarter" or "the previous term" means the latest \
+listed term before {current_term}; if no earlier term is listed, there is no earlier data, so \
+say that with kind "clarify". "The most recent term" or "the latest term" means the last term \
+in the term list. Say in assumptions which term you used.
 - event_date is often NULL. Filter by term or academic_year whenever the question allows it. \
 Filter by event_date only when the question asks about specific dates, and then say in \
 assumptions that events without a date are left out.
@@ -381,7 +385,7 @@ def _render_controlled(cv: ControlledValues) -> str:
             events,
         ),
         ("event_type", [_literal(v) for v in cv.event_types]),
-        ("term", [_literal(v) for v in cv.terms]),
+        ("term, oldest first", [_literal(v) for v in cv.terms]),
         ("academic_year", [_literal(v) for v in cv.academic_years]),
         ("affiliation", [_literal(v) for v in cv.affiliations]),
     )

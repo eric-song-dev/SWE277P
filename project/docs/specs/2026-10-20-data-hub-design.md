@@ -271,6 +271,7 @@ The `generate` prompt contains:
    - "Unique students/people" means `COUNT(DISTINCT person_key)`.
    - Use `ILIKE` with the given event names.
    - "This year" means the current academic year. State it as an assumption, or ask if the question is ambiguous.
+   - "This term" means the current term, even before any of its events are imported. "Last term" means the latest term with events before the current one (so a term with no events is skipped), and "the most recent term" means the latest term with events. The term used is stated as an assumption; if no earlier term has events, the bot says so with a clarifying question. The known terms are listed oldest first for this. (Decided in S5.)
    - "Students" with no named affiliation means everyone GPSRC serves, postdocs included, and grouping by a column that can be blank (school, department, affiliation) leaves out the records where it is blank. Both are stated as assumptions, not applied silently. (Decided in S5.)
    - Ask for clarification only when the answer would change materially.
 5. 5–10 worked examples, kept disjoint from the benchmark.

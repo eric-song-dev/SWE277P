@@ -19,7 +19,7 @@ class ControlledValues:
     schools: list[str]
     event_names: list[str]  # names of the MAX_EVENTS most recent events (event_name + term)
     event_types: list[str]
-    terms: list[str]
+    terms: list[str]  # oldest first, so "the latest term" is the last one
     academic_years: list[str]
     # A CampusGroups self-selection drop-down, so safe to send; the exact spelling matters
     # (Master’s Student uses U+2019).
@@ -36,6 +36,15 @@ class TurnContext:
     interpretation: str | None
     row_count: int | None
     clarification_question: str | None
+
+
+_SEASONS = {"Winter": 1, "Spring": 2, "Summer": 3, "Fall": 4}
+
+
+def _term_key(term: str) -> tuple[int, int]:
+    """Chronological order of 'Fall 2026'-style terms: by year, then Winter < ... < Fall."""
+    season, _, year = term.partition(" ")
+    return (int(year) if year.isascii() and year.isdigit() else 0), _SEASONS.get(season, 0)
 
 
 # Column names are constants, never user input.
@@ -59,7 +68,7 @@ _RECENT_EVENTS = text(
 
 
 def load_controlled_values(engine: Engine) -> ControlledValues:
-    """Distinct non-null values, sorted, read through the read-only chatbot engine."""
+    """Distinct non-null values, sorted (terms chronologically), read through chatbot_ro."""
     with engine.connect() as conn:
 
         def distinct(col: str) -> list[str]:
@@ -74,7 +83,7 @@ def load_controlled_values(engine: Engine) -> ControlledValues:
             schools=distinct("school"),
             event_names=event_names,
             event_types=distinct("event_type"),
-            terms=distinct("term"),
+            terms=sorted(distinct("term"), key=_term_key),
             academic_years=distinct("academic_year"),
             affiliations=distinct("affiliation"),
             event_terms={name: [t for _, t in sorted(keyed[name])] for name in event_names},

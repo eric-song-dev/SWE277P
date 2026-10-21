@@ -218,6 +218,15 @@ def test_known_events_rendered_with_their_terms():
     assert "'One-off Talk' (held in 'Fall 2026')" in system
 
 
+def test_term_wording_resolves_against_today_and_the_term_list():
+    cv = ControlledValues([], [], [], ["Spring 2026", "Fall 2026"], [], [])
+    system = build_generate_messages("q", cv, [], TODAY, [])[0].content
+    assert '"This term", "this quarter" or "the current term" means Fall 2026' in system
+    assert "means the latest listed term before Fall 2026" in system
+    assert '"The most recent term" or "the latest term" means the last term' in system
+    assert "term, oldest first:\n  'Spring 2026'\n  'Fall 2026'" in system
+
+
 def test_prompt_states_students_and_null_groups_as_assumptions():
     system = build_generate_messages("q", EMPTY_CV, [], TODAY, [])[0].content
     assert "say in assumptions that it means everyone GPSRC serves" in system
@@ -381,6 +390,18 @@ def test_recurring_event_listed_once_with_its_terms_oldest_first(db_session, cha
     }
 
 
+def test_terms_listed_chronologically(db_session, chatbot_engine):
+    _seed_events(
+        db_session,
+        "INSERT INTO hub.event (name, term, academic_year) VALUES "
+        "('A', 'Fall 2026', '2026-27'), ('B', 'Winter 2026', '2025-26'), "
+        "('C', 'Summer 2025', '2024-25'), ('D', 'Spring 2026', '2025-26'), "
+        "('E', 'Fall 2025', '2025-26')",
+    )
+    terms = load_controlled_values(chatbot_engine).terms
+    assert terms == ["Summer 2025", "Fall 2025", "Winter 2026", "Spring 2026", "Fall 2026"]
+
+
 def test_load_history_oldest_first_and_limited(db_session, user):
     conv = Conversation(title="t", created_by=user.id)
     other = Conversation(title="other", created_by=user.id)
@@ -475,4 +496,4 @@ def test_analyze_messages_flag_truncated_and_empty():
 
 
 def test_prompt_version():
-    assert prompts.PROMPT_VERSION == "2026-10-29.3"
+    assert prompts.PROMPT_VERSION == "2026-10-29.4"
