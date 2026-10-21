@@ -164,7 +164,13 @@ npm run build                            # type-check + production build
 npm run lint                             # oxlint
 ```
 
-The chatbot benchmark command will be added in S3.
+Chatbot benchmark (from `project/backend`, needs a saved LLM profile and the sample data loaded):
+
+```bash
+uv run python -m benchmark.run --profile "<name>" [--only q01,q05] [--today 2026-11-02] [--min-score 18]
+```
+
+It writes `backend/benchmark/reports/<YYYYMMDD-HHMM>-<slug>.md` and prints `Score: N/20`. Exit code 0 = ok, 1 = below `--min-score`, 2 = could not run. To run the app without a real model (tests, demos), set `HUB_ENABLE_FAKE_LLM=true`.
 
 ## Conventions
 
