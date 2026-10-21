@@ -68,3 +68,12 @@ def test_csv_oversized_field_rejected():
     with pytest.raises(HubError) as e:
         read_grid("a.csv", big)
     assert e.value.code == "unreadable_file"
+
+
+def test_csv_control_characters_removed():
+    grid = read_grid("a.csv", b"Department,Note\nBio\x0bChem, \x01 \n")
+    assert grid[1] == ["BioChem", None]
+
+
+def test_csv_tabs_and_newlines_inside_values_kept():
+    assert read_grid("a.csv", b'A\n"x\ty\nz"\n')[1] == ["x\ty\nz"]

@@ -83,3 +83,32 @@ def test_full_export_csv(client, committed_october):
 def test_export_rejects_bad_format(client):
     r = client.get("/api/dataset/export?format=pdf")
     assert r.status_code == 422 and r.json()["error"]["code"] == "validation_error"
+
+
+def test_xlsx_drops_control_characters_instead_of_failing():
+    data = to_xlsx(["Department\x0b"], [["Bio\x0bChem", "=x\x01", 5, None]])
+    ws = openpyxl.load_workbook(BytesIO(data)).active
+    assert ws["A1"].value == "Department"
+    assert ws["A2"].value == "BioChem"
+    assert ws["B2"].value == "=x" and ws["B2"].data_type == "s"
+
+
+def test_csv_keeps_values_as_given():
+    # str.splitlines() would also split on \x0b, so split on the csv module's terminator.
+    assert to_csv(["d"], [["Bio\x0bChem"]]).decode("utf-8-sig").split("\r\n")[1] == "Bio\x0bChem"
+
+
+def test_export_still_works_after_importing_a_control_character(client):
+    from tests.imports.helpers import CG_HEADER, ROW_AAHMED, csv_with_rows
+
+    row = list(ROW_AAHMED)
+    row[CG_HEADER.index("Department")] = "Bio\x0bChem"
+    files = [("files", ("vt.csv", csv_with_rows(CG_HEADER, [row]), "text/csv"))]
+    import_id = client.post("/api/imports", files=files).json()["files"][0]["id"]
+    details = {"name": "VT", "term": "Fall 2026", "modality": "In Person", "event_type": "Other"}
+    assert client.post(f"/api/imports/{import_id}/commit", json=details).status_code == 200
+
+    r = client.get("/api/dataset/export?format=xlsx")
+    assert r.status_code == 200
+    ws = openpyxl.load_workbook(BytesIO(r.content)).active
+    assert ws.cell(row=2, column=list(GPSRC_HEADERS).index("Department ") + 1).value == "BioChem"

@@ -6,6 +6,7 @@ from typing import Literal
 
 from fastapi import Response
 from openpyxl import Workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
 XLSX_MEDIA = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 CSV_MEDIA = "text/csv; charset=utf-8"
@@ -21,12 +22,17 @@ def guard_cell(value: object) -> object:
     return f"'{value}" if _needs_guard(value) else value
 
 
+def _xlsx_value(value: object) -> object:
+    """Drop control characters openpyxl refuses to write (import already strips them)."""
+    return ILLEGAL_CHARACTERS_RE.sub("", value) if isinstance(value, str) else value
+
+
 def to_xlsx(columns: list[str], rows: Iterable[Sequence[object]]) -> bytes:
     wb = Workbook()
     ws = wb.active
-    ws.append(list(columns))
+    ws.append([_xlsx_value(c) for c in columns])
     for row in rows:
-        ws.append(list(row))
+        ws.append([_xlsx_value(v) for v in row])
         for cell in ws[ws.max_row]:
             if _needs_guard(cell.value):
                 cell.data_type = "s"

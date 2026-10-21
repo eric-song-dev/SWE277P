@@ -4,6 +4,7 @@ from datetime import date, datetime
 from pathlib import PurePath
 
 from openpyxl import load_workbook
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 
 from app.errors import HubError
 
@@ -25,7 +26,8 @@ def _cell(v) -> str | None:
         return str(v)
     if isinstance(v, datetime | date):
         return v.isoformat()
-    return str(v).strip() or None
+    # Control characters such as \x0b cannot be written to XLSX; drop them on the way in.
+    return ILLEGAL_CHARACTERS_RE.sub("", str(v)).strip() or None
 
 
 def _shape(rows: list[list]) -> Grid:
