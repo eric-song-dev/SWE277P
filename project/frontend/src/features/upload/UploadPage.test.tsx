@@ -87,9 +87,63 @@ describe("UploadPage", () => {
     expect(screen.getByText("Already imported")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Dataset/ })).toHaveAttribute("href", "/dataset");
     expect(screen.getAllByText("CampusGroups")).toHaveLength(1);
-    expect(screen.getByText("Missing NetID: 2")).toBeInTheDocument();
+    expect(screen.getByText("NetID missing: 2")).toBeInTheDocument();
     expect(screen.getByText("odd_code: 1")).toBeInTheDocument();
     expect(screen.getByLabelText(/Format/)).toBeInTheDocument();
+  });
+
+  it("shows no raw codes for a 12twenty preview", async () => {
+    vi.mocked(apiUpload).mockResolvedValueOnce({
+      files: [
+        {
+          ...pending(8, "Career Panel"),
+          source: "twelvetwenty",
+          source_display: "12twenty",
+          skipped: [
+            { source_row: 4, reason: "not_attended" },
+            { source_row: 9, reason: "not_attended" },
+          ],
+          flag_counts: {
+            missing_netid: 2,
+            missing_email: 1,
+            missing_school: 3,
+            missing_department: 3,
+            missing_affiliation: 1,
+            non_standard_email: 2,
+            missing_degree: 1,
+            not_attended_skipped: 2,
+          },
+        },
+      ],
+    });
+    await drop([csv("a.csv")]);
+    const card = (await screen.findByText("Career Panel.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    expect(within(card).getByText("Non-standard email, NetID not derived: 2")).toBeInTheDocument();
+    expect(within(card).getByText("Degree missing: 1")).toBeInTheDocument();
+    expect(within(card).getByText("Row 4: Not marked as attended")).toBeInTheDocument();
+    expect(card.textContent).not.toMatch(/[a-z]+_[a-z]+/);
+  });
+
+  it("labels the identity flags too", async () => {
+    vi.mocked(apiUpload).mockResolvedValueOnce({
+      files: [
+        {
+          ...pending(9, "Mixer"),
+          skipped: [],
+          flag_counts: {
+            missing_identity: 1,
+            missing_domestic_international: 4,
+            netid_email_conflict: 1,
+            email_owned_by_other: 1,
+            duplicate_in_event: 1,
+          },
+        },
+      ],
+    });
+    await drop([csv("a.csv")]);
+    const card = (await screen.findByText("Mixer.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    expect(within(card).getByText("Email belongs to another person: 1")).toBeInTheDocument();
+    expect(card.textContent).not.toMatch(/[a-z]+_[a-z]+/);
   });
 
   it("shows an alert when the upload request fails", async () => {

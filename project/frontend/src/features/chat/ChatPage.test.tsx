@@ -246,7 +246,7 @@ describe("ChatPage", () => {
       savedTurn({ id: 6, kind: "error", sql: FAILED_SQL, row_count: null, error_code: "query_failed", analysis_text: null }),
     ]);
     const { user } = renderPage("/chat/1");
-    expect(await screen.findByText("This question could not be answered (query_failed).")).toBeInTheDocument();
+    expect(await screen.findByText("The query failed to run.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "SQL" }));
     expect(await screen.findByText(FAILED_SQL)).toBeVisible();
   });
@@ -280,7 +280,7 @@ describe("ChatPage", () => {
       "And by school?",
     ]);
     expect(screen.getByText("Do you mean the 2026-27 academic year?")).toBeInTheDocument();
-    expect(screen.getByText("This question could not be answered (turn_timeout).")).toBeInTheDocument();
+    expect(screen.getByText("This question took too long to answer.")).toBeInTheDocument();
 
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Show results" }));

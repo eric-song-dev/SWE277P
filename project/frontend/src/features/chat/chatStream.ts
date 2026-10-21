@@ -61,3 +61,21 @@ export function stepLabel(step: { name: StepName; attempt?: number }): string {
       return "Analyzing results";
   }
 }
+
+const SAVED_ERRORS: Record<string, string> = {
+  client_disconnected: "This answer was interrupted before it finished.",
+  turn_timeout: "This question took too long to answer.",
+  profile_missing_key: "The AI model has no usable API key. Re-enter it in Settings.",
+  profile_not_found: "The AI model used for this question was deleted.",
+  sql_rejected: "The AI wrote a query the Hub doesn't allow.",
+  query_failed: "The query failed to run.",
+  invalid_llm_reply: "The AI's reply couldn't be understood.",
+  internal_error: "Something went wrong on the server.",
+};
+
+// A saved turn keeps only its error code, not the message the stream sent.
+export function savedErrorText(code: string | null): string {
+  if (code === null) return "This question could not be answered.";
+  if (code.startsWith("llm_")) return "The AI provider returned an error.";
+  return SAVED_ERRORS[code] ?? `This question could not be answered (${code}).`;
+}

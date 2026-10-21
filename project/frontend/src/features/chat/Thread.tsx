@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { apiGet } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
 import AnswerCard from "./AnswerCard";
-import type { LiveTurn } from "./chatStream";
+import { savedErrorText, type LiveTurn } from "./chatStream";
 import SqlAccordion from "./SqlAccordion";
 
 interface Props {
@@ -75,8 +75,7 @@ function TurnItem({
     clarification = turn.clarification;
     sql = turn.sql?.sql;
   } else {
-    // TurnOut keeps only the code, not the message.
-    error = turn.kind === "error" ? `This question could not be answered (${turn.error_code}).` : undefined;
+    error = turn.kind === "error" ? savedErrorText(turn.error_code) : undefined;
     clarification = turn.kind === "clarification" ? turn.clarification_question : undefined;
     sql = turn.sql;
   }

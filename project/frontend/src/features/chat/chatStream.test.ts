@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QueryResultOut, SseEvent } from "../../api/types";
-import { chatStreamReducer, startTurn, stepLabel } from "./chatStream";
+import { chatStreamReducer, savedErrorText, startTurn, stepLabel } from "./chatStream";
 
 const SQL = { sql: "SELECT 1", interpretation: "one", assumptions: ["a"] };
 const RESULT: QueryResultOut = { columns: ["n"], rows: [[38]], row_count: 1, truncated: false };
@@ -112,5 +112,29 @@ describe("stepLabel", () => {
     expect(stepLabel({ name: "running" })).toBe("Running the query");
     expect(stepLabel({ name: "repairing", attempt: 2 })).toBe("Fixing the query (attempt 2)");
     expect(stepLabel({ name: "analyzing" })).toBe("Analyzing results");
+  });
+});
+
+describe("savedErrorText", () => {
+  it("says what happened in plain words for known codes", () => {
+    expect(savedErrorText("client_disconnected")).toBe("This answer was interrupted before it finished.");
+    expect(savedErrorText("turn_timeout")).toBe("This question took too long to answer.");
+    expect(savedErrorText("profile_missing_key")).toBe("The AI model has no usable API key. Re-enter it in Settings.");
+    expect(savedErrorText("profile_not_found")).toBe("The AI model used for this question was deleted.");
+    expect(savedErrorText("sql_rejected")).toBe("The AI wrote a query the Hub doesn't allow.");
+    expect(savedErrorText("query_failed")).toBe("The query failed to run.");
+    expect(savedErrorText("invalid_llm_reply")).toBe("The AI's reply couldn't be understood.");
+    expect(savedErrorText("internal_error")).toBe("Something went wrong on the server.");
+  });
+
+  it("covers every llm_* code", () => {
+    for (const code of ["llm_auth_failed", "llm_rate_limited", "llm_unavailable", "llm_model_not_found", "llm_bad_request"]) {
+      expect(savedErrorText(code)).toBe("The AI provider returned an error.");
+    }
+  });
+
+  it("keeps an unknown code in parentheses", () => {
+    expect(savedErrorText("brand_new_code")).toBe("This question could not be answered (brand_new_code).");
+    expect(savedErrorText(null)).toBe("This question could not be answered.");
   });
 });

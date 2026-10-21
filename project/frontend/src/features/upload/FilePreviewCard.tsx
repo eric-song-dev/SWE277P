@@ -13,11 +13,25 @@ import CommitSummaryView from "./CommitSummaryView";
 import EventDetailsForm from "./EventDetailsForm";
 import { useDiscardImport } from "./useImports";
 
+// Every flag code in spec section 6, worded like the dataset's attendance source notes.
 const FLAG_LABELS: Record<string, string> = {
-  missing_netid: "Missing NetID",
-  missing_email: "Missing email",
-  invalid_netid: "Invalid NetID",
-  invalid_email: "Invalid email",
+  missing_identity: "Email/NetID unavailable",
+  missing_netid: "NetID missing",
+  missing_email: "Email missing",
+  missing_school: "School missing",
+  missing_department: "Department missing",
+  missing_affiliation: "Affiliation missing",
+  missing_domestic_international: "Domestic/international missing",
+  missing_degree: "Degree missing",
+  non_standard_email: "Non-standard email, NetID not derived",
+  netid_email_conflict: "NetID/email conflict",
+  email_owned_by_other: "Email belongs to another person",
+  duplicate_in_event: "Duplicate in this event",
+  not_attended_skipped: "Skipped, not attended",
+};
+
+const SKIP_REASONS: Record<string, string> = {
+  not_attended: "Not marked as attended",
 };
 
 const STATUS_CHIPS = {
@@ -89,7 +103,7 @@ export default function FilePreviewCard({ preview, onRemove }: Props) {
                     <ul>
                       {preview.skipped.map((row) => (
                         <li key={row.source_row}>
-                          Row {row.source_row}: {row.reason}
+                          Row {row.source_row}: {SKIP_REASONS[row.reason] ?? row.reason}
                         </li>
                       ))}
                     </ul>
