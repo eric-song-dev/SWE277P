@@ -8,7 +8,8 @@ const MAX_LENGTH = 2000;
 
 interface Props {
   disabled: boolean;
-  onSend: (question: string) => void;
+  // Returns false when the question was not accepted, which keeps the text in the box.
+  onSend: (question: string) => boolean;
 }
 
 export default function Composer({ disabled, onSend }: Props) {
@@ -19,8 +20,7 @@ export default function Composer({ disabled, onSend }: Props) {
 
   function submit() {
     if (!canSend) return;
-    onSend(question);
-    setText("");
+    if (onSend(question)) setText("");
   }
 
   return (

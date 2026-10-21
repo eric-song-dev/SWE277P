@@ -84,8 +84,8 @@ export default function ChatPage() {
   const notFound =
     !validParam || (conversation.error instanceof ApiError && conversation.error.code === "conversation_not_found");
 
-  function ask(question: string) {
-    if (profile) send(question, profile.id, shareResults);
+  function ask(question: string): boolean {
+    return profile ? send(question, profile.id, shareResults) : false;
   }
 
   function retryLive() {
@@ -124,7 +124,7 @@ export default function ChatPage() {
   } else {
     main = (
       <>
-        {conversationId === null && live === null && (
+        {conversationId === null && live === null && profile && (
           <Typography color="text.secondary">Ask a question about the attendance data to start.</Typography>
         )}
         {/* Turn cards are keyed by seq, which restarts in every conversation, so each one gets
@@ -136,7 +136,7 @@ export default function ChatPage() {
           resultsByTurnId={resultsByTurnId}
           busy={streaming}
           onRetryLive={retryLive}
-          onResend={ask}
+          onResend={(question) => void ask(question)}
         />
         {profile && (
           <Stack

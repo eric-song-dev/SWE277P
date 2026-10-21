@@ -109,6 +109,7 @@ function TurnItem({
         turn={turn}
         result={result ?? rerun.data}
         rerun={result === undefined && rerun.isSuccess}
+        showResultsPending={rerun.isPending}
         onShowResults={() => {
           if (!rerun.isPending) rerun.mutate(turn.id);
         }}

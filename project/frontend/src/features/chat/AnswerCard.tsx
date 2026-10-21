@@ -18,6 +18,7 @@ interface Props {
   turn: TurnOut | LiveTurn;
   result?: QueryResultOut;
   onShowResults?: () => void;
+  showResultsPending?: boolean;
   rerun?: boolean;
   // Why "Show results" failed, from the caller's re-run request.
   resultsError?: string;
@@ -56,7 +57,7 @@ function rowsLabel(n: number) {
   return n === 1 ? "1 row" : `${n} rows`;
 }
 
-export default function AnswerCard({ turn, result, onShowResults, rerun, resultsError }: Props) {
+export default function AnswerCard({ turn, result, onShowResults, showResultsPending, rerun, resultsError }: Props) {
   const v = view(turn);
   const rowCount = result?.row_count ?? v.rowCount;
   const reading = [v.interpretation, ...v.assumptions].filter((line): line is string => !!line);
@@ -94,8 +95,8 @@ export default function AnswerCard({ turn, result, onShowResults, rerun, results
           )}
           {!result && !isLive(turn) && onShowResults && (
             <Box>
-              <Button variant="outlined" size="small" onClick={onShowResults}>
-                Show results
+              <Button variant="outlined" size="small" disabled={showResultsPending} onClick={onShowResults}>
+                {showResultsPending ? "Loading results…" : "Show results"}
               </Button>
             </Box>
           )}

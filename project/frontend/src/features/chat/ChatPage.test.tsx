@@ -165,6 +165,24 @@ describe("ChatPage", () => {
     expect(screen.getByRole("textbox")).toBeEnabled();
   });
 
+  it("keeps a question typed between done and the end of the body", async () => {
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    await ask(user, "How many came?");
+    await s.emit({ event: "done", data: { turn_id: null } });
+    const box = screen.getByRole("textbox");
+    expect(box).toBeEnabled(); // the turn is done, but the body has not ended
+    await user.type(box, "And last month?{Enter}");
+    expect(streamSse).toHaveBeenCalledTimes(1);
+    expect(box).toHaveValue("And last month?");
+    await s.finish();
+    const second = pendingStream();
+    await user.keyboard("{Enter}");
+    expect(bodies()[1]).toMatchObject({ question: "And last month?" });
+    expect(box).toHaveValue("");
+    await second.finish();
+  });
+
   it("aborts the stream when switching conversations", async () => {
     const s = pendingStream();
     const { router, user } = renderPage("/chat/1");
@@ -308,6 +326,20 @@ describe("ChatPage", () => {
     expect(screen.queryByRole("grid")).not.toBeInTheDocument();
     expect(screen.queryByText("Re-run on current data")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show results" })).toBeInTheDocument();
+  });
+
+  it("disables Show results with a pending label while the re-run is in flight", async () => {
+    details[1] = detail(1, [savedTurn({ id: 4, seq: 1 })]);
+    let resolve: (v: QueryResultOut) => void = () => {};
+    vi.mocked(apiGet).mockImplementation(async (path) =>
+      path === "/api/chat/turns/4/rerun" ? new Promise<QueryResultOut>((r) => (resolve = r)) : routeGet(path),
+    );
+    const { user } = renderPage("/chat/1");
+    await user.click(await screen.findByRole("button", { name: "Show results" }));
+    expect(screen.getByRole("button", { name: "Loading results…" })).toBeDisabled();
+    await act(async () => resolve(RESULT));
+    expect(await screen.findByRole("grid")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Loading results…" })).not.toBeInTheDocument();
   });
 
   it("shows the error when a re-run fails", async () => {
@@ -511,5 +543,7 @@ describe("ChatPage", () => {
     expect(await screen.findByText(/Add an AI model in Settings to start/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Go to Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    // One hint, not two competing ones.
+    expect(screen.queryByText(/Ask a question about the attendance data to start/)).not.toBeInTheDocument();
   });
 });

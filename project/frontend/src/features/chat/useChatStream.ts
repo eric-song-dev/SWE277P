@@ -20,6 +20,8 @@ function toTurnError(err: unknown): { code: string; message: string } {
     }
     return { code: err.code, message: err.message };
   }
+  // Not an error the server sent: a bug in this client. Keep the evidence for the console.
+  console.error("Chat stream failed with an unexpected error", err);
   return { code: "unknown_error", message: "Something went wrong. Retry." };
 }
 
@@ -117,9 +119,11 @@ export function useChatStream(
   );
 
   const send = useCallback(
-    (question: string, llmProfileId: number | null, shareResults: boolean) => {
-      if (streamingRef.current) return;
+    // false when the question was not taken (a stream is still open), so the caller keeps it.
+    (question: string, llmProfileId: number | null, shareResults: boolean): boolean => {
+      if (streamingRef.current) return false;
       void run({ question, llmProfileId, shareResults });
+      return true;
     },
     [run],
   );

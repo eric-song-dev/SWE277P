@@ -130,6 +130,53 @@ describe("useChatStream", () => {
     });
   });
 
+  it("logs an error that is not an ApiError before showing the generic message", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const s = pendingStream();
+    const { result } = setup(7);
+    const bug = new TypeError("x is undefined");
+    act(() => result.current.send("q", null, true));
+    await s.finish(bug);
+    expect(log).toHaveBeenCalledWith(expect.any(String), bug);
+    expect(result.current.live?.error).toEqual({
+      code: "unknown_error",
+      message: "Something went wrong. Retry.",
+    });
+    log.mockRestore();
+  });
+
+  it("does not log an ApiError", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const s = pendingStream();
+    const { result } = setup(7);
+    act(() => result.current.send("q", null, true));
+    await s.finish(new ApiError(404, "conversation_not_found", "No such conversation."));
+    expect(log).not.toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it("reports whether a question was accepted", async () => {
+    const s = pendingStream();
+    const { result } = setup(7);
+    let first = false;
+    let second = true;
+    act(() => {
+      first = result.current.send("one", null, true);
+      second = result.current.send("two", null, true);
+    });
+    expect(first).toBe(true);
+    expect(second).toBe(false);
+    // Between done and the end of the body the stream is still open: a question is refused, not lost.
+    await s.emit({ event: "done", data: { turn_id: 1 } });
+    let third = true;
+    act(() => {
+      third = result.current.send("three", null, true);
+    });
+    expect(third).toBe(false);
+    expect(streamSse).toHaveBeenCalledTimes(1);
+    await s.finish();
+  });
+
   it("ignores send and retry while streaming", async () => {
     const s = pendingStream();
     const { result } = setup(7);
