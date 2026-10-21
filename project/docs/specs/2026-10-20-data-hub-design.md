@@ -124,9 +124,12 @@ Details settled in S4:
 - A chat export whose `X-Hub-Truncated` header is `true` shows "This file stops at {cap} rows."
 - When the server is down, errors read "Could not reach the server." (`network_error`) or "The Hub server isn't responding…" (`server_unavailable`, any non-JSON 5xx), and the chat treats both as a lost connection. A render error or a page chunk that fails to load shows a plain error page with Reload.
 - localStorage holds only the last selected profile id (`hub.chat.profileId`).
+- The Playwright e2e runs on its own Compose project (`hub-e2e`, port 8081) with only the scripted "Demo" profile; it blanks every `LLM_SEED_*` and refuses to run if any other profile exists, so no real key is ever used.
+
+Details settled in S5:
+
 - Pending imports (S5): the Upload page opens with a card for every import the server still holds as `pending` (from `GET /api/imports`, each card built from `GET /api/imports/{id}/preview`), and the Dataset page's "Pending" status links to it. The cards, commit summaries and typed form edits live in memory in a provider owned by the app shell, so they survive navigating between pages; after a full reload the form starts from the prefilled draft. Two copies of one export in one batch give one card.
 - A question the chat refuses because the previous stream's body is still open (between `done` and its end) stays in the question box instead of being cleared. `/chat` with no AI profile shows a single hint linking to Settings.
-- The Playwright e2e runs on its own Compose project (`hub-e2e`, port 8081) with only the scripted "Demo" profile; it blanks every `LLM_SEED_*` and refuses to run if any other profile exists, so no real key is ever used.
 
 **Visual design (decided 2026-10-21, built in S6):** `docs/design/2026-10-21-ui-redesign.md` is the binding visual and copy spec. It uses the official UCI palette, Source Sans 3 (self-hosted), and a navy side nav that can collapse. The question box holds the share switch, and below it is the line "AI can make mistakes. Double-check important answers." Behavior stays as above.
 
@@ -177,7 +180,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
    - Return a preview: the source, the row count, the rows skipped (with reasons), the flags found, and prefilled event details.
 2. Staff confirm the event details in the form.
 3. `POST /api/imports/{id}/commit`. In **one transaction**: create the event, re-parse the stored bytes, link identities, insert the attendance rows and flags, and mark the file `committed`. Return a summary: linked by NetID, linked by email, new people, unlinked, flagged, skipped.
-3a. `GET /api/imports/{id}/preview` returns the same preview `POST /api/imports` returns for a pending file, rebuilt from the stored bytes, so the Upload page can show a pending import again after the staff member left the page or reloaded. An unknown id is 404 `import_not_found`; a committed import is 409 `import_not_pending`. (Decided in S5.)
+   - `GET /api/imports/{id}/preview` returns the same preview `POST /api/imports` returns for a pending file, rebuilt from the stored bytes, so the Upload page can show a pending import again after the staff member left the page or reloaded. An unknown id is 404 `import_not_found`; a committed import is 409 `import_not_pending`. (Decided in S5.)
 4. `DELETE /api/imports/{id}` discards a pending import. Committed imports cannot be deleted in the MVP (backlog).
 
 **Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module.
@@ -435,7 +438,7 @@ Every route depends on `get_current_user` except `GET /api/health`, which touche
 | Area | Routes |
 |---|---|
 | Me | `GET /api/me` |
-| Imports | `POST /api/imports`, `GET /api/imports`, `GET /api/imports/{id}`, `GET /api/imports/{id}/preview`, `POST /api/imports/{id}/commit`, `DELETE /api/imports/{id}` |
+| Imports | `POST /api/imports`, `GET /api/imports`, `GET /api/imports/{id}`, `GET /api/imports/{id}/preview` (Decided in S5.), `POST /api/imports/{id}/commit`, `DELETE /api/imports/{id}` |
 | Events | `GET /api/events` |
 | Dataset | `GET /api/dataset/export` |
 | Chat | Section 7.6 |
