@@ -2,11 +2,13 @@ from sqlalchemy import create_engine, text
 
 from alembic import context
 from app.auth import models as _auth  # noqa: F401
+from app.chat import models as _chat  # noqa: F401
 from app.config import get_settings
 from app.dataset import models as _dataset  # noqa: F401
 from app.db import SCHEMA, Base
 from app.events import models as _events  # noqa: F401
 from app.imports import models as _imports  # noqa: F401
+from app.llm import models as _llm  # noqa: F401
 from app.quality import models as _quality  # noqa: F401
 
 config = context.config

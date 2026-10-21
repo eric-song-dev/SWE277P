@@ -1,8 +1,9 @@
 import pytest
 from sqlalchemy import select, text
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from app.auth.models import AppUser
+from app.llm.models import LlmProfile
 
 VIEW_COLUMNS = [
     "person_key", "event_name", "event_date", "term", "academic_year", "modality",
@@ -87,3 +88,27 @@ def test_chatbot_ro_has_no_sequence_privileges(db_session):
         )
     ).all()
     assert rows == []
+
+
+@pytest.mark.parametrize("table", ["hub.llm_profile", "hub.conversation", "hub.chat_turn"])
+def test_chatbot_ro_cannot_read_new_tables(chatbot_engine, table):
+    with chatbot_engine.connect() as c, pytest.raises(DBAPIError):
+        c.execute(text(f"SELECT * FROM {table}"))
+
+
+def test_only_one_default_profile(db_session):
+    def profile(name: str) -> LlmProfile:
+        return LlmProfile(
+            name=name,
+            preset="custom",
+            base_url="http://localhost",
+            model="m",
+            share_results_with_llm=False,
+            is_default=True,
+        )
+
+    db_session.add(profile("a"))
+    db_session.flush()
+    db_session.add(profile("b"))
+    with pytest.raises(IntegrityError):
+        db_session.flush()

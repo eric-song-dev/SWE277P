@@ -14,7 +14,7 @@ TEST_DB = "hub_test"
 HUB_TABLES = ", ".join(
     f"hub.{t}"
     for t in (
-        "data_quality_flag", "attendance", "person_identifier", "person", "import_file",
+        "chat_turn", "conversation", "llm_profile", "data_quality_flag", "attendance", "person_identifier", "person", "import_file",
         "event", "app_user",
     )
 )  # fmt: skip

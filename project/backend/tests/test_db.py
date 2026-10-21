@@ -1,9 +1,11 @@
 from sqlalchemy import DateTime, select
 
 import app.auth.models
+import app.chat.models
 import app.dataset.models
 import app.events.models
 import app.imports.models
+import app.llm.models
 import app.quality.models  # noqa: F401 -- import so every table is registered on Base.metadata
 from app.db import Base
 from app.imports.models import ImportFile
