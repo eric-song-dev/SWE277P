@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.auth.router import router as auth_router
+from app.chat.router import router as chat_router
 from app.config import get_settings
 from app.dataset.router import router as dataset_router
 from app.db import SessionLocal, get_app_engine
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.include_router(events_router)
     app.include_router(dataset_router)
     app.include_router(llm_router)
+    app.include_router(chat_router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

@@ -12,7 +12,7 @@ class Conversation(Base):
     __tablename__ = "conversation"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    title: Mapped[str] = mapped_column(Text)
+    title: Mapped[str | None] = mapped_column(Text)  # NULL until the first question
     created_by: Mapped[int] = mapped_column(BigInteger, ForeignKey("hub.app_user.id"))
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(server_default=func.now())
