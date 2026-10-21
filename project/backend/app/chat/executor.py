@@ -11,6 +11,7 @@ from decimal import Decimal
 
 from pydantic import JsonValue
 from sqlalchemy import Engine, text
+from sqlalchemy.exc import DBAPIError
 
 from app.config import get_settings
 from app.db import get_chatbot_engine
@@ -37,14 +38,27 @@ def to_json_value(v: object) -> JsonValue:
 def run_readonly(sql: str, *, max_rows: int, engine: Engine | None = None) -> QueryResult:
     engine = engine or get_chatbot_engine()
     timeout_ms = int(get_settings().statement_timeout_ms)  # an int from settings, never user input
-    with engine.connect() as conn, conn.begin():
+    # Never committed: the transaction is read-only, and closing the connection rolls it back,
+    # which also reverts any SET / set_config done by the query.
+    with engine.connect() as conn:
         conn.execute(text("SET TRANSACTION READ ONLY"))
         conn.execute(text(f"SET LOCAL statement_timeout = {timeout_ms}"))
-        # Verbatim: no_parameters makes the driver call cursor.execute(sql) without a
-        # parameter argument, so psycopg does no %-processing and SQLAlchemy no :name parsing.
-        result = conn.execution_options(no_parameters=True).exec_driver_sql(sql)
-        columns = list(result.keys())
-        fetched = result.fetchmany(max_rows + 1)
+        # Straight to the psycopg cursor: params=None means psycopg does no placeholder
+        # processing (no :name, no %), and prepare=True forces the extended protocol, where
+        # PostgreSQL refuses a string holding more than one statement.
+        cursor = conn.connection.cursor()
+        try:
+            try:
+                cursor.execute(sql, prepare=True)
+            except conn.dialect.dbapi.Error as exc:
+                # same exception type the rest of the app sees (DBAPIError with .orig)
+                raise DBAPIError.instance(
+                    sql, None, exc, conn.dialect.dbapi.Error, dialect=conn.dialect
+                ) from exc
+            columns = [c.name for c in cursor.description or []]
+            fetched = cursor.fetchmany(max_rows + 1) if cursor.description else []
+        finally:
+            cursor.close()
     truncated = len(fetched) > max_rows
     rows = [[to_json_value(v) for v in row] for row in fetched[:max_rows]]
     return QueryResult(columns=columns, rows=rows, row_count=len(rows), truncated=truncated)

@@ -8,6 +8,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
 from alembic import command
+from app.db import make_chatbot_engine
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 TEST_DB = "hub_test"
@@ -61,6 +62,6 @@ def db_session(_app_engine):
 
 @pytest.fixture
 def chatbot_engine(test_database):
-    engine = create_engine(os.environ["CHATBOT_DATABASE_URL"])
+    engine = make_chatbot_engine(os.environ["CHATBOT_DATABASE_URL"])
     yield engine
     engine.dispose()
