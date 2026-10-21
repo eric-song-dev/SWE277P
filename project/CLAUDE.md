@@ -161,6 +161,7 @@ npm install
 npm run dev                              # :5173, proxies /api to :8000
 npm test -- --run                        # Vitest
 npm run build                            # type-check + production build
+npm run lint                             # oxlint
 ```
 
 The chatbot benchmark command will be added in S3.
