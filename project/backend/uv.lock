@@ -204,6 +204,7 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "python-multipart" },
     { name = "sqlalchemy" },
+    { name = "sqlglot" },
     { name = "uvicorn", extra = ["standard"] },
 ]
 
@@ -228,6 +229,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.16.1" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "sqlalchemy", specifier = ">=2.1.5" },
+    { name = "sqlglot", specifier = ">=30.24.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
 
@@ -980,6 +982,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ea/1b/3f59712d0a7e08bf3a075df43b0a3d89de051728d829d6836f546c533012/sqlalchemy-2.1.5-cp312-cp312-win_amd64.whl", hash = "sha256:ee7267d7ffed80c370dfdd7ad1c741d0227f0e8054b83d00715fb99307bd330c", size = 2434617, upload-time = "2026-10-16T22:33:42.917Z" },
     { url = "https://files.pythonhosted.org/packages/57/f6/31e94eb5403ca04d393805fe6df5470f48aabdbfb05437e93c2a7f8e3ebd/sqlalchemy-2.1.5-cp312-cp312-win_arm64.whl", hash = "sha256:b3732a60b01560c9efee3b9ea188dc12614b2642ffce4f8235c4fbf72dd40fe8", size = 2394015, upload-time = "2026-10-16T22:27:33.803Z" },
     { url = "https://files.pythonhosted.org/packages/de/e9/61176e4753f74ab5f6e72a56314ee654d25c31e6fc98c99060442998cccb/sqlalchemy-2.1.5-py3-none-any.whl", hash = "sha256:2f77b77b716f005b2dc3cc059d56df6a919bfb5b439e4149890a9df6c36be9e3", size = 2060214, upload-time = "2026-10-16T22:43:30.801Z" },
+]
+
+[[package]]
+name = "sqlglot"
+version = "30.24.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/7c/9fd907983ff041692399bf855d344e1fcc9a02c8d92a5fee6dbdf139d19e/sqlglot-30.24.0.tar.gz", hash = "sha256:6451aabd1c9994d0f73355c962a5eaf9258381b3f2554e53db916cd9a605552a", size = 6131857, upload-time = "2026-10-20T17:14:03.987Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/68/5f/d78f74306cc026c5f40f8808a47356dfd37461eb15eb759a20e5e9efe7d7/sqlglot-30.24.0-py3-none-any.whl", hash = "sha256:9488828cc018453b7a3ba01e65d2749c9a731314c14583695163ca1f358203fe", size = 792162, upload-time = "2026-10-20T17:14:02.053Z" },
 ]
 
 [[package]]
