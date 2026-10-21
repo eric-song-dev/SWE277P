@@ -24,18 +24,7 @@ export default function PageHeader({ title, actions }: { title: string; actions?
       <Typography variant="h1" sx={{ m: 0 }}>
         {title}
       </Typography>
-      {actions && (
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 1.5,
-          }}
-        >
-          {actions}
-        </Box>
-      )}
+      {actions && <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>{actions}</Box>}
     </Box>
   );
 }

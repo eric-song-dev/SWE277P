@@ -12,30 +12,13 @@ import type { ImportFileOut } from "../../api/types";
 import PageHeader from "../../app/PageHeader";
 import { useImportHistory } from "../upload/useImports";
 
-const PLATFORMS: Record<string, string> = {
-  campusgroups: "CampusGroups",
-  twelvetwenty: "12twenty",
-};
-const STATUSES: Record<string, string> = {
-  committed: "Committed",
-  pending: "Pending",
-};
+const PLATFORMS: Record<string, string> = { campusgroups: "CampusGroups", twelvetwenty: "12twenty" };
+const STATUSES: Record<string, string> = { committed: "Committed", pending: "Pending" };
 
 const columns: GridColDef<ImportFileOut>[] = [
   { field: "file_name", headerName: "File", flex: 1.5, minWidth: 160 },
-  {
-    field: "event",
-    headerName: "Event",
-    flex: 1.5,
-    minWidth: 160,
-    valueGetter: (_, row) => row.event?.name ?? "",
-  },
-  {
-    field: "term",
-    headerName: "Term",
-    width: 120,
-    valueGetter: (_, row) => row.event?.term ?? "",
-  },
+  { field: "event", headerName: "Event", flex: 1.5, minWidth: 160, valueGetter: (_, row) => row.event?.name ?? "" },
+  { field: "term", headerName: "Term", width: 120, valueGetter: (_, row) => row.event?.term ?? "" },
   {
     field: "source",
     headerName: "Platform",
@@ -44,13 +27,7 @@ const columns: GridColDef<ImportFileOut>[] = [
   },
   { field: "row_count", headerName: "Rows", type: "number", width: 90 },
   { field: "flag_count", headerName: "Flags", type: "number", width: 90 },
-  {
-    field: "uploaded_by",
-    headerName: "Uploaded by",
-    flex: 1,
-    minWidth: 140,
-    valueGetter: (_, row) => row.uploaded_by.display_name,
-  },
+  { field: "uploaded_by", headerName: "Uploaded by", flex: 1, minWidth: 140, valueGetter: (_, row) => row.uploaded_by.display_name },
   {
     field: "uploaded_at",
     headerName: "Uploaded at",
@@ -127,9 +104,7 @@ export default function DatasetPage() {
               columns={columns}
               density="compact"
               pageSizeOptions={[100]}
-              initialState={{
-                pagination: { paginationModel: { pageSize: 100 } },
-              }}
+              initialState={{ pagination: { paginationModel: { pageSize: 100 } } }}
               disableRowSelectionOnClick
             />
           </Box>

@@ -46,11 +46,7 @@ function pickProfile(profiles: LlmProfileOut[], id: number | null): LlmProfileOu
 // the profile changes; the /chat draft becoming the conversation its first send created is no change.
 function useShareChoice(conversationId: number | null, profileId: number | null) {
   const [choice, setChoice] = useState<boolean | null>(null);
-  const [scope, setScope] = useState({
-    conversationId,
-    profileId,
-    createdId: null as number | null,
-  });
+  const [scope, setScope] = useState({ conversationId, profileId, createdId: null as number | null });
   if (scope.conversationId !== conversationId || scope.profileId !== profileId) {
     const adopted =
       scope.conversationId === null && conversationId === scope.createdId && scope.profileId === profileId;
@@ -147,13 +143,7 @@ export default function ChatPage() {
           <Stack
             direction="row"
             spacing={2}
-            sx={{
-              position: "sticky",
-              bottom: 0,
-              py: 2,
-              bgcolor: "background.default",
-              alignItems: "flex-start",
-            }}
+            sx={{ position: "sticky", bottom: 0, py: 2, bgcolor: "background.default", alignItems: "flex-start" }}
           >
             <Composer disabled={streaming} onSend={ask} />
             <ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />
@@ -173,15 +163,7 @@ export default function ChatPage() {
           ) : undefined
         }
       />
-      <Box
-        sx={{
-          display: "flex",
-          gap: 3,
-          alignItems: "flex-start",
-          px: "40px",
-          py: "28px",
-        }}
-      >
+      <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", px: "40px", py: "28px" }}>
         <ConversationList />
         <Stack spacing={2} sx={{ flexGrow: 1, minWidth: 0 }}>
           {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}

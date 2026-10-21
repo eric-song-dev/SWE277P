@@ -18,26 +18,16 @@ import { tokens } from "./theme";
 const NAV = [
   { to: "/chat", label: "Chat", icon: <ChatIcon fontSize="small" /> },
   { to: "/upload", label: "Upload", icon: <UploadFileIcon fontSize="small" /> },
-  {
-    to: "/dataset",
-    label: "Dataset",
-    icon: <TableChartIcon fontSize="small" />,
-  },
-  {
-    to: "/settings",
-    label: "Settings",
-    icon: <SettingsIcon fontSize="small" />,
-  },
+  { to: "/dataset", label: "Dataset", icon: <TableChartIcon fontSize="small" /> },
+  { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" /> },
 ];
 
 const whiteRing = { outline: "2px solid #FFFFFF", outlineOffset: "2px" };
+// The links span the nav's full width and the nav clips overflow, so their ring sits inside the link.
+const whiteRingInset = { outline: "2px solid #FFFFFF", outlineOffset: "-2px" };
 
 export default function AppShell() {
-  const me = useQuery({
-    queryKey: ["me"],
-    queryFn: () => apiGet<MeOut>("/api/me"),
-    retry: false,
-  });
+  const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeOut>("/api/me"), retry: false });
   const [collapsed, setCollapsed] = useState(false);
   const toggleLabel = collapsed ? "Expand navigation" : "Collapse navigation";
 
@@ -60,12 +50,13 @@ export default function AppShell() {
           pb: "20px",
           overflow: "hidden",
           transition: "flex-basis 150ms ease, width 150ms ease",
-          "& a:focus-visible, & button:focus-visible, & .Mui-focusVisible": whiteRing,
+          "& button.MuiButtonBase-root:focus-visible, & button.MuiButtonBase-root.Mui-focusVisible": whiteRing,
+          "& a.MuiButtonBase-root:focus-visible, & a.MuiButtonBase-root.Mui-focusVisible": whiteRingInset,
         }}
       >
         <Box
           sx={{
-            minHeight: 88,
+            height: 88,
             boxSizing: "border-box",
             p: collapsed ? "16px 0" : "16px 12px 16px 24px",
             display: "flex",
@@ -76,24 +67,10 @@ export default function AppShell() {
         >
           {!collapsed && (
             <Box sx={{ minWidth: 0 }}>
-              <Typography
-                sx={{
-                  fontSize: 19,
-                  fontWeight: 700,
-                  lineHeight: 1.25,
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <Typography sx={{ fontSize: 19, fontWeight: 700, lineHeight: 1.25, whiteSpace: "nowrap" }}>
                 GPSRC Data Hub
               </Typography>
-              <Typography
-                sx={{
-                  fontSize: 13,
-                  color: tokens.navMuted,
-                  lineHeight: 1.35,
-                  mt: "4px",
-                }}
-              >
+              <Typography sx={{ fontSize: 13, color: tokens.navMuted, lineHeight: 1.35, mt: "4px" }}>
                 Graduate &amp; Postdoctoral Scholar Resource Center
               </Typography>
             </Box>
@@ -110,10 +87,7 @@ export default function AppShell() {
               borderRadius: "8px",
               color: tokens.navMuted,
               transition: "background-color 120ms ease, color 120ms ease",
-              "&:hover, &:focus-visible": {
-                bgcolor: "rgba(255,255,255,0.12)",
-                color: "#FFFFFF",
-              },
+              "&:hover, &:focus-visible": { bgcolor: "rgba(255,255,255,0.12)", color: "#FFFFFF" },
             }}
           >
             {collapsed ? (
@@ -157,15 +131,7 @@ export default function AppShell() {
           ))}
         </Box>
         {!collapsed && (
-          <Typography
-            sx={{
-              mt: "auto",
-              pt: "20px",
-              px: "24px",
-              fontSize: 14,
-              color: tokens.navMuted,
-            }}
-          >
+          <Typography sx={{ mt: "auto", pt: "20px", px: "24px", fontSize: 14, color: tokens.navMuted }}>
             {me.isError ? "Not connected" : me.data ? `Signed in as ${me.data.display_name}` : ""}
           </Typography>
         )}

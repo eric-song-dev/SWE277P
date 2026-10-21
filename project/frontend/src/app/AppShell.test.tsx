@@ -9,18 +9,13 @@ import AppShell from "./AppShell";
 vi.mock("../api/client");
 
 function renderShell(path = "/") {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const router = createMemoryRouter(
     [
       {
         path: "/",
         element: <AppShell />,
-        children: ["chat", "upload", "dataset", "settings"].map((p) => ({
-          path: p,
-          element: <div>{p}</div>,
-        })),
+        children: ["chat", "upload", "dataset", "settings"].map((p) => ({ path: p, element: <div>{p}</div> })),
       },
     ],
     { initialEntries: [path] },
@@ -54,12 +49,7 @@ describe("AppShell", () => {
   });
 
   it("collapses to an icon rail and expands again", async () => {
-    vi.mocked(apiGet).mockResolvedValue({
-      id: 1,
-      username: "ada",
-      display_name: "Ada Lovelace",
-      auth_mode: "none",
-    });
+    vi.mocked(apiGet).mockResolvedValue({ id: 1, username: "ada", display_name: "Ada Lovelace", auth_mode: "none" });
     const user = userEvent.setup();
     renderShell();
     await screen.findByText("Signed in as Ada Lovelace");
