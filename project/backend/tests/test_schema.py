@@ -5,6 +5,9 @@ from sqlalchemy.exc import DBAPIError, IntegrityError
 from app.auth.models import AppUser
 from app.llm.models import LlmProfile
 
+INSUFFICIENT_PRIVILEGE = "42501"
+READ_ONLY_TRANSACTION = "25006"  # default_transaction_read_only is checked before privileges
+
 VIEW_COLUMNS = [
     "person_key", "event_name", "event_date", "term", "academic_year", "modality",
     "sponsors_hosts", "event_type", "platform", "first_name", "last_name", "email", "netid",
@@ -36,17 +39,18 @@ def test_chatbot_ro_can_select_view(chatbot_engine):
 
 
 @pytest.mark.parametrize(
-    "sql",
+    "sql,sqlstate",
     [
-        "SELECT * FROM hub.attendance",
-        "SELECT * FROM hub.app_user",
-        "SELECT * FROM hub.import_file",
-        "INSERT INTO hub.event(name, term) VALUES ('x','Fall 2026')",
+        ("SELECT * FROM hub.attendance", INSUFFICIENT_PRIVILEGE),
+        ("SELECT * FROM hub.app_user", INSUFFICIENT_PRIVILEGE),
+        ("SELECT * FROM hub.import_file", INSUFFICIENT_PRIVILEGE),
+        ("INSERT INTO hub.event(name, term) VALUES ('x','Fall 2026')", READ_ONLY_TRANSACTION),
     ],
 )
-def test_chatbot_ro_cannot_touch_tables(chatbot_engine, sql):
-    with chatbot_engine.connect() as c, pytest.raises(DBAPIError):
+def test_chatbot_ro_cannot_touch_tables(chatbot_engine, sql, sqlstate):
+    with chatbot_engine.connect() as c, pytest.raises(DBAPIError) as e:
         c.execute(text(sql))
+    assert e.value.orig.sqlstate == sqlstate
 
 
 CHATBOT_GRANTS = text(
@@ -92,8 +96,9 @@ def test_chatbot_ro_has_no_sequence_privileges(db_session):
 
 @pytest.mark.parametrize("table", ["hub.llm_profile", "hub.conversation", "hub.chat_turn"])
 def test_chatbot_ro_cannot_read_new_tables(chatbot_engine, table):
-    with chatbot_engine.connect() as c, pytest.raises(DBAPIError):
+    with chatbot_engine.connect() as c, pytest.raises(DBAPIError) as e:
         c.execute(text(f"SELECT * FROM {table}"))
+    assert e.value.orig.sqlstate == INSUFFICIENT_PRIVILEGE
 
 
 def test_only_one_default_profile(db_session):
