@@ -130,15 +130,17 @@ export default function ChatPage() {
         )}
         {/* Turn cards are keyed by seq, which restarts in every conversation, so each one gets
             fresh cards. The draft's remount on its first send comes before any stream event. */}
-        <Thread
-          key={conversationId ?? "draft"}
-          turns={conversation.data?.turns ?? []}
-          live={live}
-          resultsByTurnId={resultsByTurnId}
-          busy={streaming}
-          onRetryLive={retryLive}
-          onResend={(question) => void ask(question)}
-        />
+        <Box sx={{ flex: 1 }}>
+          <Thread
+            key={conversationId ?? "draft"}
+            turns={conversation.data?.turns ?? []}
+            live={live}
+            resultsByTurnId={resultsByTurnId}
+            busy={streaming}
+            onRetryLive={retryLive}
+            onResend={(question) => void ask(question)}
+          />
+        </Box>
         {profile && (
           <Stack
             direction="row"
@@ -171,13 +173,23 @@ export default function ChatPage() {
           ) : undefined
         }
       />
-      <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+      <Box sx={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 88px)" }}>
         <ConversationList />
         <Stack
           component="section"
           aria-label="Conversation"
-          spacing={2}
-          sx={{ flex: 1, minWidth: 0, maxWidth: 880 + 80, mx: "auto", boxSizing: "border-box", px: "40px", pt: "28px" }}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            flex: 1,
+            minWidth: 0,
+            maxWidth: 880 + 80,
+            mx: "auto",
+            boxSizing: "border-box",
+            px: "40px",
+            pt: "28px",
+          }}
         >
           {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
           {profiles.data?.length === 0 && (

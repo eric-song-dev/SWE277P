@@ -15,21 +15,20 @@ export default function ConversationList() {
   const navigate = useNavigate();
 
   return (
-    <Box component="nav" aria-label="Conversations" 
+    <Box
+      component="nav"
+      aria-label="Conversations"
       sx={{
         width: 256,
         flexShrink: 0,
         boxSizing: "border-box",
         bgcolor: "#FFFFFF",
         borderRight: `1px solid ${tokens.border}`,
-        p: "20px 16px",
-        position: "sticky",
-        top: 0,
-        alignSelf: "flex-start",
-        maxHeight: "100vh",
-        overflowY: "auto",
       }}
     >
+      <Box
+        sx={{ position: "sticky", top: 0, maxHeight: "100vh", overflowY: "auto", boxSizing: "border-box", p: "20px 16px" }}
+      >
       {/* /chat is a draft; the first question creates the conversation. */}
       <Button
         fullWidth
@@ -79,6 +78,7 @@ export default function ConversationList() {
           </ListItemButton>
         ))}
       </List>
+      </Box>
     </Box>
   );
 }
