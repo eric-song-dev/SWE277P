@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import Composer from "./Composer";
 
-function setup(onSend: (q: string) => boolean = () => true) {
+function setup(onSend: (q: string) => boolean = () => true, busy = false) {
   const send = vi.fn(onSend);
   render(
     <Composer
       disabled={false}
+      busy={busy}
       onSend={send}
       toolbar={<span>Toolbar content</span>}
     />,
@@ -60,6 +61,14 @@ describe("Composer", () => {
     await user.type(box, "Keep me{Enter}");
     expect(send).toHaveBeenCalledOnce();
     expect(box).toHaveValue("Keep me");
+  });
+
+  it("stays typeable while busy but neither Send nor Enter sends", async () => {
+    const { send, user, box } = setup(() => true, true);
+    await user.type(box, "Next one{Enter}");
+    expect(box).toHaveValue("Next one");
+    expect(send).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
   });
 
   it("holds the textbox, the toolbar and Send in one question box", () => {

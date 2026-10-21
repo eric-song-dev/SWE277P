@@ -86,12 +86,19 @@ export default function ChatPage() {
   const notFound =
     !validParam || (conversation.error instanceof ApiError && conversation.error.code === "conversation_not_found");
 
+  // Each accepted send or Retry scrolls its new question into view.
+  const [sendCount, setSendCount] = useState(0);
+
   function ask(question: string): boolean {
-    return profile ? send(question, profile.id, shareResults) : false;
+    const sent = profile ? send(question, profile.id, shareResults) : false;
+    if (sent) setSendCount((n) => n + 1);
+    return sent;
   }
 
   function retryLive() {
-    if (profile) retry(profile.id, shareResults);
+    if (!profile || streaming) return;
+    retry(profile.id, shareResults);
+    setSendCount((n) => n + 1);
   }
 
   function chooseProfile(id: number) {
@@ -139,6 +146,7 @@ export default function ChatPage() {
             live={live}
             resultsByTurnId={resultsByTurnId}
             busy={streaming}
+            sendCount={sendCount}
             onRetryLive={retryLive}
             onResend={(question) => void ask(question)}
           />
@@ -160,7 +168,8 @@ export default function ChatPage() {
         >
           <Box sx={{ maxWidth: 880, mx: "auto" }}>
             <Composer
-              disabled={streaming}
+              disabled={false}
+              busy={streaming}
               onSend={ask}
               toolbar={<ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />}
             />

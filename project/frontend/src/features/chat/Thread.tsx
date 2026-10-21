@@ -4,7 +4,7 @@ import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { useMutation } from "@tanstack/react-query";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode, type Ref } from "react";
 import { apiGet } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
 import { tokens } from "../../app/theme";
@@ -19,9 +19,22 @@ interface Props {
   busy: boolean;
   onRetryLive: () => void;
   onResend: (question: string) => void;
+  // Counts accepted sends (and Retry); a change scrolls the live question into view.
+  sendCount?: number;
 }
 
-export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive, onResend }: Props) {
+export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive, onResend, sendCount = 0 }: Props) {
+  const questionRef = useRef<HTMLDivElement>(null);
+  // A remount while a turn is live (the draft became its conversation) scrolls again; otherwise
+  // opening a conversation does not.
+  const handled = useRef(live === null ? sendCount : -1);
+  useEffect(() => {
+    if (handled.current === sendCount) return;
+    handled.current = sendCount;
+    // Smooth, once: the question sits near the top and its answer grows below it.
+    questionRef.current?.scrollIntoView?.({ block: "start", behavior: "smooth" });
+  }, [sendCount]);
+
   const saved = [...turns].sort((a, b) => a.seq - b.seq);
   // The live turn replaces its saved copy (it has the rows and the full error message), or
   // comes last until that copy arrives. One list keyed by seq, so the live card keeps its state
@@ -39,7 +52,7 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
     <Stack spacing="32px">
       {items.map(({ seq, turn }) =>
         "status" in turn ? (
-          <TurnItem key={seq} turn={turn} busy={busy} onRetry={onRetryLive} />
+          <TurnItem key={seq} turn={turn} busy={busy} onRetry={onRetryLive} questionRef={questionRef} />
         ) : (
           <TurnItem
             key={seq}
@@ -66,11 +79,13 @@ function TurnItem({
   result,
   busy,
   onRetry,
+  questionRef,
 }: {
   turn: TurnOut | LiveTurn;
   result?: QueryResultOut;
   busy: boolean;
   onRetry: () => void;
+  questionRef?: Ref<HTMLDivElement>;
 }) {
   const rerun = useMutation({
     mutationFn: (id: number) => apiGet<QueryResultOut>(`/api/chat/turns/${id}/rerun`),
@@ -129,17 +144,29 @@ function TurnItem({
 
   return (
     <Stack spacing="12px">
-      <Bubble from="user">{turn.question}</Bubble>
+      <Bubble from="user" ref={questionRef}>
+        {turn.question}
+      </Bubble>
       {answer}
     </Stack>
   );
 }
 
-function Bubble({ from, children }: { from: "user" | "assistant"; children: ReactNode }) {
+function Bubble({
+  from,
+  children,
+  ref,
+}: {
+  from: "user" | "assistant";
+  children: ReactNode;
+  ref?: Ref<HTMLDivElement>;
+}) {
   const mine = from === "user";
   return (
     <Box
+      ref={ref}
       sx={{
+        scrollMarginTop: "16px",
         alignSelf: mine ? "flex-end" : "flex-start",
         maxWidth: "75%",
         px: 2,

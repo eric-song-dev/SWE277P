@@ -9,18 +9,21 @@ import { tokens } from "../../app/theme";
 const MAX_LENGTH = 2000;
 
 interface Props {
+  // No AI model: everything is disabled.
   disabled: boolean;
+  // An answer is streaming: the box stays typeable, only sending is blocked.
+  busy: boolean;
   // Returns false when the question was not accepted, which keeps the text in the box.
   onSend: (question: string) => boolean;
   // Shown at the left of the row under the textarea; Send is at its right.
   toolbar?: ReactNode;
 }
 
-export default function Composer({ disabled, onSend, toolbar }: Props) {
+export default function Composer({ disabled, busy, onSend, toolbar }: Props) {
   const [text, setText] = useState("");
   const question = text.trim();
   const tooLong = question.length > MAX_LENGTH;
-  const canSend = !disabled && question !== "" && !tooLong;
+  const canSend = !disabled && !busy && question !== "" && !tooLong;
 
   function submit() {
     if (!canSend) return;
@@ -91,7 +94,7 @@ export default function Composer({ disabled, onSend, toolbar }: Props) {
             variant="contained"
             onClick={submit}
             disabled={!canSend}
-            sx={{ flexShrink: 0, px: "22px" }}
+            sx={{ flexShrink: 0, px: "22px", marginLeft: "auto" }}
           >
             Send
           </Button>

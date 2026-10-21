@@ -161,11 +161,46 @@ describe("ChatPage", () => {
     await user.keyboard("{Enter}{Enter}");
     expect(streamSse).toHaveBeenCalledTimes(1);
     expect(bodies()[0]).toEqual({ question: "How many came?", llm_profile_id: 1, share_results: true });
-    expect(screen.getByRole("textbox")).toBeDisabled();
+    expect(screen.getByRole("textbox")).toBeEnabled();
     expect(screen.getByRole("textbox")).toHaveValue("");
     await s.emit({ event: "done", data: { turn_id: null } });
     await s.finish();
     expect(screen.getByRole("textbox")).toBeEnabled();
+  });
+
+  it("keeps the question box typeable while an answer streams, and sends the text afterwards", async () => {
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    await ask(user, "How many came?");
+    const box = screen.getByRole("textbox", { name: "Question" });
+    await user.type(box, "And last month?");
+    expect(box).toHaveValue("And last month?");
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+    await user.keyboard("{Enter}");
+    expect(streamSse).toHaveBeenCalledTimes(1);
+    expect(box).toHaveValue("And last month?");
+    await s.emit({ event: "done", data: { turn_id: null } });
+    await s.finish();
+    const second = pendingStream();
+    await user.click(screen.getByRole("button", { name: "Send" }));
+    expect(bodies()[1]).toMatchObject({ question: "And last month?" });
+    expect(box).toHaveValue("");
+    await second.finish();
+  });
+
+  it("scrolls the new question's bubble into view on a follow-up", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    details[1] = detail(1, [savedTurn({ id: 8, seq: 1, question: "An earlier question" })]);
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    await screen.findByText("An earlier question");
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    await ask(user, "A follow-up");
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "start", behavior: "smooth" });
+    const target = scrollIntoView.mock.contexts.at(-1) as HTMLElement;
+    expect(target).toHaveTextContent("A follow-up");
+    await s.finish();
   });
 
   it("keeps a question typed between done and the end of the body", async () => {
@@ -574,6 +609,10 @@ describe("ChatPage", () => {
     const list = await screen.findByRole("navigation", { name: "Conversations" });
     expect(await within(list).findByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute("href", "/chat/1");
     expect(within(list).getByRole("link", { name: "New conversation" })).toHaveAttribute("href", "/chat/2");
+    expect(within(list).getByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute(
+      "title",
+      "Bagel Breakfast attendance",
+    );
     await user.click(screen.getByRole("button", { name: "New chat" }));
     expect(router.state.location.pathname).toBe("/chat");
     expect(apiSend).not.toHaveBeenCalled();
