@@ -117,3 +117,34 @@ def test_double_colon_cast(loaded_samples, chatbot_engine):
         engine=chatbot_engine,
     )
     assert r.row_count == 2 and r.rows[0][1] == "1"
+
+
+def test_non_finite_numbers_become_strings():
+    from decimal import Decimal
+
+    assert to_json_value(float("nan")) == "NaN"
+    assert to_json_value(float("inf")) == "Infinity"
+    assert to_json_value(float("-inf")) == "-Infinity"
+    assert to_json_value(Decimal("NaN")) == "NaN"
+    assert to_json_value(Decimal("Infinity")) == "Infinity"
+    assert to_json_value(Decimal("-Infinity")) == "-Infinity"
+    assert to_json_value(1.5) == 1.5
+
+
+def test_non_finite_values_survive_sse_as_valid_json():
+    import json
+
+    from app.chat.sse import format_sse
+
+    rows = [[to_json_value(float("nan")), to_json_value(float("inf"))]]
+    frame = format_sse("result", {"rows": rows})
+    assert json.loads(frame.split("data: ", 1)[1]) == {"rows": [["NaN", "Infinity"]]}
+
+
+def test_format_sse_rejects_raw_nan():
+    import pytest
+
+    from app.chat.sse import format_sse
+
+    with pytest.raises(ValueError):
+        format_sse("result", {"x": float("nan")})

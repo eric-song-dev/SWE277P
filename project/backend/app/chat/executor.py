@@ -6,6 +6,7 @@ them into value-free feedback.
 """
 
 from dataclasses import dataclass
+import math
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -26,11 +27,16 @@ class QueryResult:
 
 
 def to_json_value(v: object) -> JsonValue:
+    if isinstance(v, float) and not math.isfinite(v):
+        # JSON has no NaN or Infinity numbers
+        return "NaN" if math.isnan(v) else ("Infinity" if v > 0 else "-Infinity")
     if v is None or isinstance(v, (bool, int, float, str)):
         return v
     if isinstance(v, (date, datetime)):  # datetime is a date subclass
         return v.isoformat()
     if isinstance(v, Decimal):
+        if not v.is_finite():
+            return str(v)  # "NaN", "Infinity", "-Infinity"
         return int(v) if v == v.to_integral_value() else float(v)
     return str(v)
 
