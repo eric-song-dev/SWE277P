@@ -37,6 +37,8 @@ def make_chatbot_engine(url: str) -> Engine:
         cursor = dbapi_connection.cursor()
         try:
             cursor.execute("RESET ALL")
+            # RESET ALL leaves session-level advisory locks held; release them too.
+            cursor.execute("SELECT pg_advisory_unlock_all()")
         finally:
             cursor.close()
         dbapi_connection.commit()

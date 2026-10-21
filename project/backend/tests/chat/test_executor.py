@@ -2,6 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
 from app.chat.error_sanitizer import sanitize_db_error
@@ -148,3 +149,12 @@ def test_format_sse_rejects_raw_nan():
 
     with pytest.raises(ValueError):
         format_sse("result", {"x": float("nan")})
+
+
+def test_pool_reset_releases_advisory_locks(chatbot_engine):
+    held = "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND pid = pg_backend_pid()"
+    with chatbot_engine.connect() as conn:
+        conn.execute(text("SELECT pg_advisory_lock(424242)"))
+        assert conn.scalar(text(held)) == 1
+    with chatbot_engine.connect() as conn:  # the same pooled connection, after the reset
+        assert conn.scalar(text(held)) == 0
