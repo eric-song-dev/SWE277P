@@ -50,24 +50,37 @@ export async function streamSse(
   if (!res.ok) throw await toApiError(res);
 
   let done = false;
+  // An error thrown by onEvent is the caller's bug, not a lost connection: it passes through as is.
+  let handlerError: { error: unknown } | null = null;
   const feed = createSseParser((e) => {
     if (signal?.aborted) return;
     if (e.event === "done") done = true;
-    onEvent(e);
+    try {
+      onEvent(e);
+    } catch (error) {
+      handlerError = { error };
+      throw error;
+    }
   });
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   try {
     if (!res.body) throw new Error("empty body");
-    const reader = res.body.getReader();
+    reader = res.body.getReader();
+    const active = reader;
     // A pending read() does not always settle on abort; cancel unblocks it.
-    signal?.addEventListener("abort", () => void reader.cancel().catch(() => {}), { once: true });
+    signal?.addEventListener("abort", () => void active.cancel().catch(() => {}), { once: true });
     const decoder = new TextDecoder();
     for (;;) {
-      const { done: finished, value } = await reader.read();
+      const { done: finished, value } = await active.read();
       if (signal?.aborted) break;
       if (finished) break;
       feed(decoder.decode(value, { stream: true }));
     }
   } catch (err) {
+    if (handlerError) {
+      void reader?.cancel().catch(() => {});
+      throw (handlerError as { error: unknown }).error;
+    }
     if (signal?.aborted) throw signal.reason ?? err;
     throw new ApiError(0, "stream_interrupted", "Connection lost.");
   }

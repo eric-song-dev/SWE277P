@@ -9,7 +9,26 @@ function stubFetch(response: Response) {
   return fn;
 }
 
+function droppedBody() {
+  const body = new ReadableStream<Uint8Array>({
+    start(c) {
+      c.error(new TypeError("network error"));
+    },
+  });
+  return new Response(body, { status: 200 });
+}
+
 describe("api client", () => {
+  it("maps a connection drop while reading the body to network_error", async () => {
+    stubFetch(droppedBody());
+    await expect(apiGet("/api/things")).rejects.toMatchObject({ status: 0, code: "network_error" });
+  });
+
+  it("maps a connection drop while reading a download to network_error", async () => {
+    stubFetch(droppedBody());
+    await expect(apiDownload("/api/dataset/export")).rejects.toMatchObject({ code: "network_error" });
+  });
+
   it("parses the error shape into ApiError", async () => {
     stubFetch(
       new Response(

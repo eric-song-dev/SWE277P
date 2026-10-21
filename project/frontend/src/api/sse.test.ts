@@ -46,10 +46,10 @@ describe("streamSse", () => {
     const fn = vi.fn().mockResolvedValue(sseResponse([STEP, DONE]));
     vi.stubGlobal("fetch", fn);
     const seen: SseEvent[] = [];
-    await streamSse("/api/chat/conversations/1/messages", { question: "hi" }, (e) => seen.push(e));
+    await streamSse("/api/conversations/1/messages", { question: "hi" }, (e) => seen.push(e));
     expect(seen.map((e) => e.event)).toEqual(["step", "done"]);
     const [url, init] = fn.mock.calls[0];
-    expect(url).toBe("/api/chat/conversations/1/messages");
+    expect(url).toBe("/api/conversations/1/messages");
     expect(init.method).toBe("POST");
     expect(init.headers.Accept).toBe("text/event-stream");
     expect(init.headers["Content-Type"]).toBe("application/json");
@@ -74,6 +74,33 @@ describe("streamSse", () => {
     });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body)));
     await expect(streamSse("/s", {}, () => {})).rejects.toMatchObject({ code: "stream_interrupted" });
+  });
+
+  it("lets an error thrown by onEvent through instead of reporting a lost connection", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sseResponse([STEP, DONE])));
+    const boom = new Error("handler bug");
+    const p = streamSse("/s", {}, () => {
+      throw boom;
+    });
+    await expect(p).rejects.toBe(boom);
+  });
+
+  it("decodes a multi-byte character split across two chunks", async () => {
+    const bytes = encoder.encode('event: analysis\ndata: {"text":"caf\u00e9 \u2713"}\n\n' + DONE);
+    // Cut between the two bytes of the first "é".
+    const at = bytes.indexOf(encoder.encode("é")[0]) + 1;
+    expect(at).toBeGreaterThan(0);
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(bytes.slice(0, at));
+        c.enqueue(bytes.slice(at));
+        c.close();
+      },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body)));
+    const seen: SseEvent[] = [];
+    await streamSse("/s", {}, (e) => seen.push(e));
+    expect(seen[0]).toEqual({ event: "analysis", data: { text: "café ✓" } });
   });
 
   it("rejects with network_error when fetch throws", async () => {

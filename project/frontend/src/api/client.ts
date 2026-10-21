@@ -47,9 +47,20 @@ export async function hubFetch(path: string, init: RequestInit = {}): Promise<Re
   }
 }
 
+// A connection that drops while the body is being read rejects with a TypeError; it is the same
+// failure as a fetch that never connected.
+async function readBody<T>(read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (err) {
+    if (err instanceof TypeError) throw new ApiError(0, "network_error", "Could not reach the server.");
+    throw err;
+  }
+}
+
 async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) throw await toApiError(res);
-  const text = await res.text();
+  const text = await readBody(() => res.text());
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
 }
@@ -95,7 +106,7 @@ export async function apiDownload(path: string): Promise<DownloadResult> {
   const disposition = res.headers.get("Content-Disposition") ?? "";
   const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "download";
   const cap = Number.parseInt(res.headers.get("X-Hub-Row-Cap") ?? "", 10);
-  const blob = await res.blob();
+  const blob = await readBody(() => res.blob());
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
