@@ -37,5 +37,11 @@ get_settings.cache_clear()
 
 
 @pytest.fixture
-def client():
-    return TestClient(create_app())
+def app():
+    return create_app()
+
+
+@pytest.fixture
+def client(app, request):
+    request.getfixturevalue("db_session")  # migrates the test DB and seeds the `local` user
+    return TestClient(app)
