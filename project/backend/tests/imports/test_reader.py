@@ -59,3 +59,12 @@ def test_rows_padded_and_truncated_to_header_width():
 def test_empty_input_returns_empty_grid():
     assert read_grid("a.csv", b"") == []
     assert read_grid("a.csv", b",,\n\n") == []
+
+
+def test_csv_oversized_field_rejected():
+    import csv
+
+    big = b"A\n" + b"x" * (csv.field_size_limit() + 1) + b"\n"
+    with pytest.raises(HubError) as e:
+        read_grid("a.csv", big)
+    assert e.value.code == "unreadable_file"

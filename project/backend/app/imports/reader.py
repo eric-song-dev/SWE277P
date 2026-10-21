@@ -43,7 +43,10 @@ def _read_csv(content: bytes) -> list[list]:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
         text = content.decode("cp1252", errors="replace")
-    return list(csv.reader(io.StringIO(text, newline="")))
+    try:
+        return list(csv.reader(io.StringIO(text, newline="")))
+    except csv.Error as exc:
+        raise _unreadable("The file could not be parsed as CSV.") from exc
 
 
 def _read_xlsx(content: bytes) -> list[list]:
@@ -54,8 +57,6 @@ def _read_xlsx(content: bytes) -> list[list]:
             return [list(row) for row in ws.iter_rows(values_only=True)]
         finally:
             wb.close()
-    except HubError:
-        raise
     except Exception as exc:
         raise _unreadable("The file could not be read as a spreadsheet.") from exc
 
