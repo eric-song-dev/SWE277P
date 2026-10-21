@@ -50,8 +50,9 @@ class LlmDraft(BaseModel):
 
 def _first_json_object(raw: str) -> dict | None:
     """The first ``{...}`` in ``raw`` that decodes as a JSON object (prose and fences around it
-    are ignored)."""
-    decoder = json.JSONDecoder()
+    are ignored). Not strict: raw newlines and tabs inside strings are accepted, because models
+    often write multi-line SQL that way."""
+    decoder = json.JSONDecoder(strict=False)
     start = raw.find("{")
     while start != -1:
         try:
@@ -82,6 +83,11 @@ def parse_draft(raw: str) -> LlmDraft:
     the reply.
     """
     obj = _first_json_object(raw)
+    if obj is None and "{" in raw:
+        raise ValueError(
+            "the JSON object was malformed; check its quotes, commas and closing brace, and "
+            "reply with exactly one valid JSON object"
+        )
     if obj is None:
         raise ValueError(
             "the reply did not contain a JSON object; reply with exactly one JSON object"

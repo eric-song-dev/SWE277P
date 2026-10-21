@@ -35,6 +35,14 @@ BAD_CAST = json.dumps(
         "interpretation": "x",
     }
 )
+MULTILINE_SQL = (
+    "SELECT COUNT(DISTINCT person_key) AS n\nFROM attendance_view\n"
+    "WHERE school = 'School of Biological Sciences'\n\tAND event_name ILIKE 'Bagel Breakfast%'"
+)
+# raw newlines and a tab inside the JSON string, as models often write it (not valid strict JSON)
+MULTILINE_DRAFT = (
+    '{"kind": "sql", "sql": "' + MULTILINE_SQL + '", "interpretation": "x", "assumptions": []}'
+)
 JSON_FORMAT = {"type": "json_object"}
 REQ = httpx.Request("POST", "https://x.test/v1/chat/completions")
 
@@ -229,7 +237,7 @@ async def test_display_cap_truncates_and_sql_event_keeps_model_sql(run):
     assert data(r.events, "sql")["sql"] == sql
     result = data(r.events, "result")
     assert (result["row_count"], result["truncated"], len(result["rows"])) == (5, True, 5)
-    assert data(r.events, "analysis")["text"] == "5 rows (showing the first 5)"
+    assert data(r.events, "analysis")["text"] == "More than 5 rows (showing the first 5)"
     assert r.state["guarded_sql"].endswith("LIMIT 6") and r.state["draft"].sql == sql
 
 
@@ -335,6 +343,16 @@ async def test_prose_fences_and_semicolon_need_no_repair(run, reply):
     assert r.state["attempts"] == 1 and r.state["draft"].sql == SQL6_TEXT
 
 
+async def test_multiline_sql_with_raw_newlines_needs_no_repair(run):
+    # common without JSON mode: a fenced object whose SQL string has literal newlines and tabs
+    reply = "```json\n" + MULTILINE_DRAFT + "\n```"
+    r = await run([entry("bio", reply)], "bio?")
+    assert "repairing" not in [n for n, _ in steps(r.events)]
+    assert data(r.events, "sql")["sql"] == MULTILINE_SQL
+    assert data(r.events, "result")["rows"] == [[6]]
+    assert r.state["attempts"] == 1
+
+
 async def test_empty_result_summary(run):
     r = await run(
         [entry("nobody", sql_reply("SELECT email FROM attendance_view WHERE false"))], "nobody?"
@@ -424,6 +442,25 @@ def test_parse_draft_plain_and_wrapped():
     )
 
 
+def test_parse_draft_accepts_raw_newlines_in_strings():
+    draft = parse_draft("Here it is:\n```json\n" + MULTILINE_DRAFT + "\n```")
+    assert draft.sql == MULTILINE_SQL and "\n" in draft.sql and "\t" in draft.sql
+
+
+@pytest.mark.parametrize(
+    ("raw", "reason"),
+    [
+        ("SELECT 1", "did not contain a JSON object"),
+        ("[1, 2]", "did not contain a JSON object"),
+        ('{"kind": "sql", "sql": "SELECT 1"', "malformed"),
+        ('Sure: {"kind": "sql", "sql": "SELECT 1",}', "malformed"),
+    ],
+)
+def test_parse_draft_reason_tells_missing_from_malformed(raw, reason):
+    with pytest.raises(ValueError, match=reason):
+        parse_draft(raw)
+
+
 def test_parse_draft_cleans_sql_and_tolerates_null_assumptions():
     raw = json.dumps({"kind": "sql", "sql": "```sql\nSELECT 1;\n```", "assumptions": None})
     draft = parse_draft(raw)
@@ -461,7 +498,7 @@ def test_parse_draft_rejects(raw):
         (QueryResult(["latest"], [[None]], 1, False), "latest: NULL"),
         (QueryResult(["a", "b"], [[1, 2]], 1, False), "1 row"),
         (QueryResult(["a"], [[1], [2], [3]], 3, False), "3 rows"),
-        (QueryResult(["a"], [[1], [2]], 2, True), "2 rows (showing the first 2)"),
+        (QueryResult(["a"], [[1], [2]], 2, True), "More than 2 rows (showing the first 2)"),
     ],
 )
 def test_local_summary(result, text):
