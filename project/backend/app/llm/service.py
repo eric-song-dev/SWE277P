@@ -112,6 +112,12 @@ def update_profile(
     if data.name is not None and data.name != profile.name:
         _name_free(session, data.name, profile.id)
         profile.name = data.name
+    provider_changed = (
+        preset_key != profile.preset
+        or base_url != profile.base_url
+        or (data.model is not None and data.model != profile.model)
+        or (data.api_key is not None and bool(data.api_key.get_secret_value()))
+    )
     profile.preset = preset_key
     profile.base_url = base_url
     if data.model is not None:
@@ -122,6 +128,12 @@ def update_profile(
         key = data.api_key.get_secret_value()
         profile.api_key_ciphertext = encrypt_api_key(key)
         profile.api_key_hint = api_key_hint(key)
+    if provider_changed:
+        # Probe results describe the old endpoint/model/key; a stale json_mode=True would make
+        # every question fail on a model that rejects response_format.
+        profile.json_mode = None
+        profile.last_test_ok = None
+        profile.last_tested_at = None
     profile.updated_at = _now()
     session.flush()
     return profile

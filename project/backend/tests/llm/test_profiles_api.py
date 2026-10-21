@@ -218,3 +218,55 @@ def test_test_route_failure_keeps_json_mode(client, db_session, monkeypatch):
 def test_test_route_unknown_profile(client):
     res = client.post("/api/llm-profiles/9999/test")
     assert res.status_code == 404 and res.json()["error"]["code"] == "profile_not_found"
+
+
+def _tested_profile(client, db_session, preset="custom", name="T"):
+    from datetime import UTC, datetime
+
+    extra = {"base_url": "https://a.example/v1"} if preset == "custom" else {}
+    created = make(client, name, preset, **extra).json()
+    row = db_session.get(LlmProfile, created["id"])
+    row.json_mode, row.last_test_ok, row.last_tested_at = True, True, datetime.now(UTC)
+    db_session.commit()  # the route runs in its own session; release the row lock
+    return created["id"]
+
+
+def _probe_state(db_session, pid):
+    db_session.expire_all()
+    row = db_session.get(LlmProfile, pid)
+    return (row.json_mode, row.last_test_ok, row.last_tested_at)
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"preset": "openai"},
+        {"base_url": "https://b.example/v1"},
+        {"model": "another-model"},
+        {"api_key": "sk-new-key-123456789"},
+    ],
+    ids=["preset", "base_url", "model", "api_key"],
+)
+def test_patch_provider_change_resets_probe_results(client, db_session, patch):
+    pid = _tested_profile(client, db_session)
+    assert client.patch(f"/api/llm-profiles/{pid}", json=patch).status_code == 200
+    assert _probe_state(db_session, pid) == (None, None, None)
+
+
+@pytest.mark.parametrize(
+    "patch",
+    [
+        {"name": "Renamed"},
+        {"share_results_with_llm": True},
+        {"preset": "custom"},
+        {"base_url": "https://a.example/v1"},
+        {"model": "gpt-4.1-mini"},
+        {"api_key": ""},
+    ],
+    ids=["name", "share", "same_preset", "same_base_url", "same_model", "empty_key"],
+)
+def test_patch_without_provider_change_keeps_probe_results(client, db_session, patch):
+    pid = _tested_profile(client, db_session)
+    assert client.patch(f"/api/llm-profiles/{pid}", json=patch).status_code == 200
+    state = _probe_state(db_session, pid)
+    assert state[0] is True and state[1] is True and state[2] is not None
