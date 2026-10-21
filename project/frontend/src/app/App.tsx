@@ -35,7 +35,9 @@ export default function App() {
       <CssBaseline />
       <QueryClientProvider client={queryClient}>
         <AuthGate>
-          <RouterProvider router={router} />
+          {/* Commit navigations right away, not in a transition: otherwise a question sent just
+              after "New chat" or a conversation link goes to the conversation being left. */}
+          <RouterProvider router={router} useTransitions={false} />
         </AuthGate>
       </QueryClientProvider>
     </ThemeProvider>
