@@ -122,7 +122,10 @@ def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser
 
 
 def _get_pending(session: Session, import_id: int) -> ImportFile:
-    record = session.get(ImportFile, import_id)
+    # Row lock: a concurrent commit or discard of the same import waits here until this
+    # transaction ends, then re-reads the row and sees it is no longer pending.
+    # populate_existing refreshes a copy already in the identity map.
+    record = session.get(ImportFile, import_id, with_for_update=True, populate_existing=True)
     if record is None:
         raise HubError("import_not_found", "Import not found.", 404)
     if record.status != "pending":

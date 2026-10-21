@@ -1,7 +1,10 @@
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
+from sqlalchemy.orm import Session
 
 from app.dataset.models import Attendance, Person
 from app.errors import HubError
@@ -148,3 +151,47 @@ def test_committed_at_is_timezone_aware_and_current(db_session, user):
     committed_at = db_session.get(ImportFile, s.import_id).committed_at
     assert committed_at.tzinfo is not None
     assert abs(datetime.now(UTC) - committed_at) < timedelta(minutes=1)
+
+
+def _wait_until_lock_wait(observer: Session, pid: int, timeout_s: float = 10.0) -> None:
+    """Block until backend `pid` is waiting on a lock (no fixed sleeps: poll the server state)."""
+    deadline = time.monotonic() + timeout_s
+    query = text("SELECT wait_event_type FROM pg_stat_activity WHERE pid = :pid")
+    while observer.scalar(query, {"pid": pid}) != "Lock":
+        assert time.monotonic() < deadline, "second commit never waited for the first"
+        time.sleep(0.01)
+
+
+def test_concurrent_second_commit_waits_then_conflicts(db_session, user):
+    pending = preview_upload(db_session, OCT, sample_bytes(OCT), user)
+    db_session.commit()
+    engine = db_session.get_bind()
+    outcome: dict[str, object] = {}
+
+    with Session(engine, expire_on_commit=False) as a, Session(engine) as b:
+        b_pid = b.scalar(text("SELECT pg_backend_pid()"))
+
+        def second_commit() -> None:
+            try:
+                outcome["summary"] = commit_import(b, pending.id, details(), user)
+                b.commit()
+            except Exception as exc:  # noqa: BLE001 -- thread errors are asserted below
+                b.rollback()
+                outcome["error"] = exc
+
+        try:
+            commit_import(a, pending.id, details(), user)  # A holds the import row, uncommitted
+            thread = threading.Thread(target=second_commit)
+            thread.start()
+            _wait_until_lock_wait(db_session, b_pid)
+            a.commit()
+        finally:
+            a.rollback()
+            thread.join(timeout=10)
+        assert not thread.is_alive()
+
+    error = outcome.get("error")
+    assert isinstance(error, HubError), outcome
+    assert (error.code, error.status_code) == ("import_not_pending", 409)
+    assert count(db_session, Event) == 1
+    assert count(db_session, Attendance) == 38
