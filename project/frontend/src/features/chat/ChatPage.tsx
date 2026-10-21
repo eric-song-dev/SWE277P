@@ -11,6 +11,7 @@ import type { LlmProfileOut } from "../../api/types";
 import { useProfiles } from "../settings/useProfiles";
 import Composer from "./Composer";
 import ConversationList from "./ConversationList";
+import PageHeader from "../../app/PageHeader";
 import ProfileSelect from "./ProfileSelect";
 import ShareResultsSwitch from "./ShareResultsSwitch";
 import Thread from "./Thread";
@@ -45,7 +46,11 @@ function pickProfile(profiles: LlmProfileOut[], id: number | null): LlmProfileOu
 // the profile changes; the /chat draft becoming the conversation its first send created is no change.
 function useShareChoice(conversationId: number | null, profileId: number | null) {
   const [choice, setChoice] = useState<boolean | null>(null);
-  const [scope, setScope] = useState({ conversationId, profileId, createdId: null as number | null });
+  const [scope, setScope] = useState({
+    conversationId,
+    profileId,
+    createdId: null as number | null,
+  });
   if (scope.conversationId !== conversationId || scope.profileId !== profileId) {
     const adopted =
       scope.conversationId === null && conversationId === scope.createdId && scope.profileId === profileId;
@@ -142,7 +147,13 @@ export default function ChatPage() {
           <Stack
             direction="row"
             spacing={2}
-            sx={{ position: "sticky", bottom: 0, py: 2, bgcolor: "background.default", alignItems: "flex-start" }}
+            sx={{
+              position: "sticky",
+              bottom: 0,
+              py: 2,
+              bgcolor: "background.default",
+              alignItems: "flex-start",
+            }}
           >
             <Composer disabled={streaming} onSend={ask} />
             <ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />
@@ -153,25 +164,38 @@ export default function ChatPage() {
   }
 
   return (
-    <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-      <ConversationList />
-      <Stack spacing={2} sx={{ flexGrow: 1, minWidth: 0 }}>
-        {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
-        {profiles.data?.length === 0 && (
-          <Alert severity="info">
-            Add an AI model in Settings to start.{" "}
-            <Link component={RouterLink} to="/settings">
-              Go to Settings
-            </Link>
-          </Alert>
-        )}
-        {profile && profiles.data && (
-          <Box>
+    <>
+      <PageHeader
+        title="Chat"
+        actions={
+          profile && profiles.data ? (
             <ProfileSelect profiles={profiles.data} value={profile.id} onChange={chooseProfile} />
-          </Box>
-        )}
-        {main}
-      </Stack>
-    </Box>
+          ) : undefined
+        }
+      />
+      <Box
+        sx={{
+          display: "flex",
+          gap: 3,
+          alignItems: "flex-start",
+          px: "40px",
+          py: "28px",
+        }}
+      >
+        <ConversationList />
+        <Stack spacing={2} sx={{ flexGrow: 1, minWidth: 0 }}>
+          {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
+          {profiles.data?.length === 0 && (
+            <Alert severity="info">
+              Add an AI model in Settings to start.{" "}
+              <Link component={RouterLink} to="/settings">
+                Go to Settings
+              </Link>
+            </Alert>
+          )}
+          {main}
+        </Stack>
+      </Box>
+    </>
   );
 }

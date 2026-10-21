@@ -78,7 +78,7 @@ Contrast is checked:
   Text uses `text-wrap: pretty` (no orphan words). Table numbers are right-aligned and use `tabular-nums`.
 - **Corner radius:** 8 px for buttons, inputs, selects and list items; 10 px for the table container and the SQL bar; 12 px for cards and the question box; 18 px for chat bubbles, with a 4 px corner on the speaker's side.
 - **Buttons:** no all-caps (MUI `textTransform: "none"`). Buttons are 600 weight, at least 40 px tall, and 44 px for the main ones.
-- **Interaction states:** every clickable element has a hover state and a visible keyboard focus ring (2 px UCI Blue, 2 px offset).
+- **Interaction states:** every clickable element has a hover state and a visible keyboard focus ring (2 px UCI Blue, 2 px offset). The side nav uses a 2 px white ring instead, because UCI Blue is not visible on navy.
 
 ## Shell (`AppShell`)
 

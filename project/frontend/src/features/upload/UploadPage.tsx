@@ -6,6 +6,7 @@ import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileRejection } from "react-dropzone";
+import PageHeader from "../../app/PageHeader";
 import FilePreviewCard from "./FilePreviewCard";
 import { useUploadStore } from "./uploadStore";
 import { useImportHistory, usePendingPreviews, usePreviewUpload } from "./useImports";
@@ -48,54 +49,57 @@ export default function UploadPage() {
     });
   }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPT });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: ACCEPT,
+  });
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 720 }}>
-      <Typography variant="h5" component="h1">
-        Upload
-      </Typography>
-      <Box
-        {...getRootProps()}
-        sx={{
-          border: 2,
-          borderStyle: "dashed",
-          borderColor: isDragActive ? "primary.main" : "divider",
-          borderRadius: 1,
-          p: 4,
-          textAlign: "center",
-          cursor: "pointer",
-        }}
-      >
-        <input {...getInputProps()} />
-        <Typography>Drop CSV or Excel files here, or click to choose. (.csv, .xlsx, .xlsm)</Typography>
-      </Box>
-      {upload.isPending && <LinearProgress aria-label="Uploading" />}
-      {failures.map((failure) => (
-        <Alert
-          key={failure.key}
-          severity="error"
-          onClose={() => setFailures((current) => current.filter((f) => f.key !== failure.key))}
+    <>
+      <PageHeader title="Upload" />
+      <Stack spacing={2} sx={{ maxWidth: 720, px: "40px", py: "28px" }}>
+        <Box
+          {...getRootProps()}
+          sx={{
+            border: 2,
+            borderStyle: "dashed",
+            borderColor: isDragActive ? "primary.main" : "divider",
+            borderRadius: 1,
+            p: 4,
+            textAlign: "center",
+            cursor: "pointer",
+          }}
         >
-          {failure.message}
-        </Alert>
-      ))}
-      {rejected.length > 0 && (
-        <Alert severity="warning">Unsupported file type, not uploaded: {rejected.join(", ")}</Alert>
-      )}
-      {history.isError && <Alert severity="error">Could not check for pending imports.</Alert>}
-      {restored.failed > 0 && (
-        <Alert severity="error">Could not load a pending import. Reload the page to try again.</Alert>
-      )}
-      {cards.map((card) => (
-        <FilePreviewCard
-          key={card.key}
-          preview={card.preview}
-          summary={card.summary}
-          onCommitted={(summary) => setSummary(card.key, summary)}
-          onRemove={() => removeCard(card.key)}
-        />
-      ))}
-    </Stack>
+          <input {...getInputProps()} />
+          <Typography>Drop CSV or Excel files here, or click to choose. (.csv, .xlsx, .xlsm)</Typography>
+        </Box>
+        {upload.isPending && <LinearProgress aria-label="Uploading" />}
+        {failures.map((failure) => (
+          <Alert
+            key={failure.key}
+            severity="error"
+            onClose={() => setFailures((current) => current.filter((f) => f.key !== failure.key))}
+          >
+            {failure.message}
+          </Alert>
+        ))}
+        {rejected.length > 0 && (
+          <Alert severity="warning">Unsupported file type, not uploaded: {rejected.join(", ")}</Alert>
+        )}
+        {history.isError && <Alert severity="error">Could not check for pending imports.</Alert>}
+        {restored.failed > 0 && (
+          <Alert severity="error">Could not load a pending import. Reload the page to try again.</Alert>
+        )}
+        {cards.map((card) => (
+          <FilePreviewCard
+            key={card.key}
+            preview={card.preview}
+            summary={card.summary}
+            onCommitted={(summary) => setSummary(card.key, summary)}
+            onRemove={() => removeCard(card.key)}
+          />
+        ))}
+      </Stack>
+    </>
   );
 }
