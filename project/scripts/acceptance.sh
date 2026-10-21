@@ -48,7 +48,14 @@ printf '%-4s %-10s %s\n' "ID" "Status" "Source"
 for id in A1 A2 A5 A6 A8 A9; do
   printf '%-4s %-10s %s\n' "$id" "PASS" "pytest -m acceptance"
 done
+DOC_FAILED=""
 for id in A3 A4 A10; do
-  printf '%-4s %-10s %s\n' "$id" "$(doc_status "$id")" "docs/benchmark-results.md"
+  row_status="$(doc_status "$id")"
+  printf '%-4s %-10s %s\n' "$id" "$row_status" "docs/benchmark-results.md"
+  if [ "$row_status" != "PASS" ]; then DOC_FAILED="$DOC_FAILED $id"; fi
 done
 printf '%-4s %-10s %s\n' "A7" "deferred" "login in backlog"
+if [ -n "$DOC_FAILED" ]; then
+  echo "ACCEPTANCE INCOMPLETE: not PASS in docs/benchmark-results.md:$DOC_FAILED" >&2
+  exit 1
+fi
