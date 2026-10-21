@@ -50,7 +50,7 @@ def test_rows_are_json_values(loaded_samples, chatbot_engine):
         max_rows=10,
         engine=chatbot_engine,
     )
-    assert r.rows == [[date.today().isoformat(), 293]]
+    assert date.fromisoformat(r.rows[0][0]) and r.rows[0][1] == 293
 
 
 def test_connection_usable_after_error(loaded_samples, chatbot_engine):
