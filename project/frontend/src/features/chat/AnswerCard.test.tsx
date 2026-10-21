@@ -198,6 +198,7 @@ describe("AnswerCard", () => {
       sql: { sql: SQL, interpretation: "Count attendees", assumptions: [] },
       result,
       analysisText: "38 people attended.",
+      afterSeq: 0,
       analysis: { text: "38 people attended.", source: "llm", results_shared: true },
       turnId: 4,
     };
