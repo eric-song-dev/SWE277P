@@ -60,6 +60,7 @@
     "modality": "Hybrid",
     "sponsors_hosts": "GPSRC / Activate to Captivate",
     "event_type": "Professional Development",
+    "attendance_source_note": "12twenty dummy attendance export",
     "student_worker": "Rosie Victor"
   },
   "Edwards Life Science Site Visit.xlsx": {
@@ -69,6 +70,7 @@
     "modality": "In Person",
     "sponsors_hosts": "GPSRC / Edwards Lifesciences",
     "event_type": "Professional Development",
+    "attendance_source_note": "12twenty dummy attendance export",
     "student_worker": "Rosie Victor"
   },
   "Health Careers Mixer.xlsx": {
@@ -78,6 +80,7 @@
     "modality": "In Person",
     "sponsors_hosts": "GPSRC / GPS-STEM",
     "event_type": "Professional Development",
+    "attendance_source_note": "12twenty dummy attendance export",
     "student_worker": "Rosie Victor"
   },
   "LinkedIn Info Session.xlsx": {
@@ -87,6 +90,7 @@
     "modality": "Virtual",
     "sponsors_hosts": "GPSRC / Division of Career Pathways",
     "event_type": "Professional Development",
+    "attendance_source_note": "12twenty dummy attendance export",
     "student_worker": "Rosie Victor"
   }
 }

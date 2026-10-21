@@ -1,3 +1,4 @@
+import json
 from collections import Counter
 from datetime import date, datetime
 from io import BytesIO
@@ -6,20 +7,23 @@ import pytest
 from openpyxl import load_workbook
 from sqlalchemy import text
 
-from app.dataset.service import gpsrc_layout_rows
+from app.dataset.service import GPSRC_HEADERS, gpsrc_layout_rows
 from app.export.writers import to_xlsx
 from app.imports.service import preview_upload
-from app.samples import SAMPLE_DIR, load_sample_exports
+from app.samples import EVENTS_FILE, SAMPLE_DIR, load_sample_exports
 
 pytestmark = pytest.mark.acceptance
 
 COMPILED = SAMPLE_DIR.parent / "GSPRC Compiled Dataset.xlsm"
 
+# Spec section 14: every GPSRC column except Notes.
 COMPARE = [
-    "Student Worker", "Event Term", "Event Name ", "Virtual/ In-Person/ Hybrid ",
+    "Student Worker", "Event Date", "Event Term", "Event Name ", "Virtual/ In-Person/ Hybrid ",
     "Sponsor/Host/Parnters",
     "Event type (Professional Development, Wellness/Mental Health, Fellowships)",
-    "On Campus Groups?", "First Name of Attendee", "Last Name of Attendee", "Email",
+    "On Campus Groups?",
+    "If not on Campus Groups, where was attendance found? State where + Link it",
+    "First Name of Attendee", "Last Name of Attendee", "Email",
     "Affiliation", "Student ID or Employee ID", "NetID", "Domestic or International", "School",
     "Department ",
 ]  # fmt: skip
@@ -64,6 +68,10 @@ def _diff_message(ours: Counter, theirs: Counter) -> str:
         f"only in import ({sum((ours - theirs).values())}): {only_ours}\n"
         f"only in compiled sheet ({sum((theirs - ours).values())}): {only_theirs}"
     )
+
+
+def test_compare_covers_every_column_but_notes():
+    assert sorted(COMPARE) == sorted(h for h in GPSRC_HEADERS if h != "Notes")
 
 
 def test_a1_import_reproduces_compiled_sheet(db_session, user):
@@ -113,8 +121,11 @@ def test_a1_identity_edge_rows(db_session, user):
 
 def test_a2_reupload_adds_nothing(db_session, user):
     load_sample_exports(db_session, user)
-    for f in sorted(SAMPLE_DIR.iterdir()):
-        assert preview_upload(db_session, f.name, f.read_bytes(), user).status == "duplicate"
+    names = list(json.loads(EVENTS_FILE.read_text(encoding="utf-8")))
+    assert len(names) == 10
+    for name in names:
+        content = (SAMPLE_DIR / name).read_bytes()
+        assert preview_upload(db_session, name, content, user).status == "duplicate", name
     assert db_session.scalar(text("SELECT count(*) FROM hub.attendance")) == 293
 
 
