@@ -5,8 +5,8 @@ statement timeout. Database errors propagate unchanged; ``sanitize_db_error`` tu
 them into value-free feedback.
 """
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
 
