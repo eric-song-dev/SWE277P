@@ -40,7 +40,9 @@ def run_readonly(sql: str, *, max_rows: int, engine: Engine | None = None) -> Qu
     with engine.connect() as conn, conn.begin():
         conn.execute(text("SET TRANSACTION READ ONLY"))
         conn.execute(text(f"SET LOCAL statement_timeout = {timeout_ms}"))
-        result = conn.execute(text(sql))
+        # Verbatim: no_parameters makes the driver call cursor.execute(sql) without a
+        # parameter argument, so psycopg does no %-processing and SQLAlchemy no :name parsing.
+        result = conn.execution_options(no_parameters=True).exec_driver_sql(sql)
         columns = list(result.keys())
         fetched = result.fetchmany(max_rows + 1)
     truncated = len(fetched) > max_rows

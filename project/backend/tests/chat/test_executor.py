@@ -84,3 +84,36 @@ def test_timeout_message(chatbot_engine):
         run_readonly("SELECT pg_sleep(10)", max_rows=10, engine=chatbot_engine)
     s = sanitize_db_error(e.value)
     assert s.code == "57014" and "too slow" in s.feedback
+
+
+def test_bagel_ilike_pattern_returns_rows(loaded_samples, chatbot_engine):
+    r = run_readonly(
+        "SELECT email FROM attendance_view WHERE event_name ILIKE 'Bagel Breakfast%'",
+        max_rows=500,
+        engine=chatbot_engine,
+    )
+    assert r.row_count > 0
+
+
+@pytest.mark.parametrize("literal", ["a :x", "100%s", "50%% off", "x:y:z", "%"])
+def test_literals_are_sent_verbatim(chatbot_engine, literal):
+    r = run_readonly(f"SELECT '{literal}' AS v", max_rows=10, engine=chatbot_engine)
+    assert r.rows == [[literal]]
+
+
+def test_colon_literal_in_where_clause(loaded_samples, chatbot_engine):
+    r = run_readonly(
+        "SELECT email FROM attendance_view WHERE email = 'a :x' LIMIT 5",
+        max_rows=10,
+        engine=chatbot_engine,
+    )
+    assert r.rows == []
+
+
+def test_double_colon_cast(loaded_samples, chatbot_engine):
+    r = run_readonly(
+        "SELECT email::text AS e, 1::text AS one FROM attendance_view LIMIT 2",
+        max_rows=10,
+        engine=chatbot_engine,
+    )
+    assert r.row_count == 2 and r.rows[0][1] == "1"
