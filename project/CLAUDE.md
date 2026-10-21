@@ -68,7 +68,7 @@ project/
 ## Non-negotiables
 
 - **Privacy (provisional, pending sponsor confirmation):** the SQL-generation prompt only gets the schema, column descriptions, controlled values, prior questions and SQL, and the user's question. It never gets row values. The only exception is the analysis step: when the selected LLM profile allows it (`share_results_with_llm`) and the user leaves the "Let AI see the results" switch on for that question, the LLM receives the rows returned by its own guarded query against `attendance_view`, capped by `LLM_RESULT_MAX_ROWS` and `LLM_RESULT_MAX_CHARS`. The LLM must never see Student IDs, other tables, or the rest of the database. Error-retry messages go through the error sanitizer and never carry row values. Never log row values to external services. If the sponsor rejects result sharing, it is switched off per profile, not by changing code.
-- **Secrets:** API keys are encrypted at rest, never returned by the API, and never logged.
+- **Secrets:** API keys are encrypted at rest, never returned by the API, and never logged. Never read, print, or `cat` `project/.env`. It holds the DB passwords and API keys, and anything you read ends up in the conversation. To check that a variable is set, run `grep -c '^NAME=.' .env`, which prints only a count. You may append non-secret lines to `.env` when the user asks. The user fills in secret values.
 - **SQL safety:** generated SQL must be a single read-only `SELECT`, run through a read-only database role with a statement timeout and a row limit. Always show the SQL to the user.
 - **Imports:** accept native export files unmodified. Staff must not have to clean files by hand. Uploading the same file twice must not create duplicates.
 - **Identity matching:** match people by NetID first, then by email (12twenty exports have no NetID). Flag uncertain matches for staff instead of silently merging them.
@@ -168,5 +168,5 @@ The chatbot benchmark command will be added in S3.
 
 ## Conventions
 
-- Keep secrets in `project/.env` (gitignored) and commit a `.env.example` alongside it.
+- Keep secrets in `project/.env` (gitignored) and commit a `.env.example` alongside it. Every new env var goes into `.env.example`. If the api container needs it, also add it to the api `environment:` list in `docker-compose.yml`. The container gets only the variables listed there, not the whole `.env`.
 - Keep this file current. When you change the stack, layout, commands, or a scope decision, update CLAUDE.md in the same commit.

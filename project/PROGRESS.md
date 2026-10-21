@@ -29,6 +29,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 - How to run: see `CLAUDE.md` "Commands". The whole app starts with `docker compose up --build -d` from `project/`. Dev mode is the dev-override db plus `uv run uvicorn …` and `npm run dev`.
 - `project/.env` exists on this machine. It was generated in S2 with random URL-safe passwords and a Fernet key, and is gitignored. A new machine needs `cp .env.example .env`, then fill it in.
+- `project/.env` also has `LLM_SEED_*` lines for a DeepSeek profile (model `deepseek-v4-flash`, sharing on, added after S2). The user fills in `LLM_SEED_API_KEY`. Nothing reads these lines until S3 Task 2. Never read `.env`; check a variable with `grep -c '^NAME=.' .env`.
 - The dev `hub` database is at migration 0002 and holds the 10 sample imports, loaded once with `python -m app.samples`. Tests use a separate `hub_test` DB that they recreate.
 - Test results at the last S2 commit:
   - backend: 158 passed, 5 of them acceptance;
