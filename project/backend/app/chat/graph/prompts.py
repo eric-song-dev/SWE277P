@@ -15,7 +15,7 @@ from app.chat.context import MAX_EVENT_NAMES, ControlledValues, TurnContext
 from app.chat.executor import QueryResult, to_json_value
 from app.imports.normalize import academic_year, term_for_date
 
-PROMPT_VERSION = "2026-10-29.1"  # bump on every prompt change
+PROMPT_VERSION = "2026-10-29.2"  # bump on every prompt change
 
 REPAIR_PREFIX = "Your previous reply was rejected:"
 EXAMPLE_PREFIX = "Example question: "
@@ -24,38 +24,48 @@ VIEW_DESCRIPTION = """\
 attendance_view has one row per attendance record: one person at one event. Every row means \
 the person attended (people who registered but did not attend are not in the data), and only \
 events with at least one record appear. Records come from the attendee exports of two \
-platforms, CampusGroups and 12twenty, and some columns are always NULL for one of them. There is \
-no Student ID column: Student IDs are not available (12twenty exports do not have them either).
+platforms, CampusGroups and 12twenty. The event columns are filled in by staff when they import \
+a file; the attendee columns are copied from the export and are NULL wherever the export left \
+them blank, and some are NULL for every 12twenty record. There is no Student ID column: Student \
+IDs are not available (12twenty exports do not have them either).
 
 Columns:
 - person_key (bigint): an internal ID for the person, the same across events and platforms \
 (people are linked by NetID, then by email). NULL for unlinked records, which had neither a \
-NetID nor an email. A linked person has at most one row per event.
-- event_name (text): the event's name. See the known values.
-- event_date (date): the day of the event. NULL when staff did not enter it, which is common.
+NetID nor an email (either platform). A linked person has at most one row per event.
+- event_name (text): the event's name. See the known values. Never NULL.
+- event_date (date): the day of the event. NULL when staff did not enter it, which is common \
+(12twenty exports never supply it).
 - term (text): the UCI quarter of the event, written like 'Fall 2026' (Winter, Spring, Summer or \
 Fall, then the year). Never NULL.
 - academic_year (text): written like '2026-27'. Derived from term: Fall 2026, Winter 2027, \
-Spring 2027 and Summer 2027 are all '2026-27'.
-- modality (text): 'In Person', 'Virtual' or 'Hybrid'.
+Spring 2027 and Summer 2027 are all '2026-27'. Never NULL.
+- modality (text): 'In Person', 'Virtual' or 'Hybrid'. Never NULL.
 - sponsors_hosts (text): the offices or partners that hosted the event; several are joined with \
-' / ', as in 'GPSRC / Graduate Writing Hub'.
+' / ', as in 'GPSRC / Graduate Writing Hub'. NULL when staff did not enter it.
 - event_type (text): the event's category, such as 'Professional Development'. See the known \
-values.
-- platform (text): where the record came from: 'CampusGroups' or '12twenty'.
-- first_name (text): the attendee's first name as recorded.
-- last_name (text): the attendee's last name as recorded.
-- email (text): the email address, in lowercase. NULL when the record has none.
-- netid (text): the UCI NetID, in lowercase (the part before @uci.edu). NULL when the record has \
-none. For 12twenty records the NetID is taken from the email, so it is NULL when the email is \
-not a plain netid@uci.edu address.
+values. Never NULL.
+- platform (text): where the record came from: 'CampusGroups' or '12twenty'. Never NULL.
+- first_name (text): the attendee's first name as recorded. NULL when the export left it blank \
+(either platform).
+- last_name (text): the attendee's last name as recorded. NULL when the export left it blank \
+(either platform).
+- email (text): the email address, in lowercase. NULL when the export left it blank (either \
+platform).
+- netid (text): the UCI NetID, in lowercase (the part before @uci.edu). CampusGroups: from its \
+Net ID column, NULL when that is blank. 12twenty: taken from the email, so NULL when the email \
+is blank or is not a plain netid@uci.edu address.
 - affiliation (text): the attendee's role, such as 'Doctoral Student'. See the known values. \
-12twenty records map their degree to the same labels CampusGroups uses.
-- domestic_international (text): 'Domestic' or 'International'. Always NULL for 12twenty \
-records (12twenty does not record it), and NULL when a CampusGroups attendee did not answer.
-- school (text): the attendee's UCI school. See the known values. NULL when not recorded.
+CampusGroups: the attendee's answer to a drop-down question, NULL when not answered. 12twenty: \
+mapped from the degree fields to the same labels, NULL when both are blank.
+- domestic_international (text): 'Domestic' or 'International'. CampusGroups: the attendee's \
+answer to a form question, NULL when not answered. 12twenty: NULL for every record (12twenty \
+does not record it).
+- school (text): the attendee's UCI school. See the known values. NULL when the export left it \
+blank (either platform).
 - department (text): the attendee's department or academic program, free text as entered \
-(12twenty records the major or program). NULL when not recorded."""
+(12twenty records the major or program). NULL when the export left it blank (either \
+platform)."""
 
 # A str.format template: {{ and }} are literal braces.
 GENERATE_SYSTEM = """\

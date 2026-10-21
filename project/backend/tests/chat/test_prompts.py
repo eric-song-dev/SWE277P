@@ -104,6 +104,19 @@ def test_view_description_covers_every_column():
         assert re.search(rf"^- {name}\b", VIEW_DESCRIPTION, re.MULTILINE), name
 
 
+def test_view_description_states_null_behavior_for_every_column():
+    lines = dict(re.findall(r"^- (\w+) \((.*)$", VIEW_DESCRIPTION, re.MULTILINE))
+    assert set(lines) == set(VIEW_COLUMNS)
+    never_null = {"event_name", "term", "academic_year", "modality", "event_type", "platform"}
+    for name, line in lines.items():
+        if name in never_null:
+            assert "Never NULL" in line, name
+        else:
+            assert re.search(r"NULL (when|for)", line), name
+    for name in ("netid", "affiliation", "domestic_international"):  # differ by platform
+        assert "CampusGroups" in lines[name] and "12twenty" in lines[name], name
+
+
 def test_system_prompt_has_contract_view_and_values():
     cv = ControlledValues(
         schools=["School of Humanities"],
@@ -352,4 +365,4 @@ def test_analyze_messages_flag_truncated_and_empty():
 
 
 def test_prompt_version():
-    assert prompts.PROMPT_VERSION == "2026-10-29.1"
+    assert prompts.PROMPT_VERSION == "2026-10-29.2"
