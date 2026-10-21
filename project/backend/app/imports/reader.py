@@ -1,5 +1,7 @@
 import csv
+import hashlib
 import io
+import json
 from datetime import date, datetime
 from pathlib import PurePath
 
@@ -72,3 +74,13 @@ def read_grid(file_name: str, content: bytes) -> Grid:
     else:
         raise _unreadable("Unsupported file type; upload a .csv, .xlsx, or .xlsm file.")
     return _shape(rows)
+
+
+def content_fingerprint(grid: Grid) -> str:
+    """SHA-256 of the parsed grid as canonical JSON.
+
+    Identifies a file by its content, so a copy re-saved by Excel (new bytes, same cells) or a
+    CSV with another BOM or line ending is still recognised as the same upload.
+    """
+    canonical = json.dumps(grid, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

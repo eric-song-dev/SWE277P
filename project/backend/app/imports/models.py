@@ -11,7 +11,8 @@ class ImportFile(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     file_name: Mapped[str] = mapped_column(Text)
-    file_sha256: Mapped[str] = mapped_column(Text, unique=True)
+    file_sha256: Mapped[str] = mapped_column(Text, unique=True)  # SHA-256 of the file bytes
+    content_sha256: Mapped[str] = mapped_column(Text, unique=True)  # see content_fingerprint
     source: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text)
     content: Mapped[bytes] = mapped_column(LargeBinary)

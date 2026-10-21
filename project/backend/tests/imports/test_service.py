@@ -1,8 +1,11 @@
+import hashlib
 import threading
 import time
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 
 import pytest
+from openpyxl import load_workbook
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
@@ -10,6 +13,7 @@ from app.dataset.models import Attendance, Person
 from app.errors import HubError
 from app.events.models import Event
 from app.imports.models import ImportFile
+from app.imports.reader import content_fingerprint, read_grid
 from app.imports.schemas import EventDetailsIn
 from app.imports.service import commit_import, discard_import, list_imports, preview_upload
 from app.quality.models import DataQualityFlag
@@ -24,6 +28,7 @@ from tests.imports.helpers import (
 
 OCT = "Bagel Breakfast - October.csv"
 NOV = "Bagel Breakfast - November.csv"
+XLSX = "Health Careers Mixer.xlsx"
 
 
 def count(session, model):
@@ -195,3 +200,41 @@ def test_concurrent_second_commit_waits_then_conflicts(db_session, user):
     assert (error.code, error.status_code) == ("import_not_pending", 409)
     assert count(db_session, Event) == 1
     assert count(db_session, Attendance) == 38
+
+
+def _resaved(name: str) -> bytes:
+    """The sample opened and saved again (as Excel would on "Save"), with no content change."""
+    original = sample_bytes(name)
+    buf = BytesIO()
+    load_workbook(BytesIO(original)).save(buf)
+    assert buf.getvalue() != original
+    return buf.getvalue()
+
+
+def test_preview_stores_file_and_content_hashes(db_session, user):
+    p = preview_upload(db_session, OCT, sample_bytes(OCT), user)
+    record = db_session.get(ImportFile, p.id)
+    assert record.file_sha256 == hashlib.sha256(sample_bytes(OCT)).hexdigest()
+    assert record.content_sha256 == content_fingerprint(read_grid(OCT, sample_bytes(OCT)))
+
+
+def test_resaved_copy_of_committed_file_is_duplicate(db_session, user):
+    first = commit_after_preview(db_session, XLSX, sample_bytes(XLSX), user)
+    again = preview_upload(db_session, "Health Careers Mixer (1).xlsx", _resaved(XLSX), user)
+    assert (again.status, again.duplicate_of, again.id) == ("duplicate", first.import_id, None)
+    assert (again.source, again.row_count) == ("twelvetwenty", first.inserted)
+    assert count(db_session, ImportFile) == 1
+
+
+def test_resaved_copy_of_pending_file_returns_same_pending(db_session, user):
+    first = preview_upload(db_session, XLSX, sample_bytes(XLSX), user)
+    again = preview_upload(db_session, XLSX, _resaved(XLSX), user)
+    assert (again.status, again.id, again.row_count) == ("pending", first.id, first.row_count)
+    assert count(db_session, ImportFile) == 1
+
+
+def test_csv_with_bom_and_lf_endings_is_duplicate_of_original(db_session, user):
+    first = commit_after_preview(db_session, OCT, sample_bytes(OCT), user)
+    variant = b"\xef\xbb\xbf" + sample_bytes(OCT).replace(b"\r\n", b"\n")
+    again = preview_upload(db_session, OCT, variant, user)
+    assert (again.status, again.duplicate_of) == ("duplicate", first.import_id)

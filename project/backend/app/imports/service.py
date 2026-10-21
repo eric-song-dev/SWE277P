@@ -16,7 +16,7 @@ from app.imports.adapters.base import Adapter, ParseResult, RowFlag
 from app.imports.identity import IdentityLinker
 from app.imports.models import ImportFile
 from app.imports.normalize import academic_year
-from app.imports.reader import read_grid
+from app.imports.reader import Grid, content_fingerprint, read_grid
 from app.imports.schemas import (
     CommitSummary,
     ErrorOut,
@@ -34,12 +34,20 @@ from app.quality.service import record_flags
 REJECTABLE = {"unreadable_file", "unknown_format", "file_too_large", "empty_file"}
 
 
-def _parse(file_name: str, content: bytes) -> tuple[Adapter, ParseResult]:
+def _read(file_name: str, content: bytes) -> Grid:
     grid = read_grid(file_name, content)
     if not grid:
         raise HubError("unreadable_file", "The file contains no rows.", 422)
+    return grid
+
+
+def _parse_grid(grid: Grid) -> tuple[Adapter, ParseResult]:
     adapter = detect_adapter(grid[0])
     return adapter, adapter.parse(grid)
+
+
+def _parse(file_name: str, content: bytes) -> tuple[Adapter, ParseResult]:
+    return _parse_grid(_read(file_name, content))
 
 
 def _adapter_for(source: str) -> Adapter:
@@ -89,26 +97,23 @@ def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser
     if not content:
         raise HubError("empty_file", "The file is empty.", 422)
 
+    # Same bytes first (cheap), then same parsed content: a copy re-saved by Excel has new bytes.
     digest = hashlib.sha256(content).hexdigest()
     existing = session.scalar(select(ImportFile).where(ImportFile.file_sha256 == digest))
-    if existing is not None and existing.status == "committed":
-        return ImportPreview(
-            id=None,
-            file_name=file_name,
-            status="duplicate",
-            source=existing.source,
-            source_display=_adapter_for(existing.source).display_name,
-            row_count=existing.row_count or 0,
-            duplicate_of=existing.id,
-        )
     if existing is not None:
-        adapter, result = _parse(existing.file_name, existing.content)
-        return _preview_from(existing.id, existing.file_name, adapter, result, user)
+        return _existing_preview(existing, file_name, user)
 
-    adapter, result = _parse(file_name, content)
+    grid = _read(file_name, content)
+    fingerprint = content_fingerprint(grid)
+    existing = session.scalar(select(ImportFile).where(ImportFile.content_sha256 == fingerprint))
+    if existing is not None:
+        return _existing_preview(existing, file_name, user)
+
+    adapter, result = _parse_grid(grid)
     record = ImportFile(
         file_name=file_name,
         file_sha256=digest,
+        content_sha256=fingerprint,
         source=adapter.source,
         status="pending",
         content=content,
@@ -119,6 +124,22 @@ def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser
     session.add(record)
     session.flush()
     return _preview_from(record.id, file_name, adapter, result, user)
+
+
+def _existing_preview(existing: ImportFile, file_name: str, user: CurrentUser) -> ImportPreview:
+    """A committed match is a duplicate; a pending match returns that same pending preview."""
+    if existing.status == "committed":
+        return ImportPreview(
+            id=None,
+            file_name=file_name,
+            status="duplicate",
+            source=existing.source,
+            source_display=_adapter_for(existing.source).display_name,
+            row_count=existing.row_count or 0,
+            duplicate_of=existing.id,
+        )
+    adapter, result = _parse(existing.file_name, existing.content)
+    return _preview_from(existing.id, existing.file_name, adapter, result, user)
 
 
 def _get_pending(session: Session, import_id: int) -> ImportFile:

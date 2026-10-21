@@ -1,9 +1,10 @@
+import hashlib
 from datetime import datetime
 
 import pytest
 
 from app.errors import HubError
-from app.imports.reader import read_grid
+from app.imports.reader import content_fingerprint, read_grid
 
 
 def test_csv_utf8_bom():
@@ -77,3 +78,9 @@ def test_csv_control_characters_removed():
 
 def test_csv_tabs_and_newlines_inside_values_kept():
     assert read_grid("a.csv", b'A\n"x\ty\nz"\n')[1] == ["x\ty\nz"]
+
+
+def test_content_fingerprint_is_sha256_of_canonical_json():
+    grid = [["Name", None], ["José", "1"]]
+    canonical = '[["Name",null],["José","1"]]'.encode()
+    assert content_fingerprint(grid) == hashlib.sha256(canonical).hexdigest()
