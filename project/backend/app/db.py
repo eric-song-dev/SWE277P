@@ -1,7 +1,8 @@
 from collections.abc import Iterator
+from datetime import datetime
 from functools import lru_cache
 
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import DateTime, MetaData, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -12,6 +13,7 @@ SCHEMA = "hub"
 
 class Base(DeclarativeBase):
     metadata = MetaData(schema=SCHEMA)
+    type_annotation_map = {datetime: DateTime(timezone=True)}
 
 
 @lru_cache
