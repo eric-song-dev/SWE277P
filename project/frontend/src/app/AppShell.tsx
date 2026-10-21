@@ -14,6 +14,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink, Outlet } from "react-router";
 import { apiGet } from "../api/client";
+import type { MeOut } from "../api/types";
 
 const DRAWER_WIDTH = 220;
 
@@ -24,15 +25,8 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: <SettingsIcon /> },
 ];
 
-interface Me {
-  id: number;
-  username: string;
-  display_name: string;
-  auth_mode: string;
-}
-
 export default function AppShell() {
-  const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<Me>("/api/me"), retry: false });
+  const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeOut>("/api/me"), retry: false });
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -41,7 +35,7 @@ export default function AppShell() {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             GPSRC Data Hub
           </Typography>
-          <Typography variant="body2">{me.data?.display_name ?? ""}</Typography>
+          <Typography variant="body2">{me.isError ? "Not connected" : (me.data?.display_name ?? "")}</Typography>
         </Toolbar>
       </AppBar>
       <Drawer
