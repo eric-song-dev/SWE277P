@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    restart: unless-stopped
     environment:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -10,23 +11,40 @@ services:
       - hub-pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      # TCP, not the socket: during first-run init Postgres listens on the socket only.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   api:
     build: ./backend
-    env_file: .env
+    restart: unless-stopped
+    # An explicit list rather than env_file, so the superuser password and the test admin URL
+    # never reach the app container.
     environment:
+      TZ: America/Los_Angeles
       DATABASE_URL: postgresql+psycopg://hub_app:${HUB_APP_PASSWORD}@db:5432/hub
       CHATBOT_DATABASE_URL: postgresql+psycopg://chatbot_ro:${CHATBOT_RO_PASSWORD}@db:5432/hub
+      HUB_SECRET_KEY: ${HUB_SECRET_KEY}
+      AUTH_MODE: ${AUTH_MODE:-none}
+      DISPLAY_ROW_CAP: ${DISPLAY_ROW_CAP:-1000}
+      EXPORT_ROW_CAP: ${EXPORT_ROW_CAP:-100000}
+      LLM_RESULT_MAX_ROWS: ${LLM_RESULT_MAX_ROWS:-200}
+      LLM_RESULT_MAX_CHARS: ${LLM_RESULT_MAX_CHARS:-20000}
+      LLM_TIMEOUT_S: ${LLM_TIMEOUT_S:-30}
+      STATEMENT_TIMEOUT_MS: ${STATEMENT_TIMEOUT_MS:-5000}
+      TURN_TIMEOUT_S: ${TURN_TIMEOUT_S:-90}
+      MAX_GENERATIONS: ${MAX_GENERATIONS:-3}
+      HUB_ENABLE_FAKE_LLM: ${HUB_ENABLE_FAKE_LLM:-false}
+      MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-10485760}
     depends_on:
       db:
         condition: service_healthy
 
   nginx:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "127.0.0.1:8080:80"
     depends_on:
