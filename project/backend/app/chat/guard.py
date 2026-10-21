@@ -215,12 +215,16 @@ def _check_nodes(root: exp.Expression) -> None:
             raise GuardError(f"the SQL construct {type(node).__name__} is not allowed")
         if isinstance(node, exp.Identifier):
             _norm(node)  # rejects unquoted non-ASCII names
-        if isinstance(node, exp.Column) and isinstance(node.this, exp.Identifier):
-            if not node.table and _norm(node.this) in _RESERVED_VALUE_NAMES:
-                raise GuardError(
-                    f"{_norm(node.this)} is not a column of attendance_view; "
-                    "session and identity values are not available"
-                )
+        if (
+            isinstance(node, exp.Column)
+            and isinstance(node.this, exp.Identifier)
+            and not node.table
+            and _norm(node.this) in _RESERVED_VALUE_NAMES
+        ):
+            raise GuardError(
+                f"{_norm(node.this)} is not a column of attendance_view; "
+                "session and identity values are not available"
+            )
         if isinstance(node, exp.Cast):
             _check_data_type(node.args.get("to"))
         elif isinstance(node, exp.DataType):
