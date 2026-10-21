@@ -503,3 +503,39 @@ def test_parse_draft_rejects(raw):
 )
 def test_local_summary(result, text):
     assert local_summary(result) == text
+
+
+# --- the Demo script's walkthrough questions -------------------------------------------------
+
+
+async def test_demo_refused_query(run):
+    r = await run(ScriptedChatModel.default(), "Demo refused query")
+    s = r.state
+    assert (s["outcome"], s["attempts"]) == ("error", 3)
+    assert s["error"]["code"] == "sql_rejected"
+    assert "DELETE" in s["draft"].sql
+
+
+async def test_demo_repaired_query(run):
+    r = await run(ScriptedChatModel.default(), "Demo repaired query")
+    assert (r.state["outcome"], r.state["attempts"]) == ("answer", 2)
+    assert ("repairing", 1) in steps(r.events)
+
+
+async def test_demo_all_columns(run):
+    r = await run(ScriptedChatModel.default(), "Demo all columns")
+    result = data(r.events, "result")
+    assert len(result["columns"]) == 17
+    assert result["row_count"] == 38
+
+
+async def test_demo_slow_question_answers(run, monkeypatch):
+    slept: list[float] = []
+
+    async def fake_sleep(seconds):
+        slept.append(seconds)
+
+    monkeypatch.setattr("app.llm.fake.asyncio.sleep", fake_sleep)
+    r = await run(ScriptedChatModel.default(), "Demo slow question")
+    assert slept == [10]
+    assert data(r.events, "result")["rows"] == [[38]]

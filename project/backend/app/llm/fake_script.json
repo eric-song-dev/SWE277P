@@ -21,6 +21,36 @@
     "analyze": "The result lists the email addresses of everyone who attended a Bagel Breakfast."
   },
   {
+    "match": "Demo slow question",
+    "delay_seconds": 10,
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT COUNT(DISTINCT person_key) AS unique_people FROM attendance_view WHERE event_name = 'Bagel Breakfast, October'\", \"interpretation\": \"Count the distinct people who attended the October Bagel Breakfast.\", \"assumptions\": []}"
+    ],
+    "analyze": "38 unique people attended the October Bagel Breakfast."
+  },
+  {
+    "match": "Demo refused query",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"DELETE FROM attendance_view\", \"interpretation\": \"Delete every attendance row.\", \"assumptions\": []}"
+    ],
+    "analyze": "The demo model has no analysis for a refused query."
+  },
+  {
+    "match": "Demo repaired query",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT COUNT(*) AS n FROM attendance_view WHERE campus = 'UCI'\", \"interpretation\": \"Count the attendance rows for UCI.\", \"assumptions\": []}",
+      "{\"kind\": \"sql\", \"sql\": \"SELECT COUNT(*) AS n FROM attendance_view\", \"interpretation\": \"Count all attendance rows.\", \"assumptions\": []}"
+    ],
+    "analyze": "The result is the number of attendance rows."
+  },
+  {
+    "match": "Demo all columns",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT * FROM attendance_view WHERE event_name = 'Bagel Breakfast, October'\", \"interpretation\": \"List every column for the October Bagel Breakfast attendees.\", \"assumptions\": []}"
+    ],
+    "analyze": "The result lists every column for the October Bagel Breakfast attendees."
+  },
+  {
     "match": "this year",
     "generate": [
       "{\"kind\": \"clarify\", \"clarification_question\": \"Do you mean the 2026-27 academic year or calendar year 2026?\"}"

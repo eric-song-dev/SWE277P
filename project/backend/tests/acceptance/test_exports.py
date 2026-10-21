@@ -10,10 +10,13 @@ from tests.acceptance.test_privacy import fake_llm, make_profile  # noqa: F401
 pytestmark = pytest.mark.acceptance
 
 # Every fake-script entry that answers with SQL; its match text doubles as the question.
+# The refused entry never answers, and the delayed one only repeats a query covered above.
 ANSWER_QUESTIONS = [
     e["match"]
     for e in json.loads(SCRIPT_PATH.read_text(encoding="utf-8"))
     if json.loads(e["generate"][0])["kind"] == "sql"
+    and not e.get("delay_seconds")
+    and "DELETE" not in e["generate"][-1]
 ]
 
 

@@ -1,4 +1,6 @@
+import asyncio
 import json
+import time
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -53,3 +55,44 @@ async def test_bind_extra_kwargs_and_streaming():
     assert (await bound.ainvoke([HumanMessage("bagel")])).content == "A"
     chunks = [c.content async for c in m.astream([HumanMessage("bagel")])]
     assert "".join(chunks) == "A"
+
+
+async def test_delay_applies_to_generate_only(monkeypatch):
+    slept: list[float] = []
+
+    async def fake_sleep(seconds):
+        slept.append(seconds)
+
+    monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+    m = ScriptedChatModel(
+        script=[ScriptEntry(match="bagel", generate=["A"], analyze="X", delay_seconds=2)]
+    )
+    await m.ainvoke([SystemMessage("gen"), HumanMessage("bagel")])
+    assert slept == [2]
+    await m.ainvoke([SystemMessage(ANALYZE_SYSTEM), HumanMessage("bagel")])
+    assert slept == [2]
+
+
+async def test_no_delay_by_default(monkeypatch):
+    async def boom(seconds):
+        raise AssertionError("slept")
+
+    monkeypatch.setattr(asyncio, "sleep", boom)
+    m = ScriptedChatModel(script=[ScriptEntry(match="bagel", generate=["A"], analyze="X")])
+    await m.ainvoke([HumanMessage("bagel")])
+
+
+def test_sync_generate_sleeps_with_time_sleep(monkeypatch):
+    slept: list[float] = []
+    monkeypatch.setattr(time, "sleep", slept.append)
+    m = ScriptedChatModel(
+        script=[ScriptEntry(match="bagel", generate=["A"], analyze="X", delay_seconds=3)]
+    )
+    m.invoke([HumanMessage("bagel")])
+    assert slept == [3]
+
+
+def test_default_script_has_the_walkthrough_entries():
+    by_match = {e.match: e for e in ScriptedChatModel.default().script}
+    assert by_match["Demo slow question"].delay_seconds == 10
+    assert len(by_match["Demo repaired query"].generate) == 2

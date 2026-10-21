@@ -1,4 +1,6 @@
+import asyncio
 import json
+import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Self
@@ -25,6 +27,7 @@ class ScriptEntry(BaseModel):
     match: str  # case-insensitive substring of the question
     generate: list[str]  # raw replies, used in order; the last one repeats
     analyze: str
+    delay_seconds: float = 0  # pause before a generate reply (analyze is never delayed)
 
 
 class ScriptedChatModel(BaseChatModel):
@@ -60,6 +63,18 @@ class ScriptedChatModel(BaseChatModel):
                 return entry.generate[min(n, len(entry.generate) - 1)]
         return UNMATCHED_ANALYSIS if is_analyze else UNMATCHED_REPLY
 
+    def _delay(self, messages: Sequence[BaseMessage]) -> float:
+        """Seconds to pause before replying: only a matched entry's generate call is delayed."""
+        question = next(
+            (str(m.content) for m in reversed(messages) if isinstance(m, HumanMessage)), ""
+        ).lower()
+        if any(m.type == "system" and m.content == prompts.ANALYZE_SYSTEM for m in messages):
+            return 0
+        return next(
+            (e.delay_seconds for e in self.script if e.match.lower() in question),
+            0,
+        )
+
     def _result(self, messages: Sequence[BaseMessage]) -> ChatResult:
         message = AIMessage(content=self._reply(messages))
         return ChatResult(generations=[ChatGeneration(message=message)])
@@ -71,6 +86,8 @@ class ScriptedChatModel(BaseChatModel):
         run_manager: CallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
+        if seconds := self._delay(messages):
+            time.sleep(seconds)
         return self._result(messages)
 
     async def _agenerate(
@@ -80,4 +97,6 @@ class ScriptedChatModel(BaseChatModel):
         run_manager: AsyncCallbackManagerForLLMRun | None = None,
         **kwargs: Any,
     ) -> ChatResult:
+        if seconds := self._delay(messages):
+            await asyncio.sleep(seconds)
         return self._result(messages)
