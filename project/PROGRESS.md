@@ -44,7 +44,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 - **How to run:** see `CLAUDE.md` "Commands", which now includes the e2e commands.
 - **Dev database (`hub`):** unchanged since S3. It is at migration `0004`, with the 10 sample imports and profile id 1 "DeepSeek" (`deepseek-flash`).
-  - `project/.env` still says `LLM_SEED_MODEL=deepseek-v4-flash`. The user should change it to `deepseek-flash`, so a fresh database seeds the right model.
+  - `project/.env` now has `LLM_SEED_MODEL=deepseek-flash` (changed 2026-10-21). DeepSeek's `/models` lists `deepseek-flash` and `deepseek-v4-pro`. It also accepts `deepseek-v4-flash`, but only as an alias that it answers as `deepseek-flash`.
 - **Tests at the last S4 commit:**
   - backend: 815 passed, 54 of them acceptance; ruff check and format are clean;
   - frontend: Vitest 132 passed (13 files); lint and build are clean;
