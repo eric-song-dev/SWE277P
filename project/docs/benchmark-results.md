@@ -51,7 +51,6 @@ Every run used `--today 2026-11-02` (the default). By prompt version:
   data has one term (Fall 2026), so the benchmark does not exercise "last term"; an ad-hoc check
   outside the benchmark gave a clarifying question for "last term" on 2026-11-02 (no earlier
   data) and Fall 2026 for "last quarter" on 2027-01-15.
-
 - **Second profile (A4)**: profile `DeepSeek Pro` (same preset and base URL as DeepSeek, model
   `deepseek-v4-pro`, result sharing off, the same stored key) ran the main and holdout sets once
   each on 2026-10-29.4 with no code change. No timeouts, JSON-mode rejections or unknown-model
@@ -64,12 +63,13 @@ No change was tried and reverted.
 Each failure is classed as a missing domain rule, a controlled-value gap, a few-shot gap, a JSON or
 format failure, or question ambiguity.
 
-No question failed in any run above, main or holdout, so there was nothing to class and no
-tuning was aimed at a question; the two prompt changes are the S3 carry-overs. One holdout answer
-(h10, 05:03, the second holdout run of that minute) passed on its second attempt, after one
-repair. It is not a failure, and holdout answers are not used to choose prompt wording.
+Only one question failed in any run above, main or holdout: q15 on DeepSeek Pro (below). The
+DeepSeek runs never failed a question, so no tuning was aimed at a question; the two prompt
+changes are the S3 carry-overs. One holdout answer (h10, 05:03, the second holdout run of that
+minute) passed on its second attempt, after one repair. It is not a failure, and holdout answers
+are not used to choose prompt wording.
 
-The one failure, q15 on DeepSeek Pro (05:09), is question ambiguity: the model counted unique
+The failure, q15 on DeepSeek Pro (05:09), is question ambiguity: the model counted unique
 people (`COUNT(DISTINCT person_key)`) among virtual-event attendees, while the reference counts
 attendance records. It returned 1 row in 1 attempt, so it is a different reading, not a
 format failure. No prompt change was made for it, since the other profile passes it and the
@@ -91,5 +91,15 @@ q01 is a cold start. Run with `HUB_E2E_PROFILE="DeepSeek" npm run e2e:timing` (P
 | q04 | 5359 | 60000 |
 | q14 | 5381 | 60000 |
 
-Log scan after the run: `docker compose logs api nginx db | grep -E "sk-|@uci\.edu" | wc -l` gave 0
+Two more runs of the same spec, 3 passed each:
+
+| Run | Profile | q01 (ms) | q04 (ms) | q14 (ms) |
+|---|---|---|---|---|
+| 2026-10-21 06:00, controller's re-run | DeepSeek (deepseek, deepseek-flash) | 4377 | 6374 | 4865 |
+| 2026-10-21 06:01 | DeepSeek Pro (deepseek, deepseek-v4-pro) | 10488 | 5395 | 16398 |
+
+All are under the 60000 ms limit. The slowest, q14 on DeepSeek Pro at 16.4 s, is about three times
+the flash model's time for the same question (about 5 s).
+
+Log scan after the first run: `docker compose logs api nginx db | grep -E "sk-|@uci\.edu" | wc -l` gave 0
 (also 0 when scoped with `--since` the start of the run).
