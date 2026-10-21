@@ -9,6 +9,7 @@ import type { FileRejection } from "react-dropzone";
 import PageHeader from "../../app/PageHeader";
 import { tokens } from "../../app/theme";
 import FilePreviewCard from "./FilePreviewCard";
+import UnloadableImportCard from "./UnloadableImportCard";
 import { useUploadStore } from "./uploadStore";
 import { useImportHistory, usePendingPreviews, usePreviewUpload } from "./useImports";
 
@@ -89,9 +90,14 @@ export default function UploadPage() {
           <Alert severity="warning">Unsupported file type, not uploaded: {rejected.join(", ")}</Alert>
         )}
         {history.isError && <Alert severity="error">Could not check for pending imports.</Alert>}
-        {restored.failed > 0 && (
-          <Alert severity="error">Could not load a pending import. Reload the page to try again.</Alert>
-        )}
+        {restored.failedIds.map((id) => (
+          <UnloadableImportCard
+            key={id}
+            importId={id}
+            fileName={history.data?.find((row) => row.id === id)?.file_name ?? `Import ${id}`}
+            onRetry={() => restored.retry(id)}
+          />
+        ))}
         {cards.map((card) => (
           <FilePreviewCard
             key={card.key}

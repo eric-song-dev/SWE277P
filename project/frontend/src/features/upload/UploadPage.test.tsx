@@ -3,7 +3,7 @@ import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, Link, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiGet, apiSend, apiUpload } from "../../api/client";
+import { ApiError, apiGet, apiSend, apiUpload } from "../../api/client";
 import type { CommitSummary, ImportFileOut, ImportPreview } from "../../api/types";
 import { UploadProvider } from "./UploadContext";
 import UploadPage from "./UploadPage";
@@ -286,13 +286,74 @@ describe("UploadPage", () => {
     expect(await within(card).findByText("38 rows imported")).toBeInTheDocument();
   });
 
-  it("says when a pending import cannot be loaded", async () => {
-    vi.mocked(apiGet).mockImplementation(async (path) => {
-      if (path === "/api/imports") return [importRow(5, "pending")];
-      throw new Error("boom");
+  describe("a pending import that no longer loads", () => {
+    const COPY = "Could not load this pending import. Try again, or discard it and upload the file again.";
+    const oldRow = { ...importRow(9, "pending"), file_name: "Old.csv" };
+
+    function mockServer(previewOk: { current: boolean }, listed: { current: boolean } = { current: true }) {
+      vi.mocked(apiGet).mockImplementation(async (path) => {
+        if (path === "/api/imports") return listed.current ? [oldRow] : [];
+        if (path === "/api/imports/9/preview") {
+          if (previewOk.current) return { ...pending(9, "Old") };
+          throw new ApiError(422, "unknown_format", "Unknown format.");
+        }
+        throw new Error(`unexpected GET ${path}`);
+      });
+    }
+
+    it("shows the file name with Try again and Discard", async () => {
+      mockServer({ current: false });
+      renderUpload();
+      expect(await screen.findByText("Old.csv")).toBeInTheDocument();
+      expect(screen.getByText(COPY)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Discard" })).toBeInTheDocument();
+      expect(screen.queryByText(/Reload the page to try again/)).not.toBeInTheDocument();
     });
-    renderUpload();
-    expect(await screen.findByText(/Could not load a pending import/)).toBeInTheDocument();
+
+    it("discards it and drops the card once the history no longer lists it", async () => {
+      const listed = { current: true };
+      mockServer({ current: false }, listed);
+      const { user } = renderUpload();
+      await screen.findByText("Old.csv");
+      vi.mocked(apiSend).mockImplementationOnce(async () => {
+        listed.current = false;
+      });
+      await user.click(screen.getByRole("button", { name: "Discard" }));
+      expect(apiSend).toHaveBeenCalledWith("DELETE", "/api/imports/9");
+      await waitFor(() => expect(screen.queryByText("Old.csv")).not.toBeInTheDocument());
+    });
+
+    it("shows the server's message and keeps the card when the discard fails", async () => {
+      mockServer({ current: false });
+      const { user } = renderUpload();
+      await screen.findByText("Old.csv");
+      vi.mocked(apiSend).mockRejectedValueOnce(new ApiError(500, "server_error", "Could not discard."));
+      await user.click(screen.getByRole("button", { name: "Discard" }));
+      expect(await screen.findByText("Could not discard.")).toBeInTheDocument();
+      expect(screen.getByText("Old.csv")).toBeInTheDocument();
+    });
+
+    it("replaces the card with the preview when Try again succeeds", async () => {
+      const ok = { current: false };
+      mockServer(ok);
+      const { user } = renderUpload();
+      await screen.findByText(COPY);
+      ok.current = true;
+      await user.click(screen.getByRole("button", { name: "Try again" }));
+      const card = (await screen.findByText("Old.csv")).closest("[data-testid=preview-card]");
+      expect(card).not.toBeNull();
+      expect(screen.queryByText(COPY)).not.toBeInTheDocument();
+    });
+
+    it("keeps the card when Try again fails again", async () => {
+      mockServer({ current: false });
+      const { user } = renderUpload();
+      await screen.findByText(COPY);
+      await user.click(screen.getByRole("button", { name: "Try again" }));
+      await waitFor(() => expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled());
+      expect(screen.getByText(COPY)).toBeInTheDocument();
+    });
   });
 
   it("keeps typed edits and a commit summary when the user leaves and comes back", async () => {

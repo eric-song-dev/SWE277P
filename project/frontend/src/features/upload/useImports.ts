@@ -42,9 +42,11 @@ export function useDiscardImport() {
 }
 
 // The previews of imports the server still holds as pending, for cards the page does not have
-// (the user left /upload or reloaded). Fetched once each; a failed one is counted, not retried.
+// (the user left /upload or reloaded). Fetched once each; a failed one is listed in failedIds and
+// only retried when retry(id) is called.
 export function usePendingPreviews(ids: number[]) {
-  return useQueries({
+  const queryClient = useQueryClient();
+  const results = useQueries({
     queries: ids.map((id) => ({
       queryKey: ["import-preview", id],
       queryFn: () => apiGet<ImportPreview>(`/api/imports/${id}/preview`),
@@ -54,7 +56,9 @@ export function usePendingPreviews(ids: number[]) {
     })),
     combine: (results) => ({
       previews: results.flatMap((r) => (r.data ? [r.data] : [])),
-      failed: results.filter((r) => r.isError).length,
+      failedIds: ids.filter((_, i) => results[i]?.isError),
     }),
   });
+  const retry = (id: number) => queryClient.refetchQueries({ queryKey: ["import-preview", id] });
+  return { ...results, retry };
 }
