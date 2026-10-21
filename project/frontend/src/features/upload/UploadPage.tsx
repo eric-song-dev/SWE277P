@@ -26,6 +26,8 @@ export default function UploadPage() {
   const upload = usePreviewUpload();
   const [cards, setCards] = useState<Card[]>([]);
   const [rejected, setRejected] = useState<string[]>([]);
+  // One entry per failed batch; the mutation's own error only tracks the latest call.
+  const [failures, setFailures] = useState<{ key: number; message: string }[]>([]);
   const nextKey = useRef(0);
 
   function addPreviews(previews: ImportPreview[]) {
@@ -45,8 +47,12 @@ export default function UploadPage() {
   function onDrop(accepted: File[], fileRejections: FileRejection[]) {
     setRejected(fileRejections.map((r) => r.file.name));
     // mutate() callbacks only fire for the latest call, so a second drop would lose the first batch.
-    // The mutation's own error state drives the alert.
-    if (accepted.length > 0) upload.mutateAsync(accepted).then(addPreviews, () => {});
+    if (accepted.length === 0) return;
+    const names = accepted.map((f) => f.name).join(", ");
+    upload.mutateAsync(accepted).then(addPreviews, (error: Error) => {
+      const key = nextKey.current++;
+      setFailures((current) => [...current, { key, message: `Upload failed for ${names}: ${error.message}` }]);
+    });
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPT });
@@ -72,7 +78,15 @@ export default function UploadPage() {
         <Typography>Drop CSV or Excel files here, or click to choose. (.csv, .xlsx, .xlsm)</Typography>
       </Box>
       {upload.isPending && <LinearProgress aria-label="Uploading" />}
-      {upload.isError && <Alert severity="error">Upload failed: {upload.error.message}</Alert>}
+      {failures.map((failure) => (
+        <Alert
+          key={failure.key}
+          severity="error"
+          onClose={() => setFailures((current) => current.filter((f) => f.key !== failure.key))}
+        >
+          {failure.message}
+        </Alert>
+      ))}
       {rejected.length > 0 && (
         <Alert severity="warning">Unsupported file type, not uploaded: {rejected.join(", ")}</Alert>
       )}

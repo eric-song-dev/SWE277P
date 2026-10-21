@@ -154,4 +154,17 @@ describe("UploadPage", () => {
     expect(await screen.findByText("Mixer.csv")).toBeInTheDocument();
     expect(screen.getByText("Panel.csv")).toBeInTheDocument();
   });
+
+  it("reports an earlier batch's failure even after a later batch succeeded", async () => {
+    let failFirst: (error: Error) => void = () => {};
+    vi.mocked(apiUpload)
+      .mockReturnValueOnce(new Promise((_, reject) => (failFirst = reject)))
+      .mockResolvedValueOnce({ files: [pending(6, "Panel")] });
+    const user = await drop([csv("a.csv")]);
+    await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, csv("b.csv"));
+    expect(await screen.findByText("Panel.csv")).toBeInTheDocument();
+    failFirst(new Error("boom"));
+    expect(await screen.findByText(/Upload failed for a\.csv: boom/)).toBeInTheDocument();
+    expect(screen.getByText("Panel.csv")).toBeInTheDocument();
+  });
 });
