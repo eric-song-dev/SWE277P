@@ -269,31 +269,61 @@ def _parse_error_reason(e: SqlglotError) -> str:
     return "could not parse the SQL: syntax error"
 
 
+_SUBQUERY_MODIFIERS = ("limit", "offset", "order")
+
+
 def _outer_query(stmt: exp.Expression) -> exp.Expression:
-    """Return a query whose own LIMIT/OFFSET/ORDER are the outermost ones."""
+    """Return a query whose own LIMIT/OFFSET/ORDER are the outermost ones.
+
+    A parenthesised top-level query is unwrapped when nothing is attached to the
+    parentheses. A WITH clause is moved with it, never dropped. Any other
+    modifier sqlglot attaches to the parentheses is rejected, not discarded.
+    """
     while isinstance(stmt, exp.Subquery):
-        modifiers = {k: stmt.args.get(k) for k in ("limit", "offset", "order")}
-        if stmt.args.get("alias"):
+        extra = [
+            k
+            for k, v in stmt.args.items()
+            if v and k not in ("this", "with_", *_SUBQUERY_MODIFIERS)
+        ]
+        if extra:
+            raise GuardError(
+                "clauses after a parenthesised query are not supported; remove the parentheses"
+            )
+        with_ = stmt.args.get("with_")
+        inner = stmt.this
+        has_mods = any(stmt.args.get(k) for k in _SUBQUERY_MODIFIERS)
+        if has_mods:
             break
-        if not any(modifiers.values()):
-            stmt = stmt.this  # plain parentheses: unwrap
+        if with_ is None:
+            stmt = inner
+            continue
+        if isinstance(inner, (exp.Select, exp.SetOperation)) and not inner.args.get("with_"):
+            inner.set("with_", with_.pop())
+            stmt = inner
             continue
         break
     if not isinstance(stmt, exp.Subquery):
         return stmt
-    # parenthesised query with its own trailing modifiers: move them to a wrapper
-    modifiers = {k: stmt.args.pop(k, None) for k in ("limit", "offset", "order")}
+    # keep the parentheses as a derived table; lift WITH and the modifiers onto a wrapper
+    lifted = {k: stmt.args.pop(k, None) for k in ("with_", *_SUBQUERY_MODIFIERS)}
     wrapper = exp.select("*").from_(exp.alias_(stmt, "_guarded", table=True))
-    for key, value in modifiers.items():
+    for key, value in lifted.items():
         if value is not None:
             wrapper.set(key, value)
     return wrapper
 
 
-def _guard(sql: str, limit: int) -> GuardedSql:
-    cleaned = strip_sql_wrapping(sql)
+def _validate(stmt: exp.Expression | None) -> exp.Expression:
+    if not isinstance(stmt, _QUERY_TYPES):
+        raise GuardError("only SELECT statements are allowed")
+    _check_nodes(stmt)
+    _check_tables(stmt, frozenset())
+    return stmt
+
+
+def _parse_one(sql: str) -> exp.Expression:
     try:
-        statements = sqlglot.parse(cleaned, read="postgres")
+        statements = sqlglot.parse(sql, read="postgres")
     except SqlglotError as e:
         raise GuardError(_parse_error_reason(e)) from None
     statements = [s for s in statements if s is not None]
@@ -301,18 +331,20 @@ def _guard(sql: str, limit: int) -> GuardedSql:
         raise GuardError("the SQL is empty")
     if len(statements) != 1:
         raise GuardError("exactly one statement is allowed")
-    stmt = statements[0]
-    if not isinstance(stmt, _QUERY_TYPES):
-        raise GuardError("only SELECT statements are allowed")
+    return statements[0]
 
-    _check_nodes(stmt)
-    _check_tables(stmt, frozenset())
+
+def _guard(sql: str, limit: int) -> GuardedSql:
+    stmt = _validate(_parse_one(strip_sql_wrapping(sql)))
 
     stmt = _outer_query(stmt)
     existing = _int_limit(stmt.args.get("limit"))
     final = limit if existing is None else min(existing, limit)
     stmt.set("limit", exp.Limit(expression=exp.Literal.number(final)))
-    return GuardedSql(sql=stmt.sql(dialect="postgres"), limit=final)
+    rendered = stmt.sql(dialect="postgres")
+    # Safety net: whatever the rewrite did, the SQL we return must itself pass every check.
+    _validate(_parse_one(rendered))
+    return GuardedSql(sql=rendered, limit=final)
 
 
 def guard_sql(sql: str, *, limit: int) -> GuardedSql:

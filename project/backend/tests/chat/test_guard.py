@@ -527,3 +527,57 @@ def test_parse_error_reason_is_clean(sql):
     assert "<Token" not in reason
     assert "token_type" not in reason
     assert "line 1" in reason
+
+
+# ---- fix round 2 -----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "WITH pg_roles AS (SELECT 1 AS x) (SELECT * FROM pg_roles) WHERE true",
+        "WITH pg_settings AS (SELECT 1 AS x) (SELECT name, setting FROM pg_settings) GROUP BY 1",
+        "WITH pg_stat_activity AS (SELECT 1 AS x) (SELECT query FROM pg_stat_activity) WINDOW w AS ()",
+        "WITH pg_class AS (SELECT 1 AS x) (SELECT relname FROM pg_class) HAVING true",
+    ],
+)
+def test_trailing_clauses_after_parentheses_rejected(sql):
+    with pytest.raises(GuardError, match="parenthesised"):
+        guard_sql(sql, limit=1001)
+
+
+def test_with_kept_when_unwrapping():
+    out = guard_sql("WITH a AS (SELECT email FROM attendance_view) (SELECT * FROM a)", limit=1001)
+    assert out.sql == "WITH a AS (SELECT email FROM attendance_view) SELECT * FROM a LIMIT 1001"
+
+
+@pytest.mark.parametrize(
+    ("sql", "n"),
+    [
+        ("WITH a AS (SELECT email FROM attendance_view) (SELECT * FROM a) LIMIT 5", 5),
+        ("WITH a AS (SELECT email FROM attendance_view) (SELECT * FROM a) LIMIT 50000", 1001),
+        (
+            "WITH a AS (SELECT email FROM attendance_view) (SELECT * FROM a) FETCH FIRST 3 ROWS ONLY",
+            3,
+        ),
+        (
+            "WITH a AS (SELECT email FROM attendance_view) (SELECT * FROM a) ORDER BY email LIMIT 4 OFFSET 1",
+            4,
+        ),
+    ],
+)
+def test_with_plus_parenthesised_query_with_modifiers(sql, n):
+    out = guard_sql(sql, limit=1001)
+    assert out.limit == n
+    assert out.sql.startswith("WITH a AS (SELECT email FROM attendance_view) SELECT * FROM (")
+    assert out.sql.count("LIMIT") == 1
+    assert guard_sql(out.sql, limit=1001).sql == out.sql
+
+
+def test_rendered_sql_is_revalidated(monkeypatch):
+    def evil(stmt):
+        return sqlglot.parse_one("SELECT * FROM pg_roles", read="postgres")
+
+    monkeypatch.setattr(guard, "_outer_query", evil)
+    with pytest.raises(GuardError, match="attendance_view"):
+        guard_sql("SELECT email FROM attendance_view", limit=10)
