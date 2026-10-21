@@ -44,7 +44,9 @@ export default function UploadPage() {
 
   function onDrop(accepted: File[], fileRejections: FileRejection[]) {
     setRejected(fileRejections.map((r) => r.file.name));
-    if (accepted.length > 0) upload.mutate(accepted, { onSuccess: addPreviews });
+    // mutate() callbacks only fire for the latest call, so a second drop would lose the first batch.
+    // The mutation's own error state drives the alert.
+    if (accepted.length > 0) upload.mutateAsync(accepted).then(addPreviews, () => {});
   }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPT });

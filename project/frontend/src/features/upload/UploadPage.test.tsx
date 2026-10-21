@@ -141,4 +141,17 @@ describe("UploadPage", () => {
     await waitFor(() => expect(apiUpload).toHaveBeenCalledTimes(2));
     expect(screen.getAllByText("Mixer.csv")).toHaveLength(1);
   });
+
+  it("keeps every batch's cards when a second drop starts before the first upload resolves", async () => {
+    let releaseFirst: (value: { files: ImportPreview[] }) => void = () => {};
+    vi.mocked(apiUpload)
+      .mockReturnValueOnce(new Promise((resolve) => (releaseFirst = resolve)))
+      .mockResolvedValueOnce({ files: [pending(6, "Panel")] });
+    const user = await drop([csv("a.csv")]);
+    await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, csv("b.csv"));
+    expect(await screen.findByText("Panel.csv")).toBeInTheDocument();
+    releaseFirst({ files: [pending(5, "Mixer")] });
+    expect(await screen.findByText("Mixer.csv")).toBeInTheDocument();
+    expect(screen.getByText("Panel.csv")).toBeInTheDocument();
+  });
 });
