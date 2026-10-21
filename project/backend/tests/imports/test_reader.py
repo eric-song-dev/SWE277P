@@ -1,4 +1,7 @@
 import hashlib
+import io
+import re
+import zipfile
 from datetime import datetime
 
 import pytest
@@ -84,3 +87,25 @@ def test_content_fingerprint_is_sha256_of_canonical_json():
     grid = [["Name", None], ["José", "1"]]
     canonical = '[["Name",null],["José","1"]]'.encode()
     assert content_fingerprint(grid) == hashlib.sha256(canonical).hexdigest()
+
+
+def _with_dimension(xlsx: bytes, ref: str) -> bytes:
+    """Rewrite the sheet's <dimension> tag, as some exporters write a stale or too-small one."""
+    src = zipfile.ZipFile(io.BytesIO(xlsx))
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w") as z:
+        for item in src.infolist():
+            data = src.read(item.filename)
+            if item.filename == "xl/worksheets/sheet1.xml":
+                data, n = re.subn(
+                    rb'<dimension ref="[^"]+"', f'<dimension ref="{ref}"'.encode(), data
+                )
+                assert n == 1
+            z.writestr(item, data)
+    return out.getvalue()
+
+
+def test_xlsx_with_understated_dimension_reads_every_cell(tmp_xlsx):
+    rows = [["A", "B", "C"], *[[f"r{i}", "x", "y"] for i in range(5)]]
+    grid = read_grid("a.xlsx", _with_dimension(tmp_xlsx(rows), "A1:B2"))
+    assert grid == rows

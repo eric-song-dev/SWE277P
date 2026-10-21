@@ -58,6 +58,9 @@ def _read_xlsx(content: bytes) -> list[list]:
         wb = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
         try:
             ws = wb.worksheets[0]
+            # Read-only mode trusts the file's <dimension> tag, which some exporters understate;
+            # without this, rows and columns past it are silently dropped.
+            ws.reset_dimensions()
             return [list(row) for row in ws.iter_rows(values_only=True)]
         finally:
             wb.close()
