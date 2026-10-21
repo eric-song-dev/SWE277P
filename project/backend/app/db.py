@@ -20,7 +20,7 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def get_app_engine() -> Engine:
-    return create_engine(get_settings().database_url, pool_pre_ping=True)
+    return create_engine(get_settings().database_url, pool_pre_ping=True, hide_parameters=True)
 
 
 def make_chatbot_engine(url: str) -> Engine:

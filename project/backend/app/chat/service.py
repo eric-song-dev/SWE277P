@@ -186,6 +186,13 @@ def _write_turn(
         return turn_id
 
 
+def _log_write_failure(task: asyncio.Future) -> None:
+    """Always retrieve the write's exception (a cancelled shield wrapper would otherwise leave it
+    to asyncio's default handler) and log only its type: the message can carry bound values."""
+    if not task.cancelled() and (exc := task.exception()) is not None:
+        logger.error("Recording the turn failed (%s)", type(exc).__name__)
+
+
 async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> AsyncIterator[str]:
     settings = get_settings()
     loop = asyncio.get_running_loop()
@@ -218,6 +225,7 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
                 latency_ms=int((time.monotonic() - started) * 1000),
             )
         )
+        record_task.add_done_callback(_log_write_failure)
         return await asyncio.shield(record_task)
 
     async def final_turn_id(failure: dict | None) -> int | None:
@@ -230,7 +238,8 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
                 logger.error("Recording the turn failed (%s)", type(exc).__name__)
         state: ChatState = dict(last_state)  # type: ignore[assignment]
         state["attempts"] = max(attempts, state.get("attempts", 0))
-        state["results_shared"] = analyzing and shared
+        # An audit flag errs toward true: rows may have been sent once a result exists.
+        state["results_shared"] = shared and ("result" in last_state or analyzing)
         state["outcome"] = "error"
         state["error"] = failure or INTERNAL_ERROR
         try:

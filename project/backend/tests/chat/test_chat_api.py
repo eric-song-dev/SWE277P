@@ -359,3 +359,43 @@ def test_prepared_repr_hides_key():
         api_key="sk-secret-1234567890", base_url="https://x", history=[],
     )  # fmt: skip
     assert "sk-secret" not in repr(prepared)
+
+
+async def test_orphaned_failed_write_logs_no_values(
+    client, fake_profile, user, monkeypatch, caplog
+):
+    import asyncio
+    import gc
+    import threading
+    import time
+
+    from app.chat.schemas import MessageIn
+
+    started = threading.Event()
+
+    def failing_write(*a, **k):
+        started.set()
+        time.sleep(0.3)
+        raise RuntimeError("[parameters: SECRET-QUESTION SECRET-SQL SECRET-ANALYSIS]")
+
+    monkeypatch.setattr(service, "_write_turn", failing_write)
+    cid = new_conversation(client)
+    gen = service.run_turn(
+        cid, MessageIn(question=FAKE_Q1, llm_profile_id=fake_profile, share_results=True), user
+    )
+
+    async def consume():
+        async for _ in gen:
+            pass
+
+    task = asyncio.create_task(consume())
+    while not started.is_set():
+        await asyncio.sleep(0.01)
+    task.cancel()  # a client disconnect
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    await asyncio.sleep(0.6)
+    gc.collect()
+    await asyncio.sleep(0)
+    assert "never retrieved" not in caplog.text and "SECRET" not in caplog.text
+    assert "Recording the turn failed (RuntimeError)" in caplog.text
