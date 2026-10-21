@@ -13,10 +13,12 @@ export interface LiveTurn {
   clarification?: string;
   error?: { code: string; message: string };
   turnId?: number | null;
+  // The highest saved seq in the conversation when this turn started (0 for a new one).
+  afterSeq: number;
 }
 
-export function startTurn(question: string): LiveTurn {
-  return { question, status: "streaming", analysisText: "" };
+export function startTurn(question: string, afterSeq: number): LiveTurn {
+  return { question, status: "streaming", analysisText: "", afterSeq };
 }
 
 export function chatStreamReducer(turn: LiveTurn, e: SseEvent): LiveTurn {

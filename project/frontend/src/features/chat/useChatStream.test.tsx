@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiSend } from "../../api/client";
 import { streamSse } from "../../api/sse";
-import type { QueryResultOut, SseEvent } from "../../api/types";
+import type { ConversationDetail, QueryResultOut, SseEvent } from "../../api/types";
 import { useChatStream } from "./useChatStream";
 
 vi.mock("../../api/client", async (orig) => ({
@@ -17,8 +17,8 @@ const RESULT: QueryResultOut = { columns: ["n"], rows: [[1]], row_count: 1, trun
 
 type Handler = (e: SseEvent) => void;
 
-function setup(initialId: number | null, onCreated?: (id: number) => void) {
-  const queryClient = new QueryClient();
+function setup(initialId: number | null, onCreated?: (id: number) => void, client?: QueryClient) {
+  const queryClient = client ?? new QueryClient();
   const invalidate = vi.spyOn(queryClient, "invalidateQueries");
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
@@ -95,6 +95,29 @@ describe("useChatStream", () => {
     });
     expect(result.current.live?.status).toBe("streaming");
     await second.finish();
+  });
+
+  it("starts a turn after the cached conversation's last seq and refetches when the connection drops", async () => {
+    const client = new QueryClient();
+    const turns = [1, 2, 3, 4].map((seq) => ({ id: seq * 10, seq, question: `Q${seq}` }));
+    client.setQueryData(["conversation", 5], { id: 5, turns } as unknown as ConversationDetail);
+    const s = pendingStream();
+    const { result, invalidate } = setup(5, undefined, client);
+    act(() => result.current.send("Q5", null, true));
+    expect(result.current.live?.afterSeq).toBe(4);
+    await s.finish(new ApiError(0, "network_error", "Could not reach the server."));
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversation", 5] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversations"] });
+  });
+
+  it("starts a new conversation's turn at afterSeq 0", async () => {
+    vi.mocked(apiSend).mockResolvedValueOnce({ id: 9 });
+    const s = pendingStream();
+    const { result } = setup(null);
+    act(() => result.current.send("q", null, true));
+    await waitFor(() => expect(streamSse).toHaveBeenCalled());
+    expect(result.current.live?.afterSeq).toBe(0);
+    await s.finish();
   });
 
   it("maps a network error the same way", async () => {

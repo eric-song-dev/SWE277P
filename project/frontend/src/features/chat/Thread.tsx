@@ -26,9 +26,10 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
   // The live turn replaces its saved copy (it has the rows and the full error message), or
   // comes last until that copy arrives. One list keyed by seq, so the live card keeps its state
   // when it moves into its saved copy's place.
+  const adopted = live === null ? undefined : savedCopyOf(live, saved);
   const items: { seq: number; turn: TurnOut | LiveTurn }[] = saved.map((turn) => ({
     seq: turn.seq,
-    turn: live !== null && turn.id === live.turnId ? live : turn,
+    turn: live !== null && (turn.id === live.turnId || turn === adopted) ? live : turn,
   }));
   if (live !== null && !items.some((item) => item.turn === live)) {
     items.push({ seq: (saved.at(-1)?.seq ?? 0) + 1, turn: live });
@@ -51,6 +52,13 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
       )}
     </Stack>
   );
+}
+
+// A turn that ended in error without a `done` never learns its id, but the backend saved it
+// (client_disconnected): the first saved turn after the cached ones, with the same question.
+function savedCopyOf(live: LiveTurn, saved: TurnOut[]): TurnOut | undefined {
+  if (live.status !== "error" || live.turnId !== undefined) return undefined;
+  return saved.find((t) => t.seq > live.afterSeq && t.question === live.question);
 }
 
 function TurnItem({

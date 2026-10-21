@@ -25,7 +25,7 @@ describe("chatStreamReducer", () => {
       ev("analysis_delta", { text: "people" }),
       ev("analysis", { text: "38 people", source: "llm", results_shared: true }),
       ev("done", { turn_id: 4 }),
-    ].reduce(chatStreamReducer, startTurn("q"));
+    ].reduce(chatStreamReducer, startTurn("q", 0));
     expect(t).toMatchObject({
       question: "q",
       status: "done",
@@ -38,7 +38,7 @@ describe("chatStreamReducer", () => {
   });
 
   it("starts streaming with empty analysis", () => {
-    expect(startTurn("q")).toEqual({ question: "q", status: "streaming", analysisText: "" });
+    expect(startTurn("q", 0)).toEqual({ question: "q", status: "streaming", analysisText: "", afterSeq: 0 });
   });
 
   it("keeps the latest sql and replaces the step", () => {
@@ -48,7 +48,7 @@ describe("chatStreamReducer", () => {
       ev("sql", SQL),
       ev("step", { name: "repairing", attempt: 2 }),
       ev("sql", sql2),
-    ].reduce(chatStreamReducer, startTurn("q"));
+    ].reduce(chatStreamReducer, startTurn("q", 0));
     expect(t.sql).toEqual(sql2);
     expect(t.step).toEqual({ name: "repairing", attempt: 2 });
   });
@@ -57,7 +57,7 @@ describe("chatStreamReducer", () => {
     const t = [
       ev("analysis_delta", { text: "partial" }),
       ev("analysis", { text: "local text", source: "local", results_shared: false }),
-    ].reduce(chatStreamReducer, startTurn("q"));
+    ].reduce(chatStreamReducer, startTurn("q", 0));
     expect(t.analysisText).toBe("local text");
     expect(t.analysis?.source).toBe("local");
   });
@@ -66,7 +66,7 @@ describe("chatStreamReducer", () => {
     const t = [
       ev("clarification", { question: "Academic or calendar year?" }),
       ev("done", { turn_id: 2 }),
-    ].reduce(chatStreamReducer, startTurn("q"));
+    ].reduce(chatStreamReducer, startTurn("q", 0));
     expect(t).toMatchObject({
       clarification: "Academic or calendar year?",
       status: "done",
@@ -78,7 +78,7 @@ describe("chatStreamReducer", () => {
     const t = [
       ev("error", { code: "llm_auth_failed", message: "Bad key" }),
       ev("done", { turn_id: 3 }),
-    ].reduce(chatStreamReducer, startTurn("q"));
+    ].reduce(chatStreamReducer, startTurn("q", 0));
     expect(t).toMatchObject({
       status: "error",
       error: { code: "llm_auth_failed", message: "Bad key" },
@@ -87,18 +87,18 @@ describe("chatStreamReducer", () => {
   });
 
   it("allows a null turn id", () => {
-    const t = chatStreamReducer(startTurn("q"), ev("done", { turn_id: null }));
+    const t = chatStreamReducer(startTurn("q", 0), ev("done", { turn_id: null }));
     expect(t).toMatchObject({ status: "done", turnId: null });
   });
 
   it("leaves the turn unchanged for an unknown event", () => {
-    const before = startTurn("q");
+    const before = startTurn("q", 0);
     const keepAlive = { event: "keep_alive", data: {} } as unknown as SseEvent;
     expect(chatStreamReducer(before, keepAlive)).toBe(before);
   });
 
   it("does not mutate the input turn", () => {
-    const before = startTurn("q");
+    const before = startTurn("q", 0);
     const frozen = Object.freeze({ ...before });
     chatStreamReducer(frozen, ev("analysis_delta", { text: "x" }));
     expect(frozen).toEqual(before);

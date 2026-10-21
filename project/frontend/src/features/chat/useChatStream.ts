@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, apiSend } from "../../api/client";
 import { streamSse } from "../../api/sse";
-import type { ConversationOut, QueryResultOut } from "../../api/types";
+import type { ConversationDetail, ConversationOut, QueryResultOut } from "../../api/types";
 import { chatStreamReducer, startTurn, type LiveTurn } from "./chatStream";
 
 interface Request {
@@ -71,11 +71,13 @@ export function useChatStream(
       controllerRef.current = controller;
       streamingRef.current = true;
       lastQuestionRef.current = request.question;
-      let turn = startTurn(request.question);
+      let id = conversationId ?? createdIdRef.current;
+      const cached = id === null ? undefined : queryClient.getQueryData<ConversationDetail>(["conversation", id]);
+      const afterSeq = cached?.turns.reduce((max, t) => Math.max(max, t.seq), 0) ?? 0;
+      let turn = startTurn(request.question, afterSeq);
       setLive(turn);
 
       try {
-        let id = conversationId ?? createdIdRef.current;
         if (id === null) {
           const created = await apiSend<ConversationOut>("POST", "/api/conversations");
           if (controller.signal.aborted) return;
@@ -107,8 +109,14 @@ export function useChatStream(
         );
       } catch (err) {
         if (controller.signal.aborted) return;
-        turn = { ...turn, status: "error", error: toTurnError(err) };
+        const error = toTurnError(err);
+        turn = { ...turn, status: "error", error };
         setLive(turn);
+        if (LOST_CONNECTION.has(error.code) && id !== null) {
+          // The backend saved the dropped turn as client_disconnected; fetch it so the thread can absorb it.
+          void queryClient.invalidateQueries({ queryKey: ["conversation", id] });
+          void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        }
       } finally {
         if (controllerRef.current === controller) {
           streamingRef.current = false;

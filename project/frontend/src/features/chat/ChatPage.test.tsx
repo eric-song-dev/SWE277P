@@ -310,6 +310,7 @@ describe("ChatPage", () => {
       status: "error" as const,
       sql: { sql: FAILED_SQL, interpretation: "Count attendees", assumptions: [] },
       analysisText: "",
+      afterSeq: 0,
       error: { code: "query_failed", message: "The query failed to run." },
     };
     const client = new QueryClient();

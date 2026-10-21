@@ -181,6 +181,7 @@ describe("AnswerCard", () => {
       step: { name: "repairing", attempt: 2 },
       sql: { sql: SQL, interpretation: "Count attendees", assumptions: [] },
       analysisText: "",
+      afterSeq: 0,
     };
     const user = renderCard({ turn: live });
     expect(screen.getByText("Fixing the query (attempt 2)")).toBeInTheDocument();
