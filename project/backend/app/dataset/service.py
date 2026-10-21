@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from sqlalchemy import asc, column, desc, func, select, table
+from sqlalchemy import column, func, select, table
 from sqlalchemy.orm import Session
 
 from app.dataset.models import Attendance
@@ -42,6 +42,9 @@ ALLOWED_COLUMNS: frozenset[str] = frozenset(VIEW_COLUMNS)
 _VIEW = table("attendance_view", *[column(c) for c in VIEW_COLUMNS], schema="hub")
 
 
+_DEFAULT_ORDER = ("event_date", "event_name", "last_name", "first_name", "person_key")
+
+
 @dataclass(frozen=True)
 class DatasetFilter:
     column: str
@@ -66,6 +69,9 @@ def query_dataset(
     for f in filters:
         _check_column(f.column)
         col = _VIEW.c[f.column]
+        if f.op in ("eq", "ilike") and f.value is None:
+            # `col == None` would silently become IS NULL; callers must say so with is_null.
+            raise HubError("invalid_filter", f"Filter {f.op} needs a value; use is_null", 422)
         if f.op == "eq":
             stmt = stmt.where(col == f.value)
         elif f.op == "ilike":
@@ -78,7 +84,14 @@ def query_dataset(
         _check_column(name)
         if direction not in ("asc", "desc"):
             raise HubError("invalid_sort", f"Unknown sort direction: {direction}", 422)
-        stmt = stmt.order_by((asc if direction == "asc" else desc)(_VIEW.c[name]))
+    # A total order, so limit/offset pages never repeat or skip a row: the caller's sort, or the
+    # default one, then person_key as the final tie-breaker.
+    order = list(sort) or [(c, "asc") for c in _DEFAULT_ORDER]
+    if "person_key" not in [name for name, _ in order]:
+        order.append(("person_key", "asc"))
+    for name, direction in order:
+        col = _VIEW.c[name]
+        stmt = stmt.order_by(col.asc().nulls_last() if direction == "asc" else col.desc())
     if limit is not None:
         stmt = stmt.limit(limit)
     if offset:

@@ -1,3 +1,5 @@
+import itertools
+
 import pytest
 
 from app.dataset.service import (
@@ -111,3 +113,36 @@ def test_build_note_combinations():
         "domestic/international status; INCOMPLETE: affiliation missing, "
         "domestic/international missing"
     )
+
+
+def _pages(session, page_size, **kw):
+    out, offset = [], 0
+    while chunk := query_dataset(session, limit=page_size, offset=offset, **kw)[1]:
+        out += chunk
+        offset += page_size
+    return out
+
+
+def test_query_dataset_default_order_is_stable_across_pages(db_session, loaded_samples):
+    _, full = query_dataset(db_session)
+    assert len(full) > 100
+    assert _pages(db_session, 7) == full
+    by_hand = [("event_date", "asc"), ("event_name", "asc"), ("last_name", "asc"),
+               ("first_name", "asc")]  # fmt: skip
+    assert query_dataset(db_session, sort=by_hand)[1] == full  # person_key breaks the last ties
+
+
+def test_query_dataset_sort_gets_person_key_tie_breaker(db_session, loaded_samples):
+    cols, full = query_dataset(db_session, sort=[("event_name", "asc")])
+    assert _pages(db_session, 11, sort=[("event_name", "asc")]) == full
+    name, key = cols.index("event_name"), cols.index("person_key")
+    for a, b in itertools.pairwise(full):
+        if a[name] == b[name] and a[key] is not None and b[key] is not None:
+            assert a[key] <= b[key]
+
+
+@pytest.mark.parametrize("op", ["eq", "ilike"])
+def test_query_dataset_none_value_is_invalid_filter(db_session, op):
+    with pytest.raises(HubError) as exc:
+        query_dataset(db_session, [DatasetFilter("email", op, None)])
+    assert exc.value.code == "invalid_filter" and exc.value.status_code == 422
