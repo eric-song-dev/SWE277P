@@ -271,6 +271,7 @@ The `generate` prompt contains:
    - "Unique students/people" means `COUNT(DISTINCT person_key)`.
    - Use `ILIKE` with the given event names.
    - "This year" means the current academic year. State it as an assumption, or ask if the question is ambiguous.
+   - "Students" with no named affiliation means everyone GPSRC serves, postdocs included, and grouping by a column that can be blank (school, department, affiliation) leaves out the records where it is blank. Both are stated as assumptions, not applied silently. (Decided in S5.)
    - Ask for clarification only when the answer would change materially.
 5. 5–10 worked examples, kept disjoint from the benchmark.
 6. Conversation history: for each prior turn, the question, SQL, interpretation, and row count, or the clarification question it asked. Prior result rows and analysis text are **not** included, so text from the data never reaches SQL generation.

@@ -218,6 +218,12 @@ def test_known_events_rendered_with_their_terms():
     assert "'One-off Talk' (held in 'Fall 2026')" in system
 
 
+def test_prompt_states_students_and_null_groups_as_assumptions():
+    system = build_generate_messages("q", EMPTY_CV, [], TODAY, [])[0].content
+    assert "say in assumptions that it means everyone GPSRC serves" in system
+    assert "are not counted as a group" in system
+
+
 def test_prompt_states_distinct_order_by_rule():
     system = build_generate_messages("q", EMPTY_CV, [], TODAY, [])[0].content
     assert "With SELECT DISTINCT, ORDER BY may use only selected columns" in system
@@ -469,4 +475,4 @@ def test_analyze_messages_flag_truncated_and_empty():
 
 
 def test_prompt_version():
-    assert prompts.PROMPT_VERSION == "2026-10-29.2"
+    assert prompts.PROMPT_VERSION == "2026-10-29.3"

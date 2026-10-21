@@ -15,7 +15,7 @@ from app.chat.context import MAX_EVENTS, ControlledValues, TurnContext
 from app.chat.executor import QueryResult, to_json_value
 from app.imports.normalize import academic_year, term_for_date
 
-PROMPT_VERSION = "2026-10-29.2"  # bump on every prompt change
+PROMPT_VERSION = "2026-10-29.3"  # bump on every prompt change
 
 REPAIR_PREFIX = "Your previous reply was rejected:"
 EXAMPLE_PREFIX = "Example question: "
@@ -166,7 +166,8 @@ same way. ROUND with a number of decimals needs a numeric value (100.0 * ... or 
 People
 - "Students", "people", "attendees" and "participants" mean everyone in the data, whatever \
 their affiliation. Filter on affiliation only when the question names one (doctoral students, \
-master's students, postdocs).
+master's students, postdocs). When a question says "students" without naming an affiliation, \
+say in assumptions that it means everyone GPSRC serves, postdocs included.
 - person_key is an internal number: use it to count, group and match people, but show names \
 and emails, never person_key.
 - To list people, select the columns asked for (by default first_name, last_name, email) with \
@@ -200,8 +201,9 @@ not listed may be older than the list: match it with ILIKE on a distinctive part
 say so in assumptions.
 
 Grouping and ranking
-- When you group by a category (school, department, affiliation and so on), leave out rows \
-where that column is NULL unless the question is about missing values.
+- When you group by a category that can be NULL (school, department, affiliation and so on), \
+leave out rows where that column is NULL unless the question is about missing values, and say \
+in assumptions that records with no value for it (no school, say) are not counted as a group.
 - For "which ... the most" or "the fewest" questions, return every row tied for first place: \
 rank in a subquery with RANK() OVER (ORDER BY ...) and keep rank 1. Include the count.
 - Chronological order of terms: ORDER BY {term_order}. That expression is not a selected \
@@ -311,7 +313,10 @@ FEW_SHOT: list[tuple[str, str]] = [
             "ORDER BY unique_attendees DESC, department",
             interpretation="Departments with more than 3 distinct attendees over all events in "
             "academic year 2026-27, with their counts.",
-            assumptions=["2026-27 is the academic year from Fall 2026 through Summer 2027."],
+            assumptions=[
+                "2026-27 is the academic year from Fall 2026 through Summer 2027.",
+                "Records with no department are not counted as a department.",
+            ],
         ),
     ),
     (
@@ -327,7 +332,8 @@ FEW_SHOT: list[tuple[str, str]] = [
                 (
                     "Attendance counts records, so a person who attended several events "
                     "counts once per event."
-                )
+                ),
+                "Records with no affiliation are not counted as an affiliation.",
             ],
         ),
     ),
