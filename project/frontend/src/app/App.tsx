@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
 import SettingsPage from "../features/settings/SettingsPage";
+import UploadPage from "../features/upload/UploadPage";
 import AuthGate from "./AuthGate";
 import PlaceholderPage from "./PlaceholderPage";
 import { theme } from "./theme";
@@ -17,7 +18,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/chat" replace /> },
       { path: "chat", element: <PlaceholderPage title="Chat" /> },
-      { path: "upload", element: <PlaceholderPage title="Upload" /> },
+      { path: "upload", element: <UploadPage /> },
       { path: "dataset", element: <PlaceholderPage title="Dataset" /> },
       { path: "settings", element: <SettingsPage /> },
     ],
