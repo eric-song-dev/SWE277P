@@ -149,9 +149,10 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
 
 # Backend (from project/backend)
 uv run uvicorn app.main:app --reload     # dev server on :8000
+# HUB_ENABLE_FAKE_LLM=true enables the scripted "Demo" preset (tests, Playwright, offline demos)
 uv run alembic upgrade head
 uv run pytest                            # all tests (needs the dev db)
-uv run pytest -m acceptance              # import acceptance tests
+uv run pytest -m acceptance              # A1/A2/A9 import, A5/A6/A8 chat, benchmark reference checks
 uv run ruff check .
 uv run ruff format --check .
 uv run python -m app.samples             # load the synthetic sample files
@@ -170,7 +171,7 @@ Chatbot benchmark (from `project/backend`, needs a saved LLM profile and the sam
 uv run python -m benchmark.run --profile "<name>" [--only q01,q05] [--today 2026-11-02] [--min-score 18]
 ```
 
-It writes `backend/benchmark/reports/<YYYYMMDD-HHMM>-<slug>.md` and prints `Score: N/20`. Exit code 0 = ok, 1 = below `--min-score`, 2 = could not run. To run the app without a real model (tests, demos), set `HUB_ENABLE_FAKE_LLM=true`.
+It writes `backend/benchmark/reports/<YYYYMMDD-HHMM>-<slug>.md` and prints `Score: N/20`. Exit code 0 = ok, 1 = below `--min-score`, 2 = could not run.
 
 ## Conventions
 
