@@ -475,7 +475,7 @@ The layers from assignment1 still apply. Changes are marked.
    - *New risk:* free text in results (e.g. Department) could carry prompt injection. Mitigations: `analyze` has no tools; its output is display-only and is never fed into later SQL generation; the result table remains the authority, and the analysis is labeled "AI-generated".
 5. **Query log** (`chat_turn`). Extended with `results_shared`, profile, provider, model, and attempts.
 6. **Secrets.** *New:* API keys are encrypted at rest; `HUB_SECRET_KEY` lives only in `.env`; keys are never sent to the browser or logged.
-   - *S3:* logs record exception types only, never messages that could carry row values.
+   - *S3:* logs record exception types only, never messages that could carry row values. (Decided in S5.) An outermost middleware catches unhandled errors, logs the type, and sends the generic 500, so uvicorn never logs a traceback.
    - *S3:* the app engine hides bound parameters in error messages.
    - *S3:* LangChain/LangSmith tracing is forced off in every code path, so prompts never reach a tracing service even if a developer's shell enables it.
 7. **Network.** Nginx is bound to 127.0.0.1. The only outbound traffic is HTTPS to the selected LLM.

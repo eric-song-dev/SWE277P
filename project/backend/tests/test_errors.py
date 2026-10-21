@@ -2,6 +2,7 @@ from typing import Annotated
 
 import pytest
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, StringConstraints
 
@@ -79,3 +80,31 @@ def test_unhandled_error_is_generic_500(probe):
         "error": {"code": "internal_error", "message": "Internal server error", "details": None}
     }
     assert SECRET not in res.text
+
+
+def test_unhandled_error_does_not_reraise_or_leak_into_logs(probe, caplog):
+    # With raise_server_exceptions=True the client re-raises whatever escapes the app, which is
+    # what uvicorn would log with a full traceback.
+    res = TestClient(probe, raise_server_exceptions=True).get("/crash")
+    assert res.status_code == 500
+    assert res.json()["error"]["code"] == "internal_error"
+    assert "RuntimeError" in caplog.text
+    assert SECRET not in caplog.text and "Traceback" not in caplog.text
+
+
+def test_error_after_response_started_is_logged_by_type_and_not_raised(caplog):
+    app = FastAPI()
+    install_error_handlers(app)
+
+    @app.get("/stream")
+    def stream():
+        def gen():
+            yield "first"
+            raise RuntimeError(f"late failure {SECRET}")
+
+        return StreamingResponse(gen())
+
+    res = TestClient(app, raise_server_exceptions=True).get("/stream")
+    assert res.status_code == 200
+    assert "RuntimeError" in caplog.text
+    assert SECRET not in caplog.text and "Traceback" not in caplog.text
