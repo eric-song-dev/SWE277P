@@ -84,11 +84,15 @@ def query_dataset(
         _check_column(name)
         if direction not in ("asc", "desc"):
             raise HubError("invalid_sort", f"Unknown sort direction: {direction}", 422)
-    # A total order, so limit/offset pages never repeat or skip a row: the caller's sort, or the
-    # default one, then person_key as the final tie-breaker.
+    # Pages must not repeat or skip rows, so the order has to be total up to identical rows:
+    # the caller's sort (or the default one), then every default column, then every other view
+    # column. person_key alone is not unique (a person has one row per event, and unlinked rows
+    # are NULL), so leftover ties are only between rows with identical values.
     order = list(sort) or [(c, "asc") for c in _DEFAULT_ORDER]
-    if "person_key" not in [name for name, _ in order]:
-        order.append(("person_key", "asc"))
+    used = {name for name, _ in order}
+    order += [
+        (c, "asc") for c in (*_DEFAULT_ORDER, *VIEW_COLUMNS) if c not in used and not used.add(c)
+    ]
     for name, direction in order:
         col = _VIEW.c[name]
         stmt = stmt.order_by(col.asc().nulls_last() if direction == "asc" else col.desc())

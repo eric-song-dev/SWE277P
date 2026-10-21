@@ -1,4 +1,4 @@
-import itertools
+from collections import Counter
 
 import pytest
 
@@ -132,13 +132,14 @@ def test_query_dataset_default_order_is_stable_across_pages(db_session, loaded_s
     assert query_dataset(db_session, sort=by_hand)[1] == full  # person_key breaks the last ties
 
 
-def test_query_dataset_sort_gets_person_key_tie_breaker(db_session, loaded_samples):
-    cols, full = query_dataset(db_session, sort=[("event_name", "asc")])
-    assert _pages(db_session, 11, sort=[("event_name", "asc")]) == full
-    name, key = cols.index("event_name"), cols.index("person_key")
-    for a, b in itertools.pairwise(full):
-        if a[name] == b[name] and a[key] is not None and b[key] is not None:
-            assert a[key] <= b[key]
+@pytest.mark.parametrize("column", ["event_name", "last_name", "school", "affiliation"])
+def test_query_dataset_caller_sort_pages_do_not_repeat_or_skip(db_session, loaded_samples, column):
+    # person-level columns tie across a person's rows, so person_key alone is not enough
+    sort = [(column, "asc")]
+    _, full = query_dataset(db_session, sort=sort)
+    for size in (3, 7, 11, 50):
+        assert Counter(_pages(db_session, size, sort=sort)) == Counter(full)
+        assert _pages(db_session, size, sort=sort) == full
 
 
 @pytest.mark.parametrize("op", ["eq", "ilike"])
