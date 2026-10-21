@@ -7,7 +7,7 @@ so only SQLSTATEs whose messages name identifiers from the SQL keep their messag
 from dataclasses import dataclass
 
 # The messages of these states only name identifiers that appear in the SQL itself.
-_PASS_THROUGH = frozenset({"42601", "42703", "42883", "42P01", "42803"})
+_PASS_THROUGH = frozenset({"42601", "42703", "42883", "42P01", "42803", "42P10"})
 _TIMEOUT = "57014"
 
 _CLASS_DESCRIPTIONS = {

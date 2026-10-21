@@ -1,6 +1,8 @@
+import pytest
 from sqlalchemy.exc import DBAPIError
 
 from app.chat.error_sanitizer import sanitize_db_error
+from app.chat.executor import run_readonly
 
 
 class FakeOrig(Exception):
@@ -14,7 +16,7 @@ def db_error(sqlstate, message="boom"):
 
 
 def test_passthrough_states_keep_message():
-    for state in ("42601", "42703", "42883", "42P01", "42803"):
+    for state in ("42601", "42703", "42883", "42P01", "42803", "42P10"):
         s = sanitize_db_error(db_error(state, 'column "abc" does not exist'))
         assert s.code == state and 'column "abc" does not exist' in s.feedback
 
@@ -63,3 +65,16 @@ def test_non_db_exception():
 def test_dbapi_error_without_sqlstate():
     s = sanitize_db_error(DBAPIError("SELECT 1", None, Exception("Aaliyah")))
     assert s.code == "unknown" and "Aaliyah" not in s.feedback + s.user_message
+
+
+def test_distinct_order_by_error_keeps_its_message(chatbot_engine):
+    # 42P10 names only the rule broken by the SQL, never a data value
+    with pytest.raises(DBAPIError) as info:
+        run_readonly(
+            "SELECT DISTINCT email FROM attendance_view ORDER BY last_name",
+            max_rows=10,
+            engine=chatbot_engine,
+        )
+    s = sanitize_db_error(info.value)
+    assert s.code == "42P10"
+    assert s.feedback == "for SELECT DISTINCT, ORDER BY expressions must appear in select list"

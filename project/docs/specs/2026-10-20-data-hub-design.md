@@ -297,7 +297,7 @@ Finally the guard sets or tightens `LIMIT`. Its error messages are our own text 
 
 PostgreSQL error messages can contain row values (`invalid input syntax for type integer: "abc"`). The sanitizer maps an error to feedback as follows:
 
-- SQLSTATEs whose messages only name identifiers from the SQL (`42601` syntax, `42703` undefined column, `42883` undefined function, `42P01` undefined table, `42803` grouping) keep the message.
+- SQLSTATEs whose messages only name identifiers from the SQL (`42601` syntax, `42703` undefined column, `42883` undefined function, `42P01` undefined table, `42803` grouping, `42P10` invalid column reference, e.g. an `ORDER BY` outside a `SELECT DISTINCT` list) keep the message.
 - Every other error becomes a template such as "data type mismatch in an expression (22P02); avoid casting text columns", with no values.
 - `57014` (statement timeout) becomes "the query was too slow; simplify it."
 
