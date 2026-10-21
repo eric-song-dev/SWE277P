@@ -1,6 +1,6 @@
 import hashlib
 from collections import Counter
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -208,7 +208,7 @@ def commit_import(
 
     record.status = "committed"
     record.event_id = event.id
-    record.committed_at = datetime.now()
+    record.committed_at = datetime.now(UTC)
     session.flush()
     return CommitSummary(
         import_id=record.id,

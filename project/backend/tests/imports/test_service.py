@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from sqlalchemy import func, select
 
@@ -138,3 +140,11 @@ def test_list_imports_newest_first_with_flag_count(db_session, user):
     assert [i.id for i in items] == [b.id, a.import_id]
     assert items[1].event.name == "Test Event" and items[1].uploaded_by.id == user.id
     assert items[0].event is None
+
+
+def test_committed_at_is_timezone_aware_and_current(db_session, user):
+    s = commit_after_preview(db_session, OCT, sample_bytes(OCT), user)
+    db_session.expire_all()
+    committed_at = db_session.get(ImportFile, s.import_id).committed_at
+    assert committed_at.tzinfo is not None
+    assert abs(datetime.now(UTC) - committed_at) < timedelta(minutes=1)
