@@ -152,6 +152,7 @@ describe("DatasetPage", () => {
     renderPage();
     expect(await screen.findByText("History unavailable.")).toBeInTheDocument();
   });
+
   it("shows a long File name on one line with an ellipsis and the full text in the title", async () => {
     vi.mocked(apiGet).mockResolvedValueOnce(imports);
     renderPage();
@@ -169,5 +170,17 @@ describe("DatasetPage", () => {
     const header = screen.getByRole("columnheader", { name: "Rows" });
     await userEvent.click(within(header).getByText("Rows"));
     expect(header).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  it("offers a column menu on File but not on the narrow Rows and Flags headers", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    const menuButton = (name: string) =>
+      // MUI hides the button from the accessibility tree until the header is hovered or focused.
+      screen.getByRole("columnheader", { name }).querySelector(`button[aria-label="${name} column menu"]`);
+    expect(menuButton("File")).not.toBeNull();
+    expect(menuButton("Rows")).toBeNull();
+    expect(menuButton("Flags")).toBeNull();
   });
 });
