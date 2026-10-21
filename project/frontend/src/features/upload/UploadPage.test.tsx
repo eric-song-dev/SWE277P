@@ -346,6 +346,31 @@ describe("UploadPage", () => {
       expect(screen.queryByText(COPY)).not.toBeInTheDocument();
     });
 
+    it("keeps the card on screen with disabled buttons while Try again runs", async () => {
+      let release: () => void = () => {};
+      let calls = 0;
+      vi.mocked(apiGet).mockImplementation(async (path) => {
+        if (path === "/api/imports") return [oldRow];
+        if (path === "/api/imports/9/preview") {
+          calls += 1;
+          if (calls === 1) throw new ApiError(422, "unknown_format", "Unknown format.");
+          await new Promise<void>((resolve) => (release = resolve));
+          throw new ApiError(422, "unknown_format", "Unknown format.");
+        }
+        throw new Error(`unexpected GET ${path}`);
+      });
+      const { user } = renderUpload();
+      await screen.findByText(COPY);
+      await user.click(screen.getByRole("button", { name: "Try again" }));
+      await waitFor(() => expect(calls).toBe(2));
+      expect(screen.getByText(COPY)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Try again" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Discard" })).toBeDisabled();
+      release();
+      await waitFor(() => expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled());
+      expect(screen.getByText(COPY)).toBeInTheDocument();
+    });
+
     it("keeps the card when Try again fails again", async () => {
       mockServer({ current: false });
       const { user } = renderUpload();
@@ -353,6 +378,8 @@ describe("UploadPage", () => {
       await user.click(screen.getByRole("button", { name: "Try again" }));
       await waitFor(() => expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled());
       expect(screen.getByText(COPY)).toBeInTheDocument();
+      const previewCalls = vi.mocked(apiGet).mock.calls.filter(([path]) => path === "/api/imports/9/preview");
+      expect(previewCalls).toHaveLength(2);
     });
   });
 

@@ -46,7 +46,7 @@ export function useDiscardImport() {
 // only retried when retry(id) is called.
 export function usePendingPreviews(ids: number[]) {
   const queryClient = useQueryClient();
-  const results = useQueries({
+  const { previews, failedIds } = useQueries({
     queries: ids.map((id) => ({
       queryKey: ["import-preview", id],
       queryFn: () => apiGet<ImportPreview>(`/api/imports/${id}/preview`),
@@ -56,9 +56,13 @@ export function usePendingPreviews(ids: number[]) {
     })),
     combine: (results) => ({
       previews: results.flatMap((r) => (r.data ? [r.data] : [])),
-      failedIds: ids.filter((_, i) => results[i]?.isError),
+      // A refetch of an errored query without data reports "pending" while it runs; it still counts as failed.
+      failedIds: ids.filter((_, i) => {
+        const r = results[i];
+        return r?.isError || (r?.isFetching && r.errorUpdateCount > 0);
+      }),
     }),
   });
   const retry = (id: number) => queryClient.refetchQueries({ queryKey: ["import-preview", id] });
-  return { ...results, retry };
+  return { previews, failedIds, retry };
 }
