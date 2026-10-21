@@ -4,11 +4,18 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 ## Current status
 
-- **Session:** S5 (2026-10-21) is complete.
-  - All 11 plan tasks are done, plus Task 10b (a secret-echo fix found in Task 10). Every task passed its task review.
-  - A final whole-branch review followed, then one fix wave. The fix wave's re-review is clean.
-- **Phase:** the MVP meets its acceptance criteria. `bash scripts/acceptance.sh` passes every row except A7, which is deferred with login.
-- **Next:** S6, the UI redesign and the user-story walkthrough (see "Next session: S6").
+- **Session:** S6 (2026-10-21) is **in progress, paused after Task 11** (the user stopped for the day).
+  - Plan: `docs/plans/2026-10-21-s6-ui-user-stories.md`, run subagent-driven.
+  - Tasks 1–11 are done and committed (`0005498`..`131d609`), each with a passing task review:
+    - the redesign on every page (Tasks 1–6);
+    - the three S5 carry-overs (Tasks 7–9);
+    - four new Demo questions (Task 10);
+    - 63 user stories in `docs/user-stories/` plus `scripts/story_files.py` (Task 11).
+  - Task 12 (walk the Shell and Chat stories) was started and stopped before it recorded anything. Its partial output was deleted and the `hub-replay` stack removed.
+  - **Resume at Task 12.** The controller's ledger, with every ruling and the deferred minors for the final review, is `SWE277P/.superpowers/sdd/2026-10-21-s6-ui-user-stories/progress.md` (git-ignored, on this machine only).
+  - One early observation for the re-walk: with the api stopped, requests through nginx hung about 40 s before returning 502 (SH-04, CH-15).
+- **Phase:** the MVP meets its acceptance criteria; S6 is UI and UX work on top. `bash scripts/acceptance.sh` has not been re-run since S5 (Task 17 does it).
+- **Next:** Tasks 12–17 of the S6 plan (walkthrough, fixes, screenshots and docs, final verification).
 
 ## Done in S5
 
@@ -138,3 +145,4 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - S4 (2026-10-21): built the whole staff UI (Task 0 plus 7 tasks, each reviewed), then a final review and one fix wave. Vitest has 132 tests, the Playwright happy path passes, and the midterm screenshots are in `docs/screenshots/`.
 - S4 follow-up (2026-10-21): verified the DeepSeek seed model, designed and approved the UI redesign, and added S6.
 - S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. The final review's fix wave closed a traceback leak under uvicorn. `acceptance.sh` is green.
+- S6 part 1 (2026-10-21): wrote the S6 plan, then ran Tasks 1–11, each reviewed: the redesign, the three S5 carry-overs, the Demo questions and 63 user stories. Vitest has 185 tests and pytest 906. Paused before the walkthrough (Task 12).
