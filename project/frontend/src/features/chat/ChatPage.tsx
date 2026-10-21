@@ -87,6 +87,10 @@ export default function ChatPage() {
     if (profile) send(question, profile.id, shareResults);
   }
 
+  function retryLive() {
+    if (profile) retry(profile.id, shareResults);
+  }
+
   function chooseProfile(id: number) {
     setChosenProfileId(id);
     rememberProfileId(id);
@@ -118,7 +122,7 @@ export default function ChatPage() {
           live={live}
           resultsByTurnId={resultsByTurnId}
           busy={streaming}
-          onRetryLive={retry}
+          onRetryLive={retryLive}
           onResend={ask}
         />
         {profile && (

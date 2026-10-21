@@ -75,10 +75,10 @@ describe("useChatStream", () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ["conversations"] });
   });
 
-  it("interrupted stream becomes a retryable error; retry resends the same question", async () => {
+  it("interrupted stream becomes a retryable error; retry resends the question with the given settings", async () => {
     const first = pendingStream();
     const { result } = setup(7);
-    act(() => result.current.send("how many?", 3, false));
+    act(() => result.current.send("how many?", 3, true));
     await first.finish(new ApiError(0, "stream_interrupted", "Connection lost."));
     expect(result.current.live).toMatchObject({
       status: "error",
@@ -86,11 +86,11 @@ describe("useChatStream", () => {
     });
 
     const second = pendingStream();
-    act(() => result.current.retry());
+    act(() => result.current.retry(4, false));
     expect(streamSse).toHaveBeenCalledTimes(2);
     expect(vi.mocked(streamSse).mock.calls[1][1]).toEqual({
       question: "how many?",
-      llm_profile_id: 3,
+      llm_profile_id: 4,
       share_results: false,
     });
     expect(result.current.live?.status).toBe("streaming");
@@ -126,7 +126,7 @@ describe("useChatStream", () => {
       result.current.send("one", null, true);
       result.current.send("two", null, true);
     });
-    act(() => result.current.retry());
+    act(() => result.current.retry(null, true));
     expect(streamSse).toHaveBeenCalledTimes(1);
     await s.finish();
   });

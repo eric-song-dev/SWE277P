@@ -322,17 +322,23 @@ describe("ChatPage", () => {
     expect(await screen.findByText("The saved query no longer runs.")).toBeInTheDocument();
   });
 
-  it("shows a lost connection with Retry, which resends the question", async () => {
+  it("shows a lost connection with Retry, which resends the question with the current model and switch", async () => {
     const first = pendingStream();
     const { user } = renderPage("/chat/1");
     await ask(user, "How many came?");
     await first.finish(new ApiError(0, "stream_interrupted", "Connection lost."));
     expect(screen.getByText("Connection lost. Retry.")).toBeInTheDocument();
     expect(screen.getByRole("textbox")).toBeEnabled();
+    // After the failure: another model, and the results kept on this computer.
+    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    await user.click(await screen.findByRole("option", { name: "Campus model" }));
+    await user.click(screen.getByLabelText(SHARE));
     const second = pendingStream();
     await user.click(screen.getByRole("button", { name: "Retry" }));
-    expect(bodies()).toHaveLength(2);
-    expect(bodies()[1]).toEqual(bodies()[0]);
+    expect(bodies()).toEqual([
+      { question: "How many came?", llm_profile_id: 1, share_results: true },
+      { question: "How many came?", llm_profile_id: 2, share_results: false },
+    ]);
     await second.emit({ event: "done", data: { turn_id: null } });
     await second.finish();
   });

@@ -31,7 +31,7 @@ export function useChatStream(
 
   const controllerRef = useRef<AbortController | null>(null);
   const streamingRef = useRef(false);
-  const lastRequestRef = useRef<Request | null>(null);
+  const lastQuestionRef = useRef<string | null>(null);
   // The conversation this hook created itself, so the null -> id prop change that follows
   // is not mistaken for navigating away.
   const createdIdRef = useRef<number | null>(null);
@@ -54,7 +54,7 @@ export function useChatStream(
     if (previous === null && conversationId === createdIdRef.current) return;
     cancel();
     createdIdRef.current = null;
-    lastRequestRef.current = null;
+    lastQuestionRef.current = null;
     setLive(null);
     setResultsByTurnId({});
   }, [conversationId, cancel]);
@@ -66,7 +66,7 @@ export function useChatStream(
       const controller = new AbortController();
       controllerRef.current = controller;
       streamingRef.current = true;
-      lastRequestRef.current = request;
+      lastQuestionRef.current = request.question;
       let turn = startTurn(request.question);
       setLive(turn);
 
@@ -122,10 +122,15 @@ export function useChatStream(
     [run],
   );
 
-  const retry = useCallback(() => {
-    if (streamingRef.current || !lastRequestRef.current) return;
-    void run(lastRequestRef.current);
-  }, [run]);
+  // Resends the last question with the settings chosen now, not the ones that failed.
+  const retry = useCallback(
+    (llmProfileId: number | null, shareResults: boolean) => {
+      const question = lastQuestionRef.current;
+      if (streamingRef.current || question === null) return;
+      void run({ question, llmProfileId, shareResults });
+    },
+    [run],
+  );
 
   const abort = useCallback(() => {
     cancel();
