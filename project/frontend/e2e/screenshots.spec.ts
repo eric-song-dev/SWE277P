@@ -54,7 +54,7 @@ test("midterm screenshots", async ({ page }) => {
       1,
     );
     await expect(page.getByRole("grid")).toContainText("38");
-    await page.getByRole("button", { name: "SQL", exact: true }).click();
+    await page.getByRole("button", { name: "Show the SQL query" }).click();
     await expect(page.getByText(/SELECT COUNT\(DISTINCT person_key\)/)).toBeVisible();
     await shoot(page, "03-chat-answer.png");
   });

@@ -14,6 +14,7 @@ import type {
   TurnOut,
 } from "../../api/types";
 import ChatPage from "./ChatPage";
+import Thread from "./Thread";
 
 // Keep the real ApiError class; automocking would blank its constructor.
 vi.mock("../../api/client", async (importOriginal) => ({
@@ -245,7 +246,7 @@ describe("ChatPage", () => {
     await screen.findByText("An earlier question");
     await ask(user, "How many came?");
     await s.emit({ event: "sql", data: { sql: LIVE_SQL, interpretation: "Count attendees", assumptions: [] } });
-    await user.click(screen.getAllByRole("button", { name: "SQL" })[1]);
+    await user.click(screen.getAllByRole("button", { name: "Show the SQL query" })[1]);
     expect(await screen.findByText(LIVE_SQL)).toBeVisible();
     await s.emit({ event: "result", data: RESULT });
     // The earlier turn's text changes only so the test can see that the refetch has rendered.
@@ -265,7 +266,7 @@ describe("ChatPage", () => {
     ]);
     const { user } = renderPage("/chat/1");
     expect(await screen.findByText("The query failed to run.")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "SQL" }));
+    await user.click(screen.getByRole("button", { name: "Show the SQL query" }));
     expect(await screen.findByText(FAILED_SQL)).toBeVisible();
   });
 
@@ -279,8 +280,51 @@ describe("ChatPage", () => {
     await s.finish();
     expect(screen.getByText("The query failed to run.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "SQL" }));
+    await user.click(screen.getByRole("button", { name: "Show the SQL query" }));
     expect(await screen.findByText(FAILED_SQL)).toBeVisible();
+  });
+
+  it("keeps the alert, Retry and the SQL bar on failed turns, and disables both Retry buttons while streaming", async () => {
+    details[1] = detail(1, [
+      savedTurn({ id: 6, kind: "error", sql: FAILED_SQL, row_count: null, error_code: "query_failed", analysis_text: null }),
+    ]);
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    expect(await screen.findByText("The query failed to run.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Show the SQL query" })).toBeInTheDocument();
+    await ask(user, "And by school?");
+    // The saved failed turn stays on screen while the new question streams.
+    expect(screen.getByText("The query failed to run.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Show the SQL query" })).toBeInTheDocument();
+    await s.emit({ event: "done", data: { turn_id: null } });
+    await s.finish();
+  });
+
+  it("shows the alert, a disabled Retry and the SQL bar on a live failed turn while another streams", () => {
+    const live = {
+      question: "How many came?",
+      status: "error" as const,
+      sql: { sql: FAILED_SQL, interpretation: "Count attendees", assumptions: [] },
+      analysisText: "",
+      error: { code: "query_failed", message: "The query failed to run." },
+    };
+    const client = new QueryClient();
+    const { rerender } = render(
+      <QueryClientProvider client={client}>
+        <Thread turns={[]} live={live} resultsByTurnId={{}} busy={false} onRetryLive={() => {}} onResend={() => {}} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByText("The query failed to run.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Show the SQL query" })).toHaveAttribute("aria-expanded", "false");
+    rerender(
+      <QueryClientProvider client={client}>
+        <Thread turns={[]} live={live} resultsByTurnId={{}} busy={true} onRetryLive={() => {}} onResend={() => {}} />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Retry" })).toBeDisabled();
   });
 
   it("shows saved turns: answers re-run on demand, clarifications, and errors with Retry", async () => {

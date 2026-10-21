@@ -85,7 +85,7 @@ function TurnItem({
   if (error) {
     // A failed query is when the SQL matters most, so it stays visible.
     answer = (
-      <Stack spacing={1}>
+      <Stack spacing="12px">
         <Alert
           severity="error"
           action={

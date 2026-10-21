@@ -1,14 +1,13 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useMutation } from "@tanstack/react-query";
 import { apiDownload } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
+import { tokens } from "../../app/theme";
 import type { LiveTurn } from "./chatStream";
 import ResultGrid from "./ResultGrid";
 import SqlAccordion from "./SqlAccordion";
@@ -53,6 +52,13 @@ function view(turn: TurnOut | LiveTurn) {
   };
 }
 
+// Outlined buttons use the control border and ink text from the design doc.
+const outlinedSx = {
+  borderColor: tokens.control,
+  color: tokens.ink,
+  "&:hover": { borderColor: tokens.primary, bgcolor: tokens.subtle },
+} as const;
+
 function rowsLabel(n: number) {
   return n === 1 ? "1 row" : `${n} rows`;
 }
@@ -66,94 +72,114 @@ export default function AnswerCard({ turn, result, onShowResults, showResultsPen
   });
 
   return (
-    <Card variant="outlined">
-      <CardContent>
-        <Stack spacing={2}>
-          {isLive(turn) && turn.status === "streaming" && <StepIndicator step={turn.step} />}
+    <Box
+      component="article"
+      sx={{
+        bgcolor: "#FFFFFF",
+        border: `1px solid ${tokens.border}`,
+        borderRadius: "12px",
+        p: 3,
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+        minWidth: 0,
+      }}
+    >
+      {isLive(turn) && turn.status === "streaming" && <StepIndicator step={turn.step} />}
 
-          {v.analysis && (
-            <Box>
-              {v.llmAnalysis && (
-                <Typography variant="caption" color="text.secondary">
-                  AI-generated summary. Check it against the table.
-                </Typography>
-              )}
-              <Typography sx={{ whiteSpace: "pre-wrap" }}>{v.analysis}</Typography>
-            </Box>
+      {v.analysis && (
+        <Box>
+          {v.llmAnalysis && (
+            <Typography sx={{ fontSize: 13, color: tokens.muted }}>
+              AI-generated summary. Check it against the table.
+            </Typography>
           )}
+          <Typography sx={{ fontSize: 18, lineHeight: 1.45, mt: v.llmAnalysis ? "4px" : 0, whiteSpace: "pre-wrap" }}>
+            {v.analysis}
+          </Typography>
+        </Box>
+      )}
 
-          {result && (
-            <Stack spacing={1}>
-              {rerun && <Typography variant="subtitle2">Re-run on current data</Typography>}
-              <ResultGrid result={result} />
-              {result.truncated && (
-                <Alert severity="info">
-                  Showing the first {result.row_count} rows. Export to get all rows.
-                </Alert>
-              )}
-            </Stack>
+      {result && (
+        <Stack spacing={1}>
+          {rerun && <Typography sx={{ fontSize: 15, fontWeight: 600, color: tokens.muted }}>Re-run on current data</Typography>}
+          <ResultGrid result={result} />
+          {result.truncated && (
+            <Alert severity="info">Showing the first {result.row_count} rows. Download the file to get all rows.</Alert>
           )}
-          {!result && !isLive(turn) && onShowResults && (
-            <Box>
-              <Button variant="outlined" size="small" disabled={showResultsPending} onClick={onShowResults}>
-                {showResultsPending ? "Loading results…" : "Show results"}
-              </Button>
-            </Box>
-          )}
-          {resultsError && <Alert severity="error">{resultsError}</Alert>}
-
-          {reading.length > 0 && (
-            <Box>
-              <Typography variant="subtitle2">How I read your question</Typography>
-              <Box component="ul" sx={{ my: 0, pl: 3 }}>
-                {reading.map((line, i) => (
-                  <Typography component="li" variant="body2" key={i}>
-                    {line}
-                  </Typography>
-                ))}
-              </Box>
-            </Box>
-          )}
-
-          {v.sql !== null && <SqlAccordion sql={v.sql} />}
-
-          {(rowCount !== null || v.id !== null) && (
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-              {rowCount !== null && (
-                <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>
-                  {rowsLabel(rowCount)}
-                </Typography>
-              )}
-              {v.id !== null && (
-                <>
-                  <Typography variant="body2">Export</Typography>
-                  {(["xlsx", "csv"] as const).map((format) => (
-                    <Button
-                      key={format}
-                      size="small"
-                      variant="outlined"
-                      startIcon={<DownloadIcon />}
-                      sx={{ textTransform: "none" }}
-                      disabled={download.isPending}
-                      onClick={() => download.mutate(format)}
-                    >
-                      .{format}
-                    </Button>
-                  ))}
-                </>
-              )}
-            </Stack>
-          )}
-          {download.data?.truncated && (
-            <Alert severity="info">
-              {download.data.rowCap === null
-                ? "This file does not include every row."
-                : `This file stops at ${download.data.rowCap.toLocaleString("en-US")} rows.`}
-            </Alert>
-          )}
-          {download.isError && <Alert severity="error">{download.error.message}</Alert>}
         </Stack>
-      </CardContent>
-    </Card>
+      )}
+      {!result && !isLive(turn) && onShowResults && (
+        <Box>
+          <Button variant="outlined" disabled={showResultsPending} onClick={onShowResults} sx={outlinedSx}>
+            {showResultsPending ? "Loading results…" : "Show results"}
+          </Button>
+        </Box>
+      )}
+      {resultsError && <Alert severity="error">{resultsError}</Alert>}
+
+      {reading.length > 0 && (
+        <Box>
+          <Typography component="h2" sx={{ m: 0, mb: "4px", fontSize: 16, fontWeight: 700, color: tokens.navy }}>
+            How I read your question
+          </Typography>
+          <Box component="ul" sx={{ my: 0, pl: "20px" }}>
+            {reading.map((line, i) => (
+              <Typography component="li" key={i}>
+                {line}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {v.sql !== null && <SqlAccordion sql={v.sql} />}
+
+      {(rowCount !== null || v.id !== null) && (
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: "12px",
+            pt: 2,
+            borderTop: `1px solid ${tokens.divider}`,
+          }}
+        >
+          <Typography sx={{ color: tokens.muted }}>{rowCount !== null ? rowsLabel(rowCount) : ""}</Typography>
+          {v.id !== null && (
+            <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
+              <Button
+                variant="contained"
+                disableElevation
+                startIcon={<DownloadIcon />}
+                disabled={download.isPending}
+                onClick={() => download.mutate("xlsx")}
+              >
+                Download Excel (.xlsx)
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                disabled={download.isPending}
+                onClick={() => download.mutate("csv")}
+                sx={outlinedSx}
+              >
+                Download CSV (.csv)
+              </Button>
+            </Stack>
+          )}
+        </Stack>
+      )}
+      {download.data?.truncated && (
+        <Alert severity="info">
+          {download.data.rowCap === null
+            ? "This file does not include every row."
+            : `This file stops at ${download.data.rowCap.toLocaleString("en-US")} rows.`}
+        </Alert>
+      )}
+      {download.isError && <Alert severity="error">{download.error.message}</Alert>}
+    </Box>
   );
 }

@@ -1,29 +1,78 @@
-import Accordion from "@mui/material/Accordion";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import AccordionSummary from "@mui/material/AccordionSummary";
 import Box from "@mui/material/Box";
+import ButtonBase from "@mui/material/ButtonBase";
 import Button from "@mui/material/Button";
+import Collapse from "@mui/material/Collapse";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { useId, useState } from "react";
+import { tokens } from "../../app/theme";
 
 // Collapsed until opened; the SQL is not in the DOM before that.
 export default function SqlAccordion({ sql }: { sql: string }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
   function copy() {
     if (!navigator.clipboard) return;
     navigator.clipboard.writeText(sql).catch(() => {});
   }
 
   return (
-    <Accordion variant="outlined" disableGutters slotProps={{ transition: { unmountOnExit: true } }}>
-      <AccordionSummary expandIcon={<ExpandMoreIcon />}>SQL</AccordionSummary>
-      <AccordionDetails>
-        <Box component="pre" sx={{ m: 0, mb: 1, whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: 13 }}>
-          {sql}
+    <Box>
+      <ButtonBase
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        onClick={() => setOpen((o) => !o)}
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+          minHeight: 44,
+          px: 2,
+          py: "10px",
+          border: `1px solid ${tokens.border}`,
+          borderRadius: "10px",
+          bgcolor: tokens.subtle,
+          color: tokens.ink,
+          fontFamily: "inherit",
+          fontSize: "1rem",
+          fontWeight: 600,
+          textAlign: "left",
+          transition: "background-color 120ms",
+          "&:hover": { bgcolor: tokens.tableHead },
+        }}
+      >
+        Show the SQL query
+        <ExpandMoreIcon
+          aria-hidden
+          sx={{ transition: "transform 120ms", transform: open ? "rotate(180deg)" : "none" }}
+        />
+      </ButtonBase>
+      <Collapse in={open} unmountOnExit>
+        <Box id={panelId} sx={{ pt: 1.5 }}>
+          <Box
+            component="pre"
+            sx={{
+              m: 0,
+              mb: 1,
+              p: 1.5,
+              whiteSpace: "pre-wrap",
+              overflowWrap: "anywhere",
+              fontFamily: "monospace",
+              fontSize: 13,
+              color: tokens.ink,
+              bgcolor: tokens.subtle,
+              border: `1px solid ${tokens.divider}`,
+              borderRadius: "10px",
+            }}
+          >
+            {sql}
+          </Box>
+          <Button size="small" startIcon={<ContentCopyIcon />} onClick={copy}>
+            Copy
+          </Button>
         </Box>
-        <Button size="small" startIcon={<ContentCopyIcon />} onClick={copy}>
-          Copy
-        </Button>
-      </AccordionDetails>
-    </Accordion>
+      </Collapse>
+    </Box>
   );
 }
