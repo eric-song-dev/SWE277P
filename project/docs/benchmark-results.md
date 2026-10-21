@@ -64,7 +64,7 @@ Each failure is classed as a missing domain rule, a controlled-value gap, a few-
 format failure, or question ambiguity.
 
 Only one question failed in any run above, main or holdout: q15 on DeepSeek Pro (below). The
-DeepSeek runs never failed a question, so no tuning was aimed at a question; the two prompt
+runs on the primary DeepSeek profile (deepseek-flash) never failed a question, so no tuning was aimed at a question; the two prompt
 changes are the S3 carry-overs. One holdout answer (h10, 05:03, the second holdout run of that
 minute) passed on its second attempt, after one repair. It is not a failure, and holdout answers
 are not used to choose prompt wording.

@@ -208,7 +208,7 @@ The database updates itself when the app starts, and your data stays. Check `.en
 | Problem | What to do |
 |---|---|
 | `docker compose` is not found, or "Cannot connect to the Docker daemon" | Start Docker Desktop and wait until it is running. |
-| The page does not open | Run `docker compose ps`. If a service is not running, run `docker compose logs api` and send the last lines to the team. Look them over first and remove anything that looks like a key or password. A start-up error about `HUB_SECRET_KEY` prints the value it rejected. |
+| The page does not open | Run `docker compose ps`. If a service is not running, run `docker compose logs api` and send the last lines to the team. Start-up errors name the setting and never print its value. |
 | "Not connected" shows in the page header | The Hub server is not reachable. Run `docker compose up -d`. |
 | `api` keeps restarting and the log says `HUB_SECRET_KEY must be a Fernet key` | The key is missing or not valid. Generate a new one (section 2). A new key means saved AI keys must be entered again. |
 | The database refuses the password after you edited `.env` | The passwords only apply when the database is first created. Put the old values back, or reset (section 5, deletes data). |
