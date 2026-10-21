@@ -120,7 +120,8 @@ function bodies() {
 }
 
 function renderPage(path: string) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  // retryDelay 0: useConversation retries other errors itself, and the tests should not wait.
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } });
   const router = createMemoryRouter(
     [
       { path: "/chat/:conversationId?", element: <ChatPage /> },
@@ -133,7 +134,7 @@ function renderPage(path: string) {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return { router, user: userEvent.setup() };
+  return { router, client, user: userEvent.setup() };
 }
 
 async function ask(user: ReturnType<typeof userEvent.setup>, question: string) {
@@ -477,6 +478,31 @@ describe("ChatPage", () => {
     expect(await screen.findByText("This conversation no longer exists.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start a new chat" })).toHaveAttribute("href", "/chat");
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+  });
+
+  it("keeps the open conversation when a background refetch fails", async () => {
+    details[1] = detail(1, [savedTurn({ id: 4, seq: 1 })]);
+    const { client } = renderPage("/chat/1");
+    expect(await screen.findByText("How many people came to the Bagel Breakfast?")).toBeInTheDocument();
+    details[1] = new ApiError(0, "network_error", "Could not reach the server.");
+    await act(async () => {
+      await client.refetchQueries({ queryKey: ["conversation", 1] });
+      await new Promise((resolve) => setTimeout(resolve, 0)); // TanStack notifies on a timer
+    });
+    expect(client.getQueryState(["conversation", 1])?.status).toBe("error");
+    expect(screen.getByText("How many people came to the Bagel Breakfast?")).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeEnabled();
+    expect(screen.queryByText("Could not load this conversation.")).not.toBeInTheDocument();
+  });
+
+  it("offers Retry when the conversation cannot be loaded", async () => {
+    details[1] = new ApiError(0, "network_error", "Could not reach the server.");
+    const { user } = renderPage("/chat/1");
+    expect(await screen.findByText("Could not load this conversation.")).toBeInTheDocument();
+    details[1] = detail(1, [savedTurn({ id: 4, seq: 1 })]);
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("How many people came to the Bagel Breakfast?")).toBeInTheDocument();
+    expect(screen.queryByText("Could not load this conversation.")).not.toBeInTheDocument();
   });
 
   it("asks for an AI model when there are no profiles", async () => {

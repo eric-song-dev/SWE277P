@@ -1,5 +1,6 @@
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -106,8 +107,20 @@ export default function ChatPage() {
         </Link>
       </Alert>
     );
-  } else if (conversation.isError) {
-    main = <Alert severity="error">Could not load this conversation.</Alert>;
+  } else if (conversation.isError && !conversation.data) {
+    // Only when nothing is cached: a failed background refetch keeps the conversation on screen.
+    main = (
+      <Alert
+        severity="error"
+        action={
+          <Button color="inherit" size="small" onClick={() => void conversation.refetch()}>
+            Retry
+          </Button>
+        }
+      >
+        Could not load this conversation.
+      </Alert>
+    );
   } else {
     main = (
       <>
