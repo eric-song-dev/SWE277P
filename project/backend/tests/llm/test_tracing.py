@@ -9,6 +9,7 @@ def test_tracing_is_forced_off_even_when_the_environment_enables_it(monkeypatch)
 
     monkeypatch.setenv("LANGSMITH_TRACING", "true")
     monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
+    monkeypatch.delenv("LANGSMITH_TRACING_V2", raising=False)
     get_env_var.cache_clear()
     assert _tracing_v2_is_enabled()  # the hazard is real without the switch
     importlib.reload(app.llm)  # what importing the package does in a fresh process
