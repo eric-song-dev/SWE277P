@@ -5,6 +5,7 @@ import { lazy } from "react";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
 import AuthGate from "./AuthGate";
+import RouteError from "./RouteError";
 import { theme } from "./theme";
 
 const ChatPage = lazy(() => import("../features/chat/ChatPage"));
@@ -18,6 +19,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <AppShell />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <Navigate to="/chat" replace /> },
       // One route for /chat and /chat/:id, so the page (and its stream) survives the first send.
