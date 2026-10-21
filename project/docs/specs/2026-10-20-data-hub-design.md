@@ -338,7 +338,7 @@ Details settled in S3:
 
 Details settled in S4:
 
-- If the client disconnects mid-stream, the turn is still logged once, with `kind = error` and `error_code = "client_disconnected"` (what already happened: SQL, row count, attempts, `results_shared` erring toward true). This code is logged only and never sent, since no one is listening. A disconnect after `done` adds nothing.
+- If the client disconnects mid-stream, the turn is still logged exactly once. `error_code = "client_disconnected"` is recorded only when nothing was recorded yet: then the turn is logged with `kind = error` and that code (what already happened: SQL, row count, attempts, `results_shared` erring toward true). If the graph already recorded the turn, that record stands. If the turn had already failed (for example with `turn_timeout`), it is logged with that failure's code. `client_disconnected` is logged only and never sent, since no one is listening. A disconnect after `done` adds nothing.
 - A question is stripped of surrounding whitespace before validation. A whitespace-only question is a 422, like an empty one, and the 2,000-character limit applies to the stripped text.
 
 Other chat endpoints:
