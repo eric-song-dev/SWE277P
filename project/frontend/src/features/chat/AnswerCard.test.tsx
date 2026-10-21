@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiDownload } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
 import AnswerCard from "./AnswerCard";
@@ -106,7 +106,8 @@ describe("AnswerCard", () => {
       result: { columns: ["name"], rows: [["Ada Lovelace"]], row_count: 1000, truncated: true },
     });
     expect(screen.getByText("Showing the first 1000 rows. Download the file to get all rows.")).toBeInTheDocument();
-    expect(screen.getByText("1000 rows")).toBeInTheDocument();
+    expect(screen.getByText("More than 1000 rows")).toBeInTheDocument();
+    expect(screen.queryByText("1000 rows")).not.toBeInTheDocument();
   });
 
   it("shows the interpretation and assumptions as bullets; null assumptions are none", () => {
@@ -133,6 +134,55 @@ describe("AnswerCard", () => {
     await user.click(screen.getByRole("button", { name: "Show the SQL query" }));
     await user.click(await screen.findByRole("button", { name: "Copy" }));
     expect(await navigator.clipboard.readText()).toBe(SQL);
+  });
+
+  describe("Copy confirmation", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+      vi.restoreAllMocks();
+    });
+
+    function mockClipboard(writeText: () => Promise<void>) {
+      Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    }
+
+    it("reads Copied for about 2 s, then Copy again", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      mockClipboard(writeText); // after setup(): user-event installs its own clipboard stub
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnswerCard turn={turn} result={result} />
+        </QueryClientProvider>,
+      );
+      await user.click(screen.getByRole("button", { name: "Show the SQL query" }));
+      await user.click(await screen.findByRole("button", { name: "Copy" }));
+      expect(writeText).toHaveBeenCalledWith(SQL);
+      expect(await screen.findByRole("button", { name: "Copied" })).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(2100);
+      });
+      expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    });
+
+    it("reads Copy failed when the clipboard write fails", async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      mockClipboard(vi.fn().mockRejectedValue(new Error("denied")));
+      render(
+        <QueryClientProvider client={new QueryClient()}>
+          <AnswerCard turn={turn} result={result} />
+        </QueryClientProvider>,
+      );
+      await user.click(screen.getByRole("button", { name: "Show the SQL query" }));
+      await user.click(await screen.findByRole("button", { name: "Copy" }));
+      expect(await screen.findByRole("button", { name: "Copy failed" })).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(2100);
+      });
+      expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+    });
   });
 
   it("export buttons download the turn", async () => {
@@ -178,7 +228,7 @@ describe("AnswerCard", () => {
     const live: LiveTurn = {
       question: "How many?",
       status: "streaming",
-      step: { name: "repairing", attempt: 2 },
+      step: { name: "repairing", attempt: 1 },
       sql: { sql: SQL, interpretation: "Count attendees", assumptions: [] },
       analysisText: "",
       afterSeq: 0,

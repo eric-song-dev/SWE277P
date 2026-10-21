@@ -59,13 +59,15 @@ const outlinedSx = {
   "&:hover": { borderColor: tokens.primary, bgcolor: tokens.subtle },
 } as const;
 
-function rowsLabel(n: number) {
+function rowsLabel(n: number, truncated: boolean) {
+  if (truncated) return `More than ${n} rows`;
   return n === 1 ? "1 row" : `${n} rows`;
 }
 
 export default function AnswerCard({ turn, result, onShowResults, showResultsPending, rerun, resultsError }: Props) {
   const v = view(turn);
   const rowCount = result?.row_count ?? v.rowCount;
+  const truncated = result?.truncated ?? (isLive(turn) ? false : turn.truncated);
   const reading = [v.interpretation, ...v.assumptions].filter((line): line is string => !!line);
   const download = useMutation({
     mutationFn: (format: "xlsx" | "csv") => apiDownload(`/api/chat/turns/${v.id}/export?format=${format}`),
@@ -147,7 +149,7 @@ export default function AnswerCard({ turn, result, onShowResults, showResultsPen
             borderTop: `1px solid ${tokens.divider}`,
           }}
         >
-          <Typography sx={{ color: tokens.muted }}>{rowCount !== null ? rowsLabel(rowCount) : ""}</Typography>
+          <Typography sx={{ color: tokens.muted }}>{rowCount !== null ? rowsLabel(rowCount, truncated) : ""}</Typography>
           {v.id !== null && (
             <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
               <Button

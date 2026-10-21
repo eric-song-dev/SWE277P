@@ -110,7 +110,7 @@ describe("stepLabel", () => {
     expect(stepLabel({ name: "generating" })).toBe("Writing SQL");
     expect(stepLabel({ name: "checking" })).toBe("Checking the query");
     expect(stepLabel({ name: "running" })).toBe("Running the query");
-    expect(stepLabel({ name: "repairing", attempt: 2 })).toBe("Fixing the query (attempt 2)");
+    expect(stepLabel({ name: "repairing", attempt: 1 })).toBe("Fixing the query (attempt 2)");
     expect(stepLabel({ name: "analyzing" })).toBe("Analyzing results");
   });
 });
@@ -127,10 +127,24 @@ describe("savedErrorText", () => {
     expect(savedErrorText("internal_error")).toBe("Something went wrong on the server.");
   });
 
-  it("covers every llm_* code", () => {
-    for (const code of ["llm_auth_failed", "llm_rate_limited", "llm_unavailable", "llm_model_not_found", "llm_bad_request"]) {
-      expect(savedErrorText(code)).toBe("The AI provider returned an error.");
-    }
+  it("keeps the plain provider message for each llm_* code", () => {
+    expect(savedErrorText("llm_auth_failed")).toBe("The AI provider rejected the API key. Check this profile in Settings.");
+    expect(savedErrorText("llm_rate_limited")).toBe(
+      "The AI provider is rate-limiting requests. Wait a moment and try again.",
+    );
+    expect(savedErrorText("llm_unavailable")).toBe(
+      "Could not reach the AI provider, or it had an error. Try again in a moment.",
+    );
+    expect(savedErrorText("llm_model_not_found")).toBe(
+      "The AI provider does not know this model or URL. Check the model name and base URL.",
+    );
+    expect(savedErrorText("llm_bad_request")).toBe(
+      "The AI provider rejected the request. Check the model and settings of this profile.",
+    );
+  });
+
+  it("falls back for any other llm_ code", () => {
+    expect(savedErrorText("llm_new_thing")).toBe("The AI provider returned an error.");
   });
 
   it("keeps an unknown code in parentheses", () => {

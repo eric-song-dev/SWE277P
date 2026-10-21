@@ -58,7 +58,8 @@ export function stepLabel(step: { name: StepName; attempt?: number }): string {
     case "running":
       return "Running the query";
     case "repairing":
-      return `Fixing the query (attempt ${step.attempt})`;
+      // The event carries the attempt that failed; the label names the one being made.
+      return `Fixing the query (attempt ${(step.attempt ?? 1) + 1})`;
     case "analyzing":
       return "Analyzing results";
   }
@@ -73,11 +74,18 @@ const SAVED_ERRORS: Record<string, string> = {
   query_failed: "The query failed to run.",
   invalid_llm_reply: "The AI's reply couldn't be understood.",
   internal_error: "Something went wrong on the server.",
+  // Same wording as backend/app/llm/errors.py, so a saved turn reads like the live error.
+  llm_auth_failed: "The AI provider rejected the API key. Check this profile in Settings.",
+  llm_rate_limited: "The AI provider is rate-limiting requests. Wait a moment and try again.",
+  llm_unavailable: "Could not reach the AI provider, or it had an error. Try again in a moment.",
+  llm_model_not_found: "The AI provider does not know this model or URL. Check the model name and base URL.",
+  llm_bad_request: "The AI provider rejected the request. Check the model and settings of this profile.",
 };
 
 // A saved turn keeps only its error code, not the message the stream sent.
 export function savedErrorText(code: string | null): string {
   if (code === null) return "This question could not be answered.";
+  if (Object.hasOwn(SAVED_ERRORS, code)) return SAVED_ERRORS[code];
   if (code.startsWith("llm_")) return "The AI provider returned an error.";
-  return SAVED_ERRORS[code] ?? `This question could not be answered (${code}).`;
+  return `This question could not be answered (${code}).`;
 }

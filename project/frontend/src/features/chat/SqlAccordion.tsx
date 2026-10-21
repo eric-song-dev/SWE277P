@@ -4,7 +4,7 @@ import Button from "@mui/material/Button";
 import Collapse from "@mui/material/Collapse";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { tokens } from "../../app/theme";
 
 // Collapsed until opened; the SQL is not in the DOM before that.
@@ -12,9 +12,22 @@ export default function SqlAccordion({ sql }: { sql: string }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  function flash(state: "copied" | "failed") {
+    setCopyState(state);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopyState("idle"), 2000);
+  }
+
   function copy() {
-    if (!navigator.clipboard) return;
-    navigator.clipboard.writeText(sql).catch(() => {});
+    if (!navigator.clipboard) return flash("failed");
+    navigator.clipboard.writeText(sql).then(
+      () => flash("copied"),
+      () => flash("failed"),
+    );
   }
 
   return (
@@ -69,7 +82,7 @@ export default function SqlAccordion({ sql }: { sql: string }) {
             {sql}
           </Box>
           <Button size="small" startIcon={<ContentCopyIcon />} onClick={copy}>
-            Copy
+            {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy"}
           </Button>
         </Box>
       </Collapse>
