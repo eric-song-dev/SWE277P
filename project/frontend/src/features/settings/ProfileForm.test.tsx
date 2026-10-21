@@ -16,6 +16,7 @@ vi.mock("../../api/client", async (importOriginal) => ({
 const presets: PresetOut[] = [
   { key: "zotgpt", label: "ZotGPT", base_url: null, share_results_default: true },
   { key: "openai", label: "OpenAI", base_url: "https://api.openai.com/v1", share_results_default: false },
+  { key: "custom", label: "Custom", base_url: null, share_results_default: false },
   { key: "fake", label: "Demo (scripted)", base_url: null, share_results_default: false },
 ];
 
@@ -43,7 +44,7 @@ function renderForm(profile: LlmProfileOut | null, probe?: ProbeResultOut) {
       <ProfileForm profile={profile} onClose={onClose} />
     </QueryClientProvider>,
   );
-  return { onClose };
+  return { onClose, client };
 }
 
 describe("ProfileForm", () => {
@@ -155,5 +156,38 @@ describe("ProfileForm", () => {
     vi.mocked(apiSend).mockRejectedValueOnce(new ApiError(422, "validation_error", "Base URL is not valid."));
     await user.click(screen.getByRole("button", { name: /save/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Base URL is not valid.");
+  });
+
+  it("sends base_url when the preset changes even if the URL is unchanged", async () => {
+    const user = userEvent.setup();
+    const custom = { ...openaiProfile, preset: "custom", base_url: "https://llm.example.edu/v1" };
+    renderForm(custom);
+    await user.click(await screen.findByRole("combobox", { name: /Provider/i }));
+    await user.click(await screen.findByRole("option", { name: "ZotGPT" }));
+    expect(screen.getByLabelText(/Base URL/i)).toHaveValue("https://llm.example.edu/v1");
+    vi.mocked(apiSend).mockResolvedValueOnce(custom);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(apiSend).toHaveBeenCalledWith("PATCH", "/api/llm-profiles/1", {
+      preset: "zotgpt",
+      base_url: "https://llm.example.edu/v1",
+      share_results_with_llm: true,
+    });
+  });
+
+  it("clears the previous preset's default URL when the new preset has none", async () => {
+    const user = userEvent.setup();
+    renderForm(openaiProfile);
+    await user.click(await screen.findByRole("combobox", { name: /Provider/i }));
+    await user.click(await screen.findByRole("option", { name: "Custom" }));
+    expect(screen.getByLabelText(/Base URL/i)).toHaveValue("");
+  });
+
+  it("clears the cached probe result after a save", async () => {
+    const user = userEvent.setup();
+    const { client } = renderForm(openaiProfile, { ok: true, json_mode: true, models: [], error: null, latency_ms: 1 });
+    await user.type(await screen.findByLabelText(/^Model/), "-2");
+    vi.mocked(apiSend).mockResolvedValueOnce(openaiProfile);
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    await vi.waitFor(() => expect(client.getQueryData(["llm-probe", 1])).toBeUndefined());
   });
 });

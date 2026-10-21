@@ -40,7 +40,11 @@ export function useSaveProfile() {
       args.id === undefined
         ? apiSend<LlmProfileOut>("POST", "/api/llm-profiles", args.body)
         : apiSend<LlmProfileOut>("PATCH", `/api/llm-profiles/${args.id}`, args.body),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: PROFILES_KEY }),
+    onSuccess: (_, args) => {
+      // The server clears the stored test result on edits, so a cached probe would be stale.
+      if (args.id !== undefined) queryClient.removeQueries({ queryKey: ["llm-probe", args.id] });
+      return queryClient.invalidateQueries({ queryKey: PROFILES_KEY });
+    },
   });
 }
 

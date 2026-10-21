@@ -64,6 +64,8 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
     const next = presets.find((p) => p.key === key);
     setPresetKey(key);
     if (next?.base_url) setBaseUrl(next.base_url);
+    // Drop the previous preset's default URL; a URL the user typed stays.
+    else if (preset?.base_url && baseUrl === preset.base_url) setBaseUrl("");
     setShare(next?.share_results_default ?? false);
   }
 
@@ -83,7 +85,8 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
     const patch: LlmProfilePatch = {};
     if (name.trim() !== profile.name) patch.name = name.trim();
     if (presetKey !== profile.preset) patch.preset = presetKey;
-    if (url !== profile.base_url) patch.base_url = url;
+    // The server resets base_url on a preset change unless the body carries it.
+    if (url !== profile.base_url || presetKey !== profile.preset) patch.base_url = url;
     if (model.trim() !== profile.model) patch.model = model.trim();
     if (share !== profile.share_results_with_llm) patch.share_results_with_llm = share;
     if (apiKey && !isFake) patch.api_key = apiKey;

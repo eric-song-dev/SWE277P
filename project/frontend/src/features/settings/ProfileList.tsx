@@ -30,6 +30,11 @@ export default function ProfileList({ profiles, onEdit }: Props) {
   const remove = useDeleteProfile();
   const [toDelete, setToDelete] = useState<LlmProfileOut | null>(null);
 
+  function closeDelete() {
+    remove.reset();
+    setToDelete(null);
+  }
+
   return (
     <Stack spacing={2}>
       {profiles.map((profile) => (
@@ -40,20 +45,21 @@ export default function ProfileList({ profiles, onEdit }: Props) {
           onDelete={() => setToDelete(profile)}
         />
       ))}
-      <Dialog open={toDelete !== null} onClose={() => setToDelete(null)}>
+      <Dialog open={toDelete !== null} onClose={closeDelete}>
         <DialogTitle>Delete AI model</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Delete "{toDelete?.name}"? Its saved API key is removed too.
           </DialogContentText>
+          {remove.isError && <Alert severity="error" sx={{ mt: 1 }}>{remove.error.message}</Alert>}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setToDelete(null)}>Cancel</Button>
+          <Button onClick={closeDelete}>Cancel</Button>
           <Button
             color="error"
+            disabled={remove.isPending}
             onClick={() => {
-              if (toDelete) remove.mutate(toDelete.id);
-              setToDelete(null);
+              if (toDelete) remove.mutate(toDelete.id, { onSuccess: closeDelete });
             }}
           >
             Delete
@@ -99,6 +105,7 @@ function ProfileCard({
           result={probeResult.data ?? null}
           error={probe.isError ? probe.error.message : null}
         />
+        {setDefault.isError && <Alert severity="error" sx={{ mt: 1 }}>{setDefault.error.message}</Alert>}
       </CardContent>
       <CardActions>
         <Button size="small" onClick={() => probe.mutate(profile.id)} disabled={probe.isPending}>

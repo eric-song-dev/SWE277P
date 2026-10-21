@@ -127,4 +127,22 @@ describe("ProfileList", () => {
     await user.click(within(dialog).getByRole("button", { name: "Delete" }));
     expect(apiSend).toHaveBeenCalledWith("DELETE", "/api/llm-profiles/2");
   });
+
+  it("keeps the dialog open and shows the error when delete fails", async () => {
+    const user = userEvent.setup();
+    renderList();
+    await user.click(within(card("Campus ZotGPT")).getByRole("button", { name: "Delete" }));
+    const dialog = await screen.findByRole("dialog");
+    vi.mocked(apiSend).mockRejectedValueOnce(new ApiError(404, "not_found", "AI model not found."));
+    await user.click(within(dialog).getByRole("button", { name: "Delete" }));
+    expect(await within(dialog).findByText("AI model not found.")).toBeInTheDocument();
+  });
+
+  it("shows the error when make default fails", async () => {
+    const user = userEvent.setup();
+    renderList();
+    vi.mocked(apiSend).mockRejectedValueOnce(new ApiError(500, "internal", "Something went wrong."));
+    await user.click(within(card("Campus ZotGPT")).getByRole("button", { name: "Make default" }));
+    expect(await within(card("Campus ZotGPT")).findByText("Something went wrong.")).toBeInTheDocument();
+  });
 });
