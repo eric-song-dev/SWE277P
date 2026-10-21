@@ -61,6 +61,7 @@ project/
   db/init/             Postgres init scripts (app and read-only roles)
   docs/specs/          design specs
   docs/plans/          implementation plans
+  docs/screenshots/    UI screenshots from the Playwright e2e run (synthetic data)
   backend/             FastAPI app (app/), Alembic (alembic/), sample_data/, tests/, Dockerfile
   frontend/            React + Vite app (src/api client, src/app shell), nginx.conf, Dockerfile
 ```
@@ -163,7 +164,11 @@ npm run dev                              # :5173, proxies /api to :8000
 npm test -- --run                        # Vitest
 npm run build                            # type-check + production build
 npm run lint                             # oxlint
+npm run e2e                              # Playwright happy path on its own stack (needs Docker)
+npm run e2e:screenshots                  # regenerate docs/screenshots/ (midterm report)
 ```
+
+Each e2e run starts a separate `hub-e2e` Compose project on 127.0.0.1:8081 (`HUB_HTTP_PORT`) with the scripted "Demo" profile, blanks every `LLM_SEED_*` so no real API key is used, and removes the stack and its volume afterwards. First time: `npx playwright install chromium`.
 
 Chatbot benchmark (from `project/backend`, needs a saved LLM profile and the sample data loaded):
 

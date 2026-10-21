@@ -11,7 +11,7 @@
   },
   "overrides": [
     {
-      "files": ["src/api/**"],
+      "files": ["src/api/**", "e2e/**", "playwright.config.ts"],
       "rules": { "no-restricted-globals": "off" }
     }
   ]
