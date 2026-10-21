@@ -107,10 +107,24 @@ React 19, TypeScript, Vite, MUI 9, MUI X DataGrid 9 (MIT edition), TanStack Quer
 
 ```
 project/frontend/src/
-  api/client.ts      the only place that calls fetch (JSON + SSE streaming)
-  app/               AppShell (nav, current user), AuthGate (pass-through for now), routes
+  api/client.ts      the only place that calls fetch (`hubFetch`: credentials, network errors; JSON, upload, download)
+  api/sse.ts         the SSE stream parser and `streamSse`, which fetches through `hubFetch`
+  api/types.ts       mirrors the backend schemas by name
+  app/               AppShell (nav, current user), AuthGate (pass-through for now), routes, error page
   features/upload/   features/chat/   features/settings/   features/dataset/
 ```
+
+Details settled in S4:
+
+- An oxlint `no-restricted-globals` rule forbids `fetch` outside `src/api/` (and the e2e setup).
+- `/chat` is a draft conversation. The first question creates the conversation (`POST /api/conversations`) and the URL becomes `/chat/:id`; "New chat" never creates an empty conversation. The chat page is one route, `chat/:conversationId?`, so the page and its stream survive that URL change. Router navigations are not wrapped in React transitions (`useTransitions={false}`), so a question sent right after "New chat" goes to the new conversation.
+- The thread shows one card per question: the live turn takes the place of its saved copy once the conversation is refetched. Known gap: if the stream drops, the backend saves a `client_disconnected` turn the browser never learns the id of, so after a refetch both that turn and the live "Connection lost. Retry." card can show.
+- Retry, on a live or a saved failed turn, resends the question with the profile and "Let AI see the results" switch selected now (D2), not the ones the failed attempt used.
+- Every failed turn still shows its SQL. Saved error codes are shown in plain language.
+- A chat export whose `X-Hub-Truncated` header is `true` shows "This file stops at {cap} rows."
+- When the server is down, errors read "Could not reach the server." (`network_error`) or "The Hub server isn't responding…" (`server_unavailable`, any non-JSON 5xx), and the chat treats both as a lost connection. A render error or a page chunk that fails to load shows a plain error page with Reload.
+- localStorage holds only the last selected profile id (`hub.chat.profileId`).
+- The Playwright e2e runs on its own Compose project (`hub-e2e`, port 8081) with only the scripted "Demo" profile; it blanks every `LLM_SEED_*` and refuses to run if any other profile exists, so no real key is ever used.
 
 ## 5. Data model
 
