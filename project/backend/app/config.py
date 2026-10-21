@@ -13,7 +13,9 @@ FERNET_HELP = (
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=("../.env", ".env"), extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=("../.env", ".env"), extra="ignore", hide_input_in_errors=True
+    )
 
     database_url: str
     chatbot_database_url: str
