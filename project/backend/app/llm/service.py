@@ -67,7 +67,7 @@ def create_profile(
     base_url = _clean_url(data.base_url) or preset.base_url or ""
     _check_preset(data.preset, base_url, settings)
     _name_free(session, data.name)
-    key = data.api_key.get_secret_value() if data.api_key else ""
+    key = data.api_key.get_secret_value().strip() if data.api_key else ""
     share = (
         preset.share_results_default
         if data.share_results_with_llm is None
