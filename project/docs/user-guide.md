@@ -27,10 +27,10 @@ The Hub has four pages, listed on the left: **Chat**, **Upload**, **Dataset** an
 
    | Field | What to enter |
    |---|---|
-   | Event name | The event's name. Filled from the file name. |
+   | Event name | The event's name. Required. Filled from the file name. |
    | Event date | The day of the event. Filled for CampusGroups files. 12twenty files do not contain it, so enter it if you know it, or leave it blank. |
    | Term | Season and year, like `Fall 2026`. Required. |
-   | Format | In Person, Virtual or Hybrid. |
+   | Format | In Person, Virtual or Hybrid. Required. |
    | Sponsor/Host/Partners | Who hosted the event. Separate several with " / ". |
    | Event type | For example Professional Development, Wellness/Mental Health or Fellowships. Required. |
    | Attendance source note | Where the attendance came from, when it is not CampusGroups. Filled in for 12twenty files. |

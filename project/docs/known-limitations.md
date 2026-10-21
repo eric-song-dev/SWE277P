@@ -10,11 +10,15 @@ What the Hub does not do yet, what is not confirmed, and where it can be wrong. 
 - **The Notes wording in the full download. Open.** The sponsor has not confirmed it.
 - **The sponsor's two dummy export files have not arrived. Open.** All tests use the team's synthetic samples, which were modeled on the sponsor's compiled sheet. That sheet may itself be AI-generated, so real exports may differ from what was tested.
 
+## Database logs can hold values
+
+PostgreSQL logs a failing statement and its error message in the `db` container log. A generated query that fails can therefore put a value from the question or the data into `docker compose logs db`. These logs stay on the machine; check them before sharing. The fix, a superuser-only per-role log setting, is backlog.
+
 ## Chat answers can be wrong
 
 The AI writes the SQL, so an answer can be wrong even when it looks reasonable. The table is the authority. The Hub shows the SQL and a "How I read your question" note so you can check.
 
-- **Benchmark.** On the main model (DeepSeek, `deepseek-flash`) the AI answered 20 of 20 benchmark questions correctly on two runs in a row, and 10 of 10 on three runs of a set of 10 held-out questions written before tuning. A second model (DeepSeek Pro, `deepseek-v4-pro`) scored 19 of 20 and 10 of 10. The target is 18 of 20.
+- **Benchmark.** On the main model (DeepSeek, `deepseek-flash`) the AI answered 20 of 20 benchmark questions correctly on two runs in a row, and 10 of 10 on three runs of a set of 10 held-out questions written before tuning. A second model (DeepSeek Pro, `deepseek-v4-pro`) scored 19 of 20 and 10 of 10. The target is 18 of 20. Both benchmarked profiles are DeepSeek models on one provider. No second provider has been benchmarked, and ZotGPT is unverified.
 - **The benchmark likely overstates how well it handles new wording.** All runs used one model family, 293 sample rows, and one term (Fall 2026). Several prompt rules match the benchmark's own readings. The held-out questions help, but they are only 10. Expect misses on new kinds of questions.
 - **The second profile's q15 reading (records vs people).** The question is "What percentage of attendees at virtual events were doctoral students?". The main model counts attendance records, like the reference answer. DeepSeek Pro counted unique people instead. Both readings are sensible, and the question does not say which. Say "unique people" or "attendance records" when it matters. The "How I read your question" note shows which reading was used.
 - **The "students" assumption is stated in most answers, not all.** In a spot check of nine answers, eight stated it. When an answer says "students", check the note, or name the affiliation (doctoral students, Master's students, postdocs).

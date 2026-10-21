@@ -69,10 +69,10 @@ docker run --rm python:3.12-slim python -c "import secrets; print(secrets.token_
 For `HUB_SECRET_KEY`:
 
 ```
-docker run --rm python:3.12-slim sh -c "pip install -q cryptography && python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'"
+docker run --rm python:3.12-slim python -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
 ```
 
-(On PowerShell, if the second command complains about quotes, use the `uv` command below, or ask the team.)
+The key is the single line of 44 characters ending in `=`. Copy that whole line.
 
 Developers with `uv` installed can make the key like this instead. Do not use the computer's own `python`: it usually lacks the `cryptography` package.
 
@@ -171,7 +171,7 @@ The first model you add becomes the default. The ZotGPT address, JSON support an
 
 ## 7. Back up and restore
 
-All data is in the database, in a Docker volume named `<folder>_hub-pgdata`. Back it up before every upgrade and regularly.
+All data is in the database, in a Docker volume named `<folder>_hub-pgdata`. Back it up before every upgrade and regularly. The volume is named after the folder, so keep the folder name `project` when you upgrade. If the Hub opens empty after an upgrade, the old data is in the old folder's volume (go back to that folder), or restore the backup.
 
 **Back up** (writes `hub-backup.sql` in the current folder):
 
@@ -194,7 +194,7 @@ docker compose start api
 ## 8. Upgrade
 
 1. Back up (section 7).
-2. Replace the `project` folder with the new version, but keep your `.env` file. If you use git: `git pull`.
+2. Replace the `project` folder with the new version, but keep your `.env` file. Keep the folder name `project`: the data volume is named after it. If you use git: `git pull`.
 3. Run:
 
    ```

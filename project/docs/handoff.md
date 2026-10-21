@@ -80,7 +80,7 @@ cd backend
 uv run python -m benchmark.run --profile "<name>" [--set main|holdout] [--only q01,q05] [--min-score 18]
 ```
 
-It writes a report to `backend/benchmark/reports/` (not committed) and prints `Score: N/20`. Run it after every change to the prompt or the AI model. `--set holdout` runs the 10 held-out questions; never tune prompts on those. Results so far: [benchmark-results.md](benchmark-results.md).
+It writes a report to `backend/benchmark/reports/` (not committed) and prints `Score: N/20` (`Score: N/10` for `--set holdout`). Run it after every change to the prompt or the AI model. `--set holdout` runs the 10 held-out questions; never tune prompts on those. Results so far: [benchmark-results.md](benchmark-results.md).
 
 Acceptance tests A1 to A10 are in spec section 14. A7 (login) is deferred. A3, A4 and A10 need a real AI key and are run by hand; the rest are automated.
 
