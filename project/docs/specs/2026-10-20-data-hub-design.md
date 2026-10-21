@@ -319,7 +319,7 @@ The guard parses with `sqlglot` (dialect `postgres`) and enforces:
 
   Everything else is rejected, including `pg_sleep`, `set_config`, `current_setting`, `dblink`, and `lo_*`.
 
-Finally the guard sets or tightens `LIMIT`. Its error messages are our own text and safe to send back to the LLM.
+Finally the guard sets or tightens `LIMIT`. Its error messages are our own text and safe to send back to the LLM. The messages for constructs the LLM tends to reach for say what to do instead, and never echo the rejected SQL: `COLLATE` (remove it; use `lower()`/`upper()` for case-insensitive matching), the `^` operator and `power()` (use `*` or avoid exponentiation), and schema-qualified function calls such as `pg_catalog.lower(...)` (write the allow-listed name alone). (Decided in S5.)
 
 ### 7.5 Execution errors and the sanitizer
 

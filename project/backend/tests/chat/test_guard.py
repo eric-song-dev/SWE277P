@@ -593,3 +593,29 @@ def test_rendered_sql_is_revalidated(monkeypatch):
     monkeypatch.setattr(guard, "_outer_query", evil)
     with pytest.raises(GuardError, match="attendance_view"):
         guard_sql("SELECT email FROM attendance_view", limit=10)
+
+
+@pytest.mark.parametrize(
+    ("sql", "expected"),
+    [
+        ('SELECT netid COLLATE "C" FROM attendance_view', "COLLATE is not allowed"),
+        ('SELECT lower(email COLLATE "C") FROM attendance_view', "COLLATE is not allowed"),
+        ("SELECT 2 ^ 3 FROM attendance_view", "the ^ operator is not allowed"),
+        ("SELECT power(2, 3) FROM attendance_view", "the ^ operator is not allowed"),
+        (
+            "SELECT pg_catalog.lower(email) FROM attendance_view",
+            "schema-qualified function calls are not allowed",
+        ),
+        (
+            "SELECT public.myfn(email) FROM attendance_view",
+            "schema-qualified function calls are not allowed",
+        ),
+    ],
+)
+def test_repair_messages_name_the_problem_and_the_fix(sql, expected):
+    with pytest.raises(GuardError) as exc:
+        guard_sql(sql, limit=10)
+    reason = exc.value.reason
+    assert expected in reason
+    assert "function collate" not in reason and "function power" not in reason
+    assert "pg_catalog" not in reason and "myfn" not in reason  # nothing echoed from the SQL

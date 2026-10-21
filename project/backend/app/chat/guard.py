@@ -130,7 +130,24 @@ _FORBIDDEN_NODES: tuple[tuple[tuple[type[exp.Expression], ...], str], ...] = (
         "only SELECT statements are allowed",
     ),
     ((exp.Operator,), "custom operators (OPERATOR(...)) are not allowed"),
-    ((exp.Dot,), "qualified function or type names are not allowed"),
+    (
+        (exp.Dot,),
+        (
+            "schema-qualified function calls are not allowed (also schema-qualified type names); "
+            "write the function name alone, and only the allow-listed functions can be used"
+        ),
+    ),
+    (
+        (exp.Collate,),
+        (
+            "COLLATE is not allowed; remove it (use lower() or upper() for case-insensitive "
+            "comparisons)"
+        ),
+    ),
+    (
+        (exp.Pow,),
+        "the ^ operator is not allowed (nor power()); use * for squares or avoid exponentiation",
+    ),
     (
         (exp.Parameter, exp.SessionParameter, exp.Placeholder),
         "query parameters and placeholders are not allowed",
