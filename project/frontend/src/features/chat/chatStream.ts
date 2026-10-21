@@ -41,6 +41,9 @@ export function chatStreamReducer(turn: LiveTurn, e: SseEvent): LiveTurn {
         status: turn.status === "error" ? "error" : "done",
         turnId: e.data.turn_id,
       };
+    default:
+      // An event this client does not know (a newer server, a keep-alive) changes nothing.
+      return turn;
   }
 }
 

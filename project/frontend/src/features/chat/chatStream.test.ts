@@ -91,6 +91,12 @@ describe("chatStreamReducer", () => {
     expect(t).toMatchObject({ status: "done", turnId: null });
   });
 
+  it("leaves the turn unchanged for an unknown event", () => {
+    const before = startTurn("q");
+    const keepAlive = { event: "keep_alive", data: {} } as unknown as SseEvent;
+    expect(chatStreamReducer(before, keepAlive)).toBe(before);
+  });
+
   it("does not mutate the input turn", () => {
     const before = startTurn("q");
     const frozen = Object.freeze({ ...before });
