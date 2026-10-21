@@ -5,6 +5,7 @@ import { lazy } from "react";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
 import AuthGate from "./AuthGate";
+import { UploadProvider } from "../features/upload/UploadContext";
 import RouteError from "./RouteError";
 import { theme } from "./theme";
 
@@ -21,7 +22,10 @@ const router = createBrowserRouter([
     // The gate sits inside the route, so a render error in it reaches errorElement.
     element: (
       <AuthGate>
-        <AppShell />
+        {/* Above the routes, so Upload's cards and typed edits survive navigating away. */}
+        <UploadProvider>
+          <AppShell />
+        </UploadProvider>
       </AuthGate>
     ),
     errorElement: <RouteError />,

@@ -6,7 +6,6 @@ import Chip from "@mui/material/Chip";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import type { CommitSummary, ImportPreview } from "../../api/types";
 import CommitSummaryView from "./CommitSummaryView";
@@ -42,6 +41,8 @@ const STATUS_CHIPS = {
 
 interface Props {
   preview: ImportPreview;
+  summary: CommitSummary | null;
+  onCommitted: (summary: CommitSummary) => void;
   onRemove: () => void;
 }
 
@@ -50,9 +51,8 @@ function missingColumns(preview: ImportPreview): string[] {
   return Array.isArray(missing) ? missing.map(String) : [];
 }
 
-export default function FilePreviewCard({ preview, onRemove }: Props) {
+export default function FilePreviewCard({ preview, summary, onCommitted, onRemove }: Props) {
   const discard = useDiscardImport();
-  const [summary, setSummary] = useState<CommitSummary | null>(null);
   const chip = STATUS_CHIPS[preview.status];
   const missing = missingColumns(preview);
 
@@ -115,7 +115,7 @@ export default function FilePreviewCard({ preview, onRemove }: Props) {
                   ))}
                 </Stack>
               </Stack>
-              <EventDetailsForm importId={preview.id} draft={preview.event_draft} onCommitted={setSummary} />
+              <EventDetailsForm importId={preview.id} draft={preview.event_draft} onCommitted={onCommitted} />
               {discard.isError && <Alert severity="error">{discard.error.message}</Alert>}
               <Button
                 color="inherit"

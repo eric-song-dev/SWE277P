@@ -3,12 +3,12 @@ import Box from "@mui/material/Box";
 import LinearProgress from "@mui/material/LinearProgress";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileRejection } from "react-dropzone";
-import type { ImportPreview } from "../../api/types";
 import FilePreviewCard from "./FilePreviewCard";
-import { usePreviewUpload } from "./useImports";
+import { useUploadStore } from "./uploadStore";
+import { useImportHistory, usePendingPreviews, usePreviewUpload } from "./useImports";
 
 const ACCEPT = {
   "text/csv": [".csv"],
@@ -17,32 +17,25 @@ const ACCEPT = {
   "application/vnd.ms-excel.sheet.macroEnabled.12": [".xlsm"],
 };
 
-interface Card {
-  key: string;
-  preview: ImportPreview;
-}
-
 export default function UploadPage() {
   const upload = usePreviewUpload();
-  const [cards, setCards] = useState<Card[]>([]);
+  const { cards, addPreviews, removeCard, setSummary } = useUploadStore();
   const [rejected, setRejected] = useState<string[]>([]);
   // One entry per failed batch; the mutation's own error only tracks the latest call.
   const [failures, setFailures] = useState<{ key: number; message: string }[]>([]);
   const nextKey = useRef(0);
 
-  function addPreviews(previews: ImportPreview[]) {
-    setCards((current) => {
-      // Re-dropping a pending file returns the same import, which already has a card.
-      const seen = new Set(current.map((c) => c.preview.id).filter((id) => id !== null));
-      const added = previews
-        .filter((p) => p.id === null || !seen.has(p.id))
-        .map((preview) => ({
-          key: preview.id === null ? `file-${nextKey.current++}` : `import-${preview.id}`,
-          preview,
-        }));
-      return [...added, ...current];
-    });
-  }
+  // Pending imports the server holds that this session has no card for (after leaving the page
+  // or a reload) come back as cards, so they can still be committed or discarded.
+  const history = useImportHistory();
+  const haveCard = new Set(cards.map((c) => c.preview.id));
+  const missingIds = (history.data ?? [])
+    .filter((row) => row.status === "pending" && !haveCard.has(row.id))
+    .map((row) => row.id);
+  const restored = usePendingPreviews(missingIds);
+  useEffect(() => {
+    if (restored.previews.length > 0) addPreviews(restored.previews);
+  }, [restored.previews, addPreviews]);
 
   function onDrop(accepted: File[], fileRejections: FileRejection[]) {
     setRejected(fileRejections.map((r) => r.file.name));
@@ -90,11 +83,17 @@ export default function UploadPage() {
       {rejected.length > 0 && (
         <Alert severity="warning">Unsupported file type, not uploaded: {rejected.join(", ")}</Alert>
       )}
+      {history.isError && <Alert severity="error">Could not check for pending imports.</Alert>}
+      {restored.failed > 0 && (
+        <Alert severity="error">Could not load a pending import. Reload the page to try again.</Alert>
+      )}
       {cards.map((card) => (
         <FilePreviewCard
           key={card.key}
           preview={card.preview}
-          onRemove={() => setCards((current) => current.filter((c) => c.key !== card.key))}
+          summary={card.summary}
+          onCommitted={(summary) => setSummary(card.key, summary)}
+          onRemove={() => removeCard(card.key)}
         />
       ))}
     </Stack>

@@ -4,9 +4,10 @@ import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import { useId, useRef, useState } from "react";
+import { useId, useRef } from "react";
 import type { SyntheticEvent } from "react";
 import type { CommitSummary, EventDetailsIn, EventDraftOut } from "../../api/types";
+import { useUploadStore, type EventFormValues } from "./uploadStore";
 import { useCommitImport } from "./useImports";
 
 const TERM_PATTERN = /^(Fall|Winter|Spring|Summer) [0-9]{4}$/;
@@ -26,14 +27,28 @@ export default function EventDetailsForm({ importId, draft, onCommitted }: Props
   const commit = useCommitImport();
   // Set synchronously so a fast double click cannot send twice before the button disables.
   const inFlight = useRef(false);
-  const [name, setName] = useState(draft.name);
-  const [eventDate, setEventDate] = useState(draft.event_date ?? "");
-  const [term, setTerm] = useState(draft.term ?? "");
-  const [modality, setModality] = useState(draft.modality ?? "");
-  const [sponsors, setSponsors] = useState(draft.sponsors_hosts ?? "");
-  const [eventType, setEventType] = useState(draft.event_type ?? "");
-  const [sourceNote, setSourceNote] = useState(draft.attendance_source_note ?? "");
-  const [studentWorker, setStudentWorker] = useState(draft.student_worker ?? "");
+  // Kept in the upload store, so typed edits survive leaving the page; a reload starts from the draft.
+  const { formValues, setFormValues } = useUploadStore();
+  const values: EventFormValues = formValues(importId) ?? {
+    name: draft.name,
+    eventDate: draft.event_date ?? "",
+    term: draft.term ?? "",
+    modality: draft.modality ?? "",
+    sponsors: draft.sponsors_hosts ?? "",
+    eventType: draft.event_type ?? "",
+    sourceNote: draft.attendance_source_note ?? "",
+    studentWorker: draft.student_worker ?? "",
+  };
+  const { name, eventDate, term, modality, sponsors, eventType, sourceNote, studentWorker } = values;
+  const edit = (patch: Partial<EventFormValues>) => setFormValues(importId, { ...values, ...patch });
+  const setName = (name: string) => edit({ name });
+  const setEventDate = (eventDate: string) => edit({ eventDate });
+  const setTerm = (term: string) => edit({ term });
+  const setModality = (modality: string) => edit({ modality });
+  const setSponsors = (sponsors: string) => edit({ sponsors });
+  const setEventType = (eventType: string) => edit({ eventType });
+  const setSourceNote = (sourceNote: string) => edit({ sourceNote });
+  const setStudentWorker = (studentWorker: string) => edit({ studentWorker });
 
   const termValid = TERM_PATTERN.test(term.trim());
   const valid =

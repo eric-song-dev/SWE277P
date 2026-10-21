@@ -36,7 +36,21 @@ const columns: GridColDef<ImportFileOut>[] = [
     valueGetter: (_, row) => new Date(row.uploaded_at),
     valueFormatter: (value: Date) => value.toLocaleString(),
   },
-  { field: "status", headerName: "Status", width: 110, valueGetter: (_, row) => STATUSES[row.status] ?? row.status },
+  {
+    field: "status",
+    headerName: "Status",
+    width: 110,
+    valueGetter: (_, row) => STATUSES[row.status] ?? row.status,
+    // A pending import is finished on the Upload page.
+    renderCell: ({ row, value }) =>
+      row.status === "pending" ? (
+        <Link component={RouterLink} to="/upload">
+          {value}
+        </Link>
+      ) : (
+        value
+      ),
+  },
 ];
 
 export default function DatasetPage() {

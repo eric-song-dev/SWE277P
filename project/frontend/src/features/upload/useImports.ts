@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiSend, apiUpload } from "../../api/client";
 import type {
   CommitSummary,
@@ -38,5 +38,23 @@ export function useDiscardImport() {
   return useMutation({
     mutationFn: (id: number) => apiSend<void>("DELETE", `/api/imports/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: IMPORTS_KEY }),
+  });
+}
+
+// The previews of imports the server still holds as pending, for cards the page does not have
+// (the user left /upload or reloaded). Fetched once each; a failed one is counted, not retried.
+export function usePendingPreviews(ids: number[]) {
+  return useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ["import-preview", id],
+      queryFn: () => apiGet<ImportPreview>(`/api/imports/${id}/preview`),
+      staleTime: Infinity,
+      gcTime: 0,
+      retry: false,
+    })),
+    combine: (results) => ({
+      previews: results.flatMap((r) => (r.data ? [r.data] : [])),
+      failed: results.filter((r) => r.isError).length,
+    }),
   });
 }

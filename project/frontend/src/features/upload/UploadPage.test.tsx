@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router";
+import { createMemoryRouter, Link, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiSend, apiUpload } from "../../api/client";
-import type { CommitSummary, ImportPreview } from "../../api/types";
+import { apiGet, apiSend, apiUpload } from "../../api/client";
+import type { CommitSummary, ImportFileOut, ImportPreview } from "../../api/types";
+import { UploadProvider } from "./UploadContext";
 import UploadPage from "./UploadPage";
 
 // Keep the real ApiError class; automocking would blank its constructor.
@@ -60,24 +61,55 @@ const summary: CommitSummary = {
   new_people: 3, unlinked: 1, flagged_rows: 2, skipped: 1, duplicates_in_event: 0,
 };
 
-async function drop(files: File[]) {
-  const user = userEvent.setup({ applyAccept: false });
+function renderUpload(path = "/upload") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const router = createMemoryRouter(
+    [
+      { path: "/upload", element: <UploadPage /> },
+      { path: "/chat", element: <Link to="/upload">Back to upload</Link> },
+    ],
+    { initialEntries: [path] },
+  );
+  // The provider sits above the routes, like the app shell's.
   render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <UploadPage />
-      </MemoryRouter>
+      <UploadProvider>
+        <RouterProvider router={router} />
+      </UploadProvider>
     </QueryClientProvider>,
   );
+  return { router, user: userEvent.setup({ applyAccept: false }) };
+}
+
+async function drop(files: File[]) {
+  const { user } = renderUpload();
   await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, files);
   return user;
+}
+
+function importRow(id: number, status: "pending" | "committed"): ImportFileOut {
+  return {
+    id,
+    file_name: `Mixer-${id}.csv`,
+    source: "campusgroups",
+    status,
+    row_count: 38,
+    skipped_count: 0,
+    event: null,
+    flag_count: 0,
+    uploaded_by: { id: 1, display_name: "Ada" },
+    uploaded_at: "2026-10-02T17:30:00Z",
+    committed_at: null,
+  };
 }
 
 const csv = (name: string) => new File(["a"], name, { type: "text/csv" });
 
 describe("UploadPage", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiGet).mockResolvedValue([]);
+  });
 
   it("renders one card per file with its status", async () => {
     vi.mocked(apiUpload).mockResolvedValueOnce({ files: [pending(5, "Mixer"), duplicate, rejected] });
@@ -220,5 +252,60 @@ describe("UploadPage", () => {
     failFirst(new Error("boom"));
     expect(await screen.findByText(/Upload failed for a\.csv: boom/)).toBeInTheDocument();
     expect(screen.getByText("Panel.csv")).toBeInTheDocument();
+  });
+
+  it("gives two copies of one export in one batch a single card", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(apiUpload).mockResolvedValueOnce({ files: [pending(5, "Mixer"), pending(5, "Mixer")] });
+    await drop([csv("a.csv"), csv("a-copy.csv")]);
+    await screen.findByText("Mixer.csv");
+    expect(screen.getAllByText("Mixer.csv")).toHaveLength(1);
+    expect(log).not.toHaveBeenCalledWith(expect.stringContaining("same key"), expect.anything());
+    log.mockRestore();
+  });
+
+  it("shows the server's pending imports when the page opens", async () => {
+    vi.mocked(apiGet).mockImplementation(async (path) => {
+      if (path === "/api/imports") return [importRow(5, "pending"), importRow(4, "committed")];
+      if (path === "/api/imports/5/preview") return pending(5, "Mixer");
+      throw new Error(`unexpected GET ${path}`);
+    });
+    const { user } = renderUpload();
+    const card = (await screen.findByText("Mixer.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    expect(screen.getAllByTestId("preview-card")).toHaveLength(1);
+    vi.mocked(apiSend).mockResolvedValueOnce(summary);
+    await user.click(within(card).getByRole("button", { name: "Commit" }));
+    expect(apiSend).toHaveBeenCalledWith("POST", "/api/imports/5/commit", expect.objectContaining({ name: "Mixer" }));
+    expect(await within(card).findByText("38 rows imported")).toBeInTheDocument();
+  });
+
+  it("says when a pending import cannot be loaded", async () => {
+    vi.mocked(apiGet).mockImplementation(async (path) => {
+      if (path === "/api/imports") return [importRow(5, "pending")];
+      throw new Error("boom");
+    });
+    renderUpload();
+    expect(await screen.findByText(/Could not load a pending import/)).toBeInTheDocument();
+  });
+
+  it("keeps typed edits and a commit summary when the user leaves and comes back", async () => {
+    vi.mocked(apiUpload).mockResolvedValueOnce({ files: [pending(5, "Mixer"), pending(6, "Panel")] });
+    const { router, user } = renderUpload();
+    await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, [csv("a.csv"), csv("b.csv")]);
+    const cardA = (await screen.findByText("Mixer.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    const cardB = screen.getByText("Panel.csv").closest("[data-testid=preview-card]") as HTMLElement;
+    await user.type(within(cardB).getByLabelText(/Event name/), " edited");
+    vi.mocked(apiSend).mockResolvedValueOnce(summary);
+    await user.click(within(cardA).getByRole("button", { name: "Commit" }));
+    await within(cardA).findByText("38 rows imported");
+
+    await act(() => router.navigate("/chat"));
+    expect(screen.queryByText("Panel.csv")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("link", { name: "Back to upload" }));
+
+    const backB = (await screen.findByText("Panel.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    expect(within(backB).getByLabelText(/Event name/)).toHaveValue("Panel edited");
+    const backA = screen.getByText("Mixer.csv").closest("[data-testid=preview-card]") as HTMLElement;
+    expect(within(backA).getByText("38 rows imported")).toBeInTheDocument();
   });
 });

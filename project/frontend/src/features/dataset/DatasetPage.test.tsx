@@ -79,6 +79,14 @@ describe("DatasetPage", () => {
     expect(statuses).toEqual(["Committed", "Pending"]);
   });
 
+  it("links a Pending row to the Upload page and leaves Committed as text", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    expect(screen.getByRole("link", { name: "Pending" })).toHaveAttribute("href", "/upload");
+    expect(screen.queryByRole("link", { name: "Committed" })).not.toBeInTheDocument();
+  });
+
   it("sorts Uploaded at by time, not by its text", async () => {
     // As text, "10/10/2026" sorts before "10/8/2026" and "10/9/2026".
     vi.mocked(apiGet).mockResolvedValueOnce([

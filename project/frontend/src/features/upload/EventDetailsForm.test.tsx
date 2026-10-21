@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiError, apiSend } from "../../api/client";
 import type { CommitSummary, EventDraftOut } from "../../api/types";
 import EventDetailsForm from "./EventDetailsForm";
+import { UploadProvider } from "./UploadContext";
 
 // Keep the real ApiError class; automocking would blank its constructor.
 vi.mock("../../api/client", async (importOriginal) => ({
@@ -41,7 +42,9 @@ function renderForm(onCommitted = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={client}>
-      <EventDetailsForm importId={5} draft={draft} onCommitted={onCommitted} />
+      <UploadProvider>
+        <EventDetailsForm importId={5} draft={draft} onCommitted={onCommitted} />
+      </UploadProvider>
     </QueryClientProvider>,
   );
   return { onCommitted };
