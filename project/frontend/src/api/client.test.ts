@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ApiError, apiGet, apiSend } from "./client";
+import { ApiError, apiDownload, apiGet, apiSend, apiUpload } from "./client";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -48,5 +48,93 @@ describe("api client", () => {
     expect(init.method).toBe("POST");
     expect(init.headers["Content-Type"]).toBe("application/json");
     expect(init.body).toBe(JSON.stringify({ a: 1 }));
+  });
+
+  it("returns undefined for any empty 2xx body", async () => {
+    stubFetch(new Response("", { status: 200 }));
+    await expect(apiSend("POST", "/api/things")).resolves.toBeUndefined();
+    stubFetch(new Response("", { status: 201 }));
+    await expect(apiSend("POST", "/api/things")).resolves.toBeUndefined();
+  });
+
+  it("uploads files as multipart under 'files' without a Content-Type header", async () => {
+    const fn = stubFetch(new Response(JSON.stringify({ files: [] }), { status: 200 }));
+    const a = new File(["a"], "a.csv");
+    const b = new File(["b"], "b.csv");
+    await expect(apiUpload("/api/imports", [a, b])).resolves.toEqual({ files: [] });
+    const [url, init] = fn.mock.calls[0];
+    expect(url).toBe("/api/imports");
+    expect(init.method).toBe("POST");
+    expect(init.credentials).toBe("same-origin");
+    expect(init.headers?.["Content-Type"]).toBeUndefined();
+    expect((init.body as FormData).getAll("files")).toEqual([a, b]);
+  });
+
+  it("maps upload errors to ApiError", async () => {
+    stubFetch(
+      new Response(JSON.stringify({ error: { code: "bad_file", message: "Bad", details: null } }), {
+        status: 422,
+      }),
+    );
+    await expect(apiUpload("/api/imports", [])).rejects.toMatchObject({ status: 422, code: "bad_file" });
+  });
+});
+
+describe("apiDownload", () => {
+  function stubUrls() {
+    const create = vi.fn().mockReturnValue("blob:fake");
+    const revoke = vi.fn();
+    vi.stubGlobal("URL", Object.assign(URL, { createObjectURL: create, revokeObjectURL: revoke }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    return { create, revoke, click };
+  }
+
+  afterEach(() => vi.restoreAllMocks());
+
+  it("returns the server file name and clicks an object-URL anchor", async () => {
+    const { create, revoke, click } = stubUrls();
+    stubFetch(
+      new Response("data", {
+        status: 200,
+        headers: {
+          "Content-Disposition": 'attachment; filename="hub-turn-3-20261105-1010.xlsx"',
+        },
+      }),
+    );
+    await expect(apiDownload("/api/chat/turns/3/export?format=xlsx")).resolves.toEqual({
+      fileName: "hub-turn-3-20261105-1010.xlsx",
+      truncated: false,
+      rowCap: null,
+    });
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(click).toHaveBeenCalledTimes(1);
+    expect(revoke).toHaveBeenCalledWith("blob:fake");
+  });
+
+  it("reports truncation and the row cap, and falls back to 'download'", async () => {
+    stubUrls();
+    stubFetch(
+      new Response("data", {
+        status: 200,
+        headers: { "X-Hub-Truncated": "true", "X-Hub-Row-Cap": "100000" },
+      }),
+    );
+    await expect(apiDownload("/api/dataset/export?format=csv")).resolves.toEqual({
+      fileName: "download",
+      truncated: true,
+      rowCap: 100000,
+    });
+  });
+
+  it("rejects with ApiError on a non-2xx response", async () => {
+    stubUrls();
+    stubFetch(
+      new Response(JSON.stringify({ error: { code: "turn_not_found", message: "No", details: null } }), {
+        status: 404,
+      }),
+    );
+    await expect(apiDownload("/api/chat/turns/9/export?format=csv")).rejects.toMatchObject({
+      code: "turn_not_found",
+    });
   });
 });

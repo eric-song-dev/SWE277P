@@ -14,7 +14,7 @@ export class ApiError extends Error {
   }
 }
 
-async function toApiError(res: Response): Promise<ApiError> {
+export async function toApiError(res: Response): Promise<ApiError> {
   try {
     const body = await res.json();
     const err = body?.error;
@@ -36,8 +36,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
   const res = await fetch(path, init);
   if (!res.ok) throw await toApiError(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  const text = await res.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 export function apiGet<T>(path: string): Promise<T> {
@@ -50,4 +51,39 @@ export function apiSend<T>(
   body?: unknown,
 ): Promise<T> {
   return request<T>(method, path, body);
+}
+
+export async function apiUpload<T>(path: string, files: File[]): Promise<T> {
+  const form = new FormData();
+  for (const file of files) form.append("files", file);
+  // No Content-Type: the browser adds the multipart boundary.
+  const res = await fetch(path, { method: "POST", body: form, credentials: "same-origin" });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
+}
+
+export interface DownloadResult {
+  fileName: string;
+  truncated: boolean;
+  rowCap: number | null;
+}
+
+export async function apiDownload(path: string): Promise<DownloadResult> {
+  const res = await fetch(path, { credentials: "same-origin" });
+  if (!res.ok) throw await toApiError(res);
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "download";
+  const cap = Number.parseInt(res.headers.get("X-Hub-Row-Cap") ?? "", 10);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+  return {
+    fileName,
+    truncated: res.headers.get("X-Hub-Truncated") === "true",
+    rowCap: Number.isNaN(cap) ? null : cap,
+  };
 }
