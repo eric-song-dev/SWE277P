@@ -27,7 +27,15 @@ export default function ConversationList() {
       }}
     >
       <Box
-        sx={{ position: "sticky", top: 0, maxHeight: "100vh", overflowY: "auto", boxSizing: "border-box", p: "20px 16px" }}
+        sx={{
+          position: "sticky",
+          top: 0,
+          display: "flex",
+          flexDirection: "column",
+          maxHeight: "calc(100vh - 88px)",
+          boxSizing: "border-box",
+          p: "20px 16px",
+        }}
       >
       {/* /chat is a draft; the first question creates the conversation. */}
       <Button
@@ -38,6 +46,7 @@ export default function ConversationList() {
         sx={{
           minHeight: 44,
           mb: "12px",
+          flexShrink: 0,
           color: tokens.primary,
           borderColor: tokens.primary,
           transition: "background-color 120ms ease, color 120ms ease",
@@ -46,6 +55,7 @@ export default function ConversationList() {
       >
         New chat
       </Button>
+      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
       {conversations.isError && (
         <Alert severity="error" sx={{ mt: 2 }}>
           Could not load your conversations.
@@ -62,6 +72,7 @@ export default function ConversationList() {
             key={conversation.id}
             component={NavLink}
             to={`/chat/${conversation.id}`}
+            title={conversation.title ?? "New conversation"}
             sx={{
               p: "10px 12px",
               borderRadius: "8px",
@@ -78,6 +89,7 @@ export default function ConversationList() {
           </ListItemButton>
         ))}
       </List>
+      </Box>
       </Box>
     </Box>
   );
