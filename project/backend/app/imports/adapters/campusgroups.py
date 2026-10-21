@@ -4,6 +4,7 @@ from app.imports.adapters.base import (
     NormalizedRow,
     ParseResult,
     RowFlag,
+    file_rows,
 )
 from app.imports.normalize import (
     clean,
@@ -29,7 +30,9 @@ class CampusGroupsAdapter:
     display_name = "CampusGroups"
     required_headers = REQUIRED_HEADERS
 
-    def parse(self, grid: list[list[str | None]]) -> ParseResult:
+    def parse(
+        self, grid: list[list[str | None]], row_numbers: list[int] | None = None
+    ) -> ParseResult:
         idx = HeaderIndex(grid[0])
         n = len(grid[0])
 
@@ -42,7 +45,7 @@ class CampusGroupsAdapter:
         affiliation_pos = idx.find_prefix(_AFFILIATION_PREFIX)
         domestic_pos = idx.find_containing(_DOMESTIC_SUBSTRING)
         rows: list[NormalizedRow] = []
-        for i, row in enumerate(grid[1:], start=2):
+        for i, row in zip(file_rows(grid, row_numbers)[1:], grid[1:], strict=True):
             row = [*row, *([None] * (n - len(row)))]
             fields = {
                 "first_name": clean(col(row, "First Name")) or clean(col(row, "First name")),

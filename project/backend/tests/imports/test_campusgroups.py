@@ -131,3 +131,9 @@ def test_reworded_affiliation_and_domestic_questions_still_found():
     )
     r = CampusGroupsAdapter().parse(grid).rows[0]
     assert (r.affiliation, r.domestic_international) == ("Doctoral Student", "International")
+
+
+def test_campusgroups_prefill_has_no_attendance_source_note():
+    a = CampusGroupsAdapter()
+    d = a.prefill("Bagel Breakfast - October.csv", a.parse(cg("Bagel Breakfast - October.csv")))
+    assert d.attendance_source_note is None

@@ -32,14 +32,14 @@ def _cell(v) -> str | None:
     return ILLEGAL_CHARACTERS_RE.sub("", str(v)).strip() or None
 
 
-def _shape(rows: list[list]) -> Grid:
-    cleaned = [[_cell(c) for c in row] for row in rows]
-    cleaned = [row for row in cleaned if any(c is not None for c in row)]
-    if not cleaned:
-        return []
-    header = cleaned[0]
-    width = max(i for i, c in enumerate(header) if c is not None) + 1
-    return [(row + [None] * width)[:width] for row in cleaned]
+def _shape(rows: list[list]) -> tuple[Grid, list[int]]:
+    """Drop blank rows; also return each kept row's 1-based number in the file."""
+    cleaned = [(n, [_cell(c) for c in row]) for n, row in enumerate(rows, start=1)]
+    kept = [(n, row) for n, row in cleaned if any(c is not None for c in row)]
+    if not kept:
+        return [], []
+    width = max(i for i, c in enumerate(kept[0][1]) if c is not None) + 1
+    return [(row + [None] * width)[:width] for _, row in kept], [n for n, _ in kept]
 
 
 def _read_csv(content: bytes) -> list[list]:
@@ -68,7 +68,11 @@ def _read_xlsx(content: bytes) -> list[list]:
         raise _unreadable("The file could not be read as a spreadsheet.") from exc
 
 
-def read_grid(file_name: str, content: bytes) -> Grid:
+def read_sheet(file_name: str, content: bytes) -> tuple[Grid, list[int]]:
+    """The grid without blank rows, and the file row number (header included) of each grid row.
+
+    Staff see these numbers in Excel or a CSV editor, so skipped-row reasons and flags use them.
+    """
     ext = PurePath(file_name).suffix.lower()
     if ext == ".csv":
         rows = _read_csv(content)
@@ -77,6 +81,10 @@ def read_grid(file_name: str, content: bytes) -> Grid:
     else:
         raise _unreadable("Unsupported file type; upload a .csv, .xlsx, or .xlsm file.")
     return _shape(rows)
+
+
+def read_grid(file_name: str, content: bytes) -> Grid:
+    return read_sheet(file_name, content)[0]
 
 
 def content_fingerprint(grid: Grid) -> str:

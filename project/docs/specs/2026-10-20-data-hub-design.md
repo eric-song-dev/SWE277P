@@ -188,8 +188,9 @@ Files are read as raw cell grids (`csv` module, openpyxl) rather than with panda
 - The event name comes from the file name, with the extension stripped and ` - ` replaced by `, `. For example, `Bagel Breakfast - October.csv` becomes `Bagel Breakfast, October`, which matches the compiled sheet.
 - `on_campus_groups` is derived from the source.
 - `student_worker` defaults to the current user's display name.
+- `attendance_source_note` is prefilled by the adapter: `12twenty attendance export` for 12twenty files, and empty for CampusGroups, where the field does not apply. (Decided in S4.)
 
-**Normalization:** trim all strings; lowercase emails and NetIDs; treat empty strings as NULL. Validate `term` against `^(Fall|Winter|Spring|Summer) \d{4}$`. `academic_year` is derived from the term: Fall Y belongs to `Y-(Y+1)`, and Winter, Spring, and Summer Y belong to `(Y-1)-Y`.
+**Normalization:** trim all strings; lowercase emails and NetIDs; treat empty strings as NULL. Validate `term` against `^(Fall|Winter|Spring|Summer) [0-9]{4}$` (a full match, ASCII digits only). `academic_year` is derived from the term: Fall Y belongs to `Y-(Y+1)`, and Winter, Spring, and Summer Y belong to `(Y-1)-Y`.
 
 **Identity linking** uses exact matches only and is applied in file order:
 
@@ -205,6 +206,12 @@ Details settled in S2:
 
 - Rule 2's attach case reports `match_method = email`, because the email found the person.
 - In the `netid_email_conflict` case the email stays with its current owner. The row gets only `netid_email_conflict`, not `email_owned_by_other` as well.
+
+Details settled in S4:
+
+- `source_row` is the row number staff see in Excel or a CSV editor (the header row counts, and so do blank rows), for both adapters. Skipped-row reasons and flags carry the same number.
+- A file with a header row but no attendee rows (blank rows don't count) is `rejected` at upload with error code `no_data_rows` and the message "This file has a header row but no attendee rows." It is not stored. Without this, header-only exports from two events would parse to the same grid and the second would be reported as a duplicate of the first.
+- A `term` with trailing whitespace or non-ASCII digits (for example full-width digits) is invalid.
 
 **Flags** (`code`): `missing_identity`, `missing_netid`, `missing_email`, `missing_school`, `missing_department`, `missing_affiliation`, `missing_domestic_international` (CampusGroups only), `missing_degree` (12twenty only), `non_standard_email`, `netid_email_conflict`, `email_owned_by_other`, `duplicate_in_event`, `not_attended_skipped`.
 

@@ -3,7 +3,8 @@ from datetime import date
 from pathlib import PurePath
 
 _NETID_EMAIL_RE = re.compile(r"^[a-z0-9]+@uci\.edu$")
-_TERM_RE = re.compile(r"^(Fall|Winter|Spring|Summer) (\d{4})$")
+# ASCII digits only, and fullmatch (``$`` would accept a trailing newline).
+_TERM_RE = re.compile(r"(Fall|Winter|Spring|Summer) ([0-9]{4})")
 _CG_UID_RE = re.compile(r"^CG-(\d{4})(\d{2})(\d{2})-")
 
 
@@ -31,7 +32,7 @@ def derive_netid(email: str | None) -> str | None:
 
 
 def validate_term(term: str) -> str:
-    if not isinstance(term, str) or not _TERM_RE.match(term):
+    if not isinstance(term, str) or not _TERM_RE.fullmatch(term):
         raise ValueError(f"Invalid term {term!r}; expected e.g. 'Fall 2026'")
     return term
 

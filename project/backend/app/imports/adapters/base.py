@@ -47,6 +47,7 @@ class EventDraft:
     sponsors_hosts: str | None
     event_type: str | None
     on_campus_groups: bool
+    attendance_source_note: str | None = None
 
 
 class Adapter(Protocol):
@@ -54,9 +55,17 @@ class Adapter(Protocol):
     display_name: str
     required_headers: tuple[str, ...]
 
-    def parse(self, grid: list[list[str | None]]) -> ParseResult: ...
+    def parse(
+        self, grid: list[list[str | None]], row_numbers: list[int] | None = None
+    ) -> ParseResult:
+        """`row_numbers[i]` is grid row i's 1-based file row; default: the grid's own order."""
+        ...
 
     def prefill(self, file_name: str, result: ParseResult) -> EventDraft: ...
+
+
+def file_rows(grid: list[list[str | None]], row_numbers: list[int] | None) -> list[int]:
+    return row_numbers if row_numbers is not None else list(range(1, len(grid) + 1))
 
 
 class HeaderIndex:

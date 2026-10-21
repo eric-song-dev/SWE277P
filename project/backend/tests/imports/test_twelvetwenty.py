@@ -124,3 +124,9 @@ def test_parses_without_degree_school_and_major_columns():
     assert {"missing_affiliation", "missing_degree", "missing_school", "missing_department"} <= {
         f.code for f in r.flags
     }
+
+
+def test_prefill_notes_the_attendance_source():
+    a = TwelveTwentyAdapter()
+    d = a.prefill("Health Careers Mixer.xlsx", a.parse(tt("Health Careers Mixer.xlsx")))
+    assert d.attendance_source_note == "12twenty attendance export"

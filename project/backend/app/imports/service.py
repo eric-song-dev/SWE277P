@@ -16,7 +16,7 @@ from app.imports.adapters.base import Adapter, ParseResult, RowFlag
 from app.imports.identity import IdentityLinker
 from app.imports.models import ImportFile
 from app.imports.normalize import academic_year
-from app.imports.reader import Grid, content_fingerprint, read_grid
+from app.imports.reader import Grid, content_fingerprint, read_sheet
 from app.imports.schemas import (
     CommitSummary,
     ErrorOut,
@@ -31,23 +31,23 @@ from app.imports.schemas import (
 from app.quality.models import DataQualityFlag
 from app.quality.service import record_flags
 
-REJECTABLE = {"unreadable_file", "unknown_format", "file_too_large", "empty_file"}
+REJECTABLE = {"unreadable_file", "unknown_format", "file_too_large", "empty_file", "no_data_rows"}
 
 
-def _read(file_name: str, content: bytes) -> Grid:
-    grid = read_grid(file_name, content)
+def _read(file_name: str, content: bytes) -> tuple[Grid, list[int]]:
+    grid, row_numbers = read_sheet(file_name, content)
     if not grid:
         raise HubError("unreadable_file", "The file contains no rows.", 422)
-    return grid
+    return grid, row_numbers
 
 
-def _parse_grid(grid: Grid) -> tuple[Adapter, ParseResult]:
+def _parse_grid(grid: Grid, row_numbers: list[int]) -> tuple[Adapter, ParseResult]:
     adapter = detect_adapter(grid[0])
-    return adapter, adapter.parse(grid)
+    return adapter, adapter.parse(grid, row_numbers)
 
 
 def _parse(file_name: str, content: bytes) -> tuple[Adapter, ParseResult]:
-    return _parse_grid(_read(file_name, content))
+    return _parse_grid(*_read(file_name, content))
 
 
 def _adapter_for(source: str) -> Adapter:
@@ -103,13 +103,17 @@ def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser
     if existing is not None:
         return _existing_preview(existing, file_name, user)
 
-    grid = _read(file_name, content)
+    grid, row_numbers = _read(file_name, content)
+    if len(grid) == 1:
+        # Checked before the fingerprint: header-only exports of different events parse to the
+        # same grid and would otherwise be reported as duplicates of each other.
+        raise HubError("no_data_rows", "This file has a header row but no attendee rows.", 422)
     fingerprint = content_fingerprint(grid)
     existing = session.scalar(select(ImportFile).where(ImportFile.content_sha256 == fingerprint))
     if existing is not None:
         return _existing_preview(existing, file_name, user)
 
-    adapter, result = _parse_grid(grid)
+    adapter, result = _parse_grid(grid, row_numbers)
     record = ImportFile(
         file_name=file_name,
         file_sha256=digest,

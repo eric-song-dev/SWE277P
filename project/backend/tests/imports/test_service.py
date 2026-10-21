@@ -239,3 +239,97 @@ def test_csv_with_bom_and_lf_endings_is_duplicate_of_original(db_session, user):
     variant = b"\xef\xbb\xbf" + sample_bytes(OCT).replace(b"\r\n", b"\n")
     again = preview_upload(db_session, OCT, variant, user)
     assert (again.status, again.duplicate_of) == ("duplicate", first.import_id)
+
+
+TT_HEADER = read_grid(XLSX, sample_bytes(XLSX))[0]
+
+
+def tt_row(first: str, attended: str | None, email: str) -> list[str | None]:
+    row: list[str | None] = [None] * len(TT_HEADER)
+    for name, value in (
+        ("First Name", first),
+        ("Last Name", "Tester"),
+        ("Email", email),
+        ("Attended?", attended),
+    ):
+        row[TT_HEADER.index(name)] = value
+    return row
+
+
+def test_twelvetwenty_keeps_only_attended_yes_rows(db_session, user):
+    rows = [
+        tt_row("Ann", "YES", "ann@uci.edu"),
+        tt_row("Bob", "NO", "bob@uci.edu"),
+        tt_row("Cy", None, "cy@uci.edu"),
+        tt_row("Di", "yes", "di@uci.edu"),
+        tt_row("Ed", "", "ed@uci.edu"),
+    ]
+    p = preview_upload(db_session, "tt.csv", csv_with_rows(TT_HEADER, rows), user)
+    assert (p.status, p.source, p.row_count) == ("pending", "twelvetwenty", 2)
+    assert [(s.source_row, s.reason) for s in p.skipped] == [
+        (3, "not_attended"),
+        (4, "not_attended"),
+        (6, "not_attended"),
+    ]
+    assert p.flag_counts["not_attended_skipped"] == 3
+    summary = commit_import(db_session, p.id, details(), user)
+    assert (summary.inserted, summary.skipped) == (2, 3)
+    assert count(db_session, Attendance) == 2
+
+
+def test_source_row_matches_the_file_row_after_blank_rows(db_session, user):
+    # file rows: 1 header, 2 Ann (YES), 3 blank, 4 Bob (NO), 5 blank, 6 blank, 7 Cy (YES, no email)
+    text = csv_with_rows(
+        TT_HEADER,
+        [
+            tt_row("Ann", "YES", "ann@uci.edu"),
+            [],
+            tt_row("Bob", "NO", "bob@uci.edu"),
+            [],
+            [],
+            tt_row("Cy", "YES", ""),
+        ],
+    )
+    p = preview_upload(db_session, "tt.csv", text, user)
+    assert [s.source_row for s in p.skipped] == [4]
+    commit_import(db_session, p.id, details(), user)
+    flags = db_session.scalars(select(DataQualityFlag)).all()
+    assert {f.source_row for f in flags if f.code == "missing_email"} == {7}
+    skipped = {f.source_row for f in flags if f.code == "not_attended_skipped"}
+    assert skipped == {4}
+    assert {f.source_row for f in flags} == {2, 4, 7}  # never the blank rows' numbers
+
+
+def test_source_row_counts_leading_blank_rows_and_xlsx(db_session, user, tmp_xlsx):
+    content = tmp_xlsx(
+        [
+            [],
+            TT_HEADER,
+            tt_row("Ann", "YES", "ann@uci.edu"),
+            [],
+            tt_row("Bob", "NO", "bob@uci.edu"),
+        ]
+    )
+    p = preview_upload(db_session, "tt.xlsx", content, user)
+    assert [s.source_row for s in p.skipped] == [5]
+    cg_rows = csv_with_rows(
+        CG_HEADER, [ROW_AAHMED, [], ROW_AAHMED[:4] + [""] * (len(CG_HEADER) - 4)]
+    )
+    p = preview_upload(db_session, "cg.csv", cg_rows, user)
+    assert p.status == "pending" and p.row_count == 2
+    commit_import(db_session, p.id, details(), user)
+    rows = db_session.scalars(select(DataQualityFlag.source_row)).all()
+    assert rows and set(rows) <= {4}
+
+
+@pytest.mark.parametrize("name", ["empty.csv", "empty.xlsx"])
+def test_header_only_file_is_rejected_and_not_stored(db_session, user, tmp_xlsx, name):
+    for header in (TT_HEADER, CG_HEADER):  # two different events, identical grids
+        content = (
+            tmp_xlsx([header, [], []]) if name.endswith("xlsx") else csv_with_rows(header, [[]])
+        )
+        p = preview_upload(db_session, name, content, user)
+        assert p.status == "rejected" and p.id is None
+        assert p.error.code == "no_data_rows"
+        assert p.error.message == "This file has a header row but no attendee rows."
+    assert count(db_session, ImportFile) == 0

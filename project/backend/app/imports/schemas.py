@@ -25,6 +25,7 @@ class EventDraftOut(BaseModel):
     sponsors_hosts: str | None
     event_type: str | None
     on_campus_groups: bool
+    attendance_source_note: str | None
     student_worker: str | None
 
 

@@ -5,6 +5,7 @@ from app.imports.adapters.base import (
     ParseResult,
     RowFlag,
     SkippedRow,
+    file_rows,
 )
 from app.imports.normalize import (
     clean,
@@ -40,7 +41,9 @@ class TwelveTwentyAdapter:
     display_name = "12twenty"
     required_headers = REQUIRED_HEADERS
 
-    def parse(self, grid: list[list[str | None]]) -> ParseResult:
+    def parse(
+        self, grid: list[list[str | None]], row_numbers: list[int] | None = None
+    ) -> ParseResult:
         idx = HeaderIndex(grid[0])
         n = len(grid[0])
 
@@ -50,7 +53,7 @@ class TwelveTwentyAdapter:
 
         rows: list[NormalizedRow] = []
         skipped: list[SkippedRow] = []
-        for i, row in enumerate(grid[1:], start=2):
+        for i, row in zip(file_rows(grid, row_numbers)[1:], grid[1:], strict=True):
             row = [*row, *([None] * (n - len(row)))]
             if (clean(col(row, "Attended?")) or "").upper() != "YES":
                 skipped.append(SkippedRow(i, "not_attended"))
@@ -93,4 +96,5 @@ class TwelveTwentyAdapter:
             sponsors_hosts=None,
             event_type=None,
             on_campus_groups=False,
+            attendance_source_note="12twenty attendance export",
         )

@@ -84,3 +84,10 @@ def test_clean_and_normalizers():
     assert normalize_email(" A@B.com ") == "a@b.com"
     assert normalize_netid(" AAhmed ") == "aahmed"
     assert normalize_netid("") is None
+
+
+@pytest.mark.parametrize(
+    "term", ["Fall 2026\n", "Fall 2026 ", "Fall ２０２６", "Fall ٢٠٢٦", "Fall 202"]
+)
+def test_validate_term_rejects_trailing_whitespace_and_non_ascii_digits(term):
+    pytest.raises(ValueError, validate_term, term)
