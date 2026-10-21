@@ -108,6 +108,17 @@ describe("useChatStream", () => {
     });
   });
 
+  it("treats an unavailable server as a lost connection", async () => {
+    const s = pendingStream();
+    const { result } = setup(7);
+    act(() => result.current.send("q", null, true));
+    await s.finish(new ApiError(502, "server_unavailable", "The Hub server isn't responding."));
+    expect(result.current.live?.error).toEqual({
+      code: "server_unavailable",
+      message: "Connection lost. Retry.",
+    });
+  });
+
   it("keeps the server code and message for other API errors", async () => {
     const s = pendingStream();
     const { result } = setup(7);

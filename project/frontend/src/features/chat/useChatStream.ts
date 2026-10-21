@@ -11,9 +11,11 @@ interface Request {
   shareResults: boolean;
 }
 
+const LOST_CONNECTION = new Set(["stream_interrupted", "network_error", "server_unavailable"]);
+
 function toTurnError(err: unknown): { code: string; message: string } {
   if (err instanceof ApiError) {
-    if (err.code === "stream_interrupted" || err.code === "network_error") {
+    if (LOST_CONNECTION.has(err.code)) {
       return { code: err.code, message: "Connection lost. Retry." };
     }
     return { code: err.code, message: err.message };

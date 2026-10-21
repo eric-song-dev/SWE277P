@@ -25,6 +25,14 @@ export async function toApiError(res: Response): Promise<ApiError> {
   } catch {
     // Not JSON (for example an HTML 502 page from nginx).
   }
+  if (res.status >= 500) {
+    // Not from the api's error handler: most likely nginx while the api is down or restarting.
+    return new ApiError(
+      res.status,
+      "server_unavailable",
+      "The Hub server isn't responding. Check that it is running, then try again.",
+    );
+  }
   return new ApiError(res.status, `http_${res.status}`, res.statusText || `HTTP ${res.status}`);
 }
 

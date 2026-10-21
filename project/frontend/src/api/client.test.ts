@@ -34,9 +34,22 @@ describe("api client", () => {
     await expect(apiSend("DELETE", "/api/things/1")).resolves.toBeUndefined();
   });
 
-  it("falls back to http_<status> for non-JSON errors", async () => {
-    stubFetch(new Response("<html>Bad Gateway</html>", { status: 502 }));
-    await expect(apiGet("/api/health")).rejects.toMatchObject({ status: 502, code: "http_502" });
+  it("gives a non-JSON 5xx (nginx while the api restarts) a plain message", async () => {
+    stubFetch(new Response("<html>Bad Gateway</html>", { status: 502, statusText: "Bad Gateway" }));
+    await expect(apiGet("/api/health")).rejects.toMatchObject({
+      status: 502,
+      code: "server_unavailable",
+      message: "The Hub server isn't responding. Check that it is running, then try again.",
+    });
+  });
+
+  it("falls back to http_<status> for other non-JSON errors", async () => {
+    stubFetch(new Response("<html>Too large</html>", { status: 413, statusText: "Payload Too Large" }));
+    await expect(apiGet("/api/health")).rejects.toMatchObject({
+      status: 413,
+      code: "http_413",
+      message: "Payload Too Large",
+    });
   });
 
   it("sends same-origin credentials on a GET", async () => {
