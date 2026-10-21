@@ -12,7 +12,7 @@ The status cell is exactly `PASS`, `FAIL` or `PENDING`.
 | Acceptance | Status | Evidence |
 |---|---|---|
 | A3 | PASS | 20/20 on two consecutive runs on prompt 2026-10-29.4 (DeepSeek, deepseek-flash, 2026-10-21 05:03 and 05:04); holdout 10/10 on three runs of the same prompt |
-| A4 | PENDING | |
+| A4 | PASS | The same benchmark ran against two profiles with no code change: DeepSeek (deepseek, deepseek-flash) 20/20 main and 10/10 holdout, and DeepSeek Pro (deepseek, deepseek-v4-pro) 19/20 main and 10/10 holdout, both on prompt 2026-10-29.4 (2026-10-21) |
 | A10 | PENDING | |
 
 ## Runs
@@ -34,6 +34,8 @@ The status cell is exactly `PASS`, `FAIL` or `PENDING`.
 | 2026-10-21 05:03 | DeepSeek (deepseek, deepseek-flash) | 2026-10-29.4 | holdout | 10/10 | none |
 | 2026-10-21 05:04 | DeepSeek (deepseek, deepseek-flash) | 2026-10-29.4 | main | 20/20 | none |
 | 2026-10-21 05:04 | DeepSeek (deepseek, deepseek-flash) | 2026-10-29.4 | holdout | 10/10 | none |
+| 2026-10-21 05:09 | DeepSeek Pro (deepseek, deepseek-v4-pro) | 2026-10-29.4 | main | 19/20 | q15 |
+| 2026-10-21 05:13 | DeepSeek Pro (deepseek, deepseek-v4-pro) | 2026-10-29.4 | holdout | 10/10 | none |
 
 Every run used `--today 2026-11-02` (the default). By prompt version:
 
@@ -50,6 +52,11 @@ Every run used `--today 2026-11-02` (the default). By prompt version:
   outside the benchmark gave a clarifying question for "last term" on 2026-11-02 (no earlier
   data) and Fall 2026 for "last quarter" on 2027-01-15.
 
+- **Second profile (A4)**: profile `DeepSeek Pro` (same preset and base URL as DeepSeek, model
+  `deepseek-v4-pro`, result sharing off, the same stored key) ran the main and holdout sets once
+  each on 2026-10-29.4 with no code change. No timeouts, JSON-mode rejections or unknown-model
+  errors. Only the primary profile has to reach 18/20. q15 failed on DeepSeek Pro (see below).
+
 No change was tried and reverted.
 
 ## Failure classes
@@ -61,6 +68,12 @@ No question failed in any run above, main or holdout, so there was nothing to cl
 tuning was aimed at a question; the two prompt changes are the S3 carry-overs. One holdout answer
 (h10, 05:03, the second holdout run of that minute) passed on its second attempt, after one
 repair. It is not a failure, and holdout answers are not used to choose prompt wording.
+
+The one failure, q15 on DeepSeek Pro (05:09), is question ambiguity: the model counted unique
+people (`COUNT(DISTINCT person_key)`) among virtual-event attendees, while the reference counts
+attendance records. It returned 1 row in 1 attempt, so it is a different reading, not a
+format failure. No prompt change was made for it, since the other profile passes it and the
+benchmark is not tuned to one question.
 
 The holdout scoring 10/10 like the main set suggests the rules are not fitted only to the 20
 questions, but both sets use one model and the same 293 sample rows from one term.
