@@ -3,6 +3,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
+import ChatPage from "../features/chat/ChatPage";
 import SettingsPage from "../features/settings/SettingsPage";
 import UploadPage from "../features/upload/UploadPage";
 import AuthGate from "./AuthGate";
@@ -17,7 +18,8 @@ const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       { index: true, element: <Navigate to="/chat" replace /> },
-      { path: "chat", element: <PlaceholderPage title="Chat" /> },
+      // One route for /chat and /chat/:id, so the page (and its stream) survives the first send.
+      { path: "chat/:conversationId?", element: <ChatPage /> },
       { path: "upload", element: <UploadPage /> },
       { path: "dataset", element: <PlaceholderPage title="Dataset" /> },
       { path: "settings", element: <SettingsPage /> },
