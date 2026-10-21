@@ -224,14 +224,14 @@ load_context ─► generate ─► route ─┬─► clarify ─────�
 
 | Node | Does | LLM call? |
 |---|---|---|
-| `load_context` | Loads controlled values through `chatbot_ro`: distinct `school`, `event_name`, `event_type`, `term`, `academic_year`, `affiliation` (a CampusGroups drop-down; the exact spelling matters, e.g. `Master’s Student` with U+2019). Loads prior turns of this conversation from `chat_turn`. Adds today's date and the current term. | No |
+| `load_context` | Loads controlled values through `chatbot_ro`: distinct `school`, `event_name`, `event_type`, `term`, `academic_year`, `affiliation` (a CampusGroups drop-down; the exact spelling matters, e.g. `Master’s Student` with U+2019). Loads prior turns of this conversation from `chat_turn`. Adds today's date and the current term (Jan–Mar Winter, Apr–Jun Spring, Jul–Aug Summer, Sep–Dec Fall). An event is identified by its name and term, so each known event name is listed with its terms. (Decided in S3.) | No |
 | `generate` | Asks for a JSON object `LlmDraft {kind: "sql" \| "clarify", sql, interpretation, assumptions[], clarification_question}` and validates it with Pydantic. A validation failure counts as a failed attempt and goes to `repair`. | Yes |
 | `route` | Sends `clarify` drafts to `clarify` and `sql` drafts to `guard` | No |
 | `clarify` | Emits the clarifying question. The turn ends with `kind = clarification`. The user's reply is simply the next turn, and the history carries the context. | No |
 | `guard` | sqlglot checks (7.4) and adds `LIMIT display_cap + 1` | No |
-| `execute` | Runs the SQL on `chatbot_ro` in a read-only transaction with `statement_timeout`. Fetches up to the display cap (default 1,000 rows) and records `row_count` and `truncated`. | No |
+| `execute` | Runs the SQL on `chatbot_ro` in a read-only transaction with `statement_timeout`. Fetches up to the display cap (default 1,000 rows) and records `row_count` and `truncated`. The SQL goes to PostgreSQL verbatim as one prepared statement, so a string holding several statements is refused by the protocol even if the guard were bypassed. The transaction is always rolled back, and pooled connections are reset (`RESET ALL`) when returned. (Decided in S3.) | No |
 | `repair` | Adds sanitized feedback (7.5) to the state and returns to `generate`. At most 3 generations per question. | No (loops to `generate`) |
-| `analyze` | **If results are shared for this question (D2: the profile allows it and the request's `share_results` is true):** sends the question, SQL, interpretation, column names, and up to `LLM_RESULT_MAX_ROWS` rows / `LLM_RESULT_MAX_CHARS` characters of the result (defaults 200 / 20,000), plus row count and truncation. Streams back a short analysis of 150 words or fewer. **Otherwise:** builds a local summary: one cell → "`<column>`: `<value>`"; otherwise "`<n>` rows". | Only when sharing |
+| `analyze` | **If results are shared for this question (D2: the profile allows it and the request's `share_results` is true):** sends the question, SQL, interpretation, column names, and up to `LLM_RESULT_MAX_ROWS` rows / `LLM_RESULT_MAX_CHARS` characters of the result (defaults 200 / 20,000), plus row count and truncation. Streams back a short analysis of 150 words or fewer. **Otherwise:** builds a local summary: no rows → "No matching records."; one cell → "`<column>`: `<value>`"; otherwise "`<n>` rows", or "More than `<cap>` rows (showing the first `<cap>`)" when truncated. If the analysis call fails, the turn still answers with the local summary (`results_shared` stays true, because rows were sent). | Only when sharing |
 | `finalize` | Writes the `chat_turn` row and emits `done` | No |
 
 We do **not** use a LangGraph checkpointer. `chat_turn` is the single source of truth for history, and the graph state lives for one request. A checkpointer only becomes useful if we move to an interrupt-based agent (Approach B).
@@ -320,6 +320,15 @@ The sanitizer applies whether or not results are shared.
 
 If the client disconnects, the server cancels the run. Timeouts: 30 s per LLM call, 5 s per statement, 90 s per turn.
 
+Details settled in S3:
+
+- The `sql` event and `chat_turn.sql` carry the model's SQL without the `LIMIT` the guard adds. Rerun and export re-guard it with their own caps. A turn can send `sql` once per generation attempt; the UI shows the latest.
+- When `analysis` arrives, it replaces any streamed `analysis_delta` text. It can have `source: "local"` after deltas if the analysis call failed.
+- `error.code` is one of the codes in the S3 plan (`llm_*`, `invalid_llm_reply`, `sql_rejected`, `query_failed`, `turn_timeout`, `profile_not_found`, `profile_missing_key`) or `internal_error` for an unexpected failure. Every stream ends with `done`. `done.turn_id` is null only when the turn could not be recorded.
+- A turn that times out or fails is still logged with what already happened: its SQL, row count, attempts, and `results_shared`. The flag errs toward true once the query has returned rows. Each question is logged exactly once.
+- A missing conversation is a 404 `conversation_not_found` before the stream starts. A question over 2,000 characters is a 422.
+- Rerun and export accept only `kind = answer` turns with SQL. Other turns get 409 `turn_has_no_result`.
+
 Other chat endpoints:
 
 - `POST /api/conversations` (title = first question, truncated)
@@ -359,6 +368,12 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
   - `PATCH` and `DELETE /api/llm-profiles/{id}`
   - `POST /api/llm-profiles/{id}/default`
   - `POST /api/llm-profiles/{id}/test`, which sends a tiny prompt with no data, detects `json_mode`, and also returns the provider's `/models` list when it has one, for the model field's suggestions
+- **Details settled in S3:**
+  - A `PATCH` that changes the preset, base URL, model, or key clears `json_mode` and the last test result, so the next question or test re-detects them.
+  - Each LLM call has one 30 s timeout and no client-side retry; the graph's repair loop handles retries.
+  - Provider failures map to the `llm_*` codes. The `/test` route returns HTTP 502 for upstream failures and 400 for `llm_bad_request`, never 401, which would read as the app's own login failing.
+  - A saved key that can no longer be decrypted (because `HUB_SECRET_KEY` changed) gives `profile_missing_key` with "Re-enter the API key in Settings."
+  - Profile names are unique (409 `profile_name_taken`). Deleting the default profile makes the oldest remaining one the default.
 - **Selection:** the chat page shows a profile drop-down (default preselected) and, next to the question box, the "Let AI see the results" switch (D2) with the helper text "Off: AI only writes the SQL. Results stay on this computer." When the selected profile does not allow sharing, the switch is off and disabled, with the tooltip "This AI model isn't allowed to receive results. Change it in Settings." The selected `llm_profile_id` and `share_results` are sent with each question. The turn records the profile and the effective `results_shared`.
 - **Benchmark:** `uv run python -m benchmark.run --profile "<name>"` uses a stored profile. Running it once per profile satisfies "runs with each provider after a settings change".
 - **Fake model:** a `fake` preset exists only when `HUB_ENABLE_FAKE_LLM=true` (tests, Playwright, and offline demos). It returns scripted drafts keyed by question.
@@ -368,7 +383,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 - **Chat results:** `GET /api/chat/turns/{id}/export`, as described in 7.6.
 - **Full dataset:** `GET /api/dataset/export?format=xlsx|csv` writes the 19-column GPSRC Data Project layout, with the template's exact headers, including Student ID. It is read through the app role by the `dataset` service. The Notes column is generated from the row's source and flags, in the style of the compiled sheet: `Source: <platform> export`, then `INCOMPLETE: …` for the missing-field flags and `CHECK: …` for the identity and email flags (e.g. `Source: CampusGroups export; INCOMPLETE: email missing`).
 - **Formula guard:** a value starting with `=`, `+`, `-`, `@`, tab, or CR is written as an explicit string cell in XLSX (`data_type = "s"`). In CSV it gets a leading `'`.
-- **File names:** `hub-<turn id or "dataset">-<YYYYMMDD-HHMM>.<ext>`.
+- **File names:** `hub-turn-<turn id>-<YYYYMMDD-HHMM>.<ext>` for a chat result, `hub-dataset-<YYYYMMDD-HHMM>.<ext>` for the full dataset.
 
 ## 10. API summary
 
@@ -405,7 +420,7 @@ Errors use one JSON shape, `{"error": {"code", "message", "details"}}`.
 The layers from assignment1 still apply. Changes are marked.
 
 1. **SQL guard (sqlglot).** Unchanged; allow-list in 7.4.
-2. **Read-only role** `chatbot_ro`. Unchanged.
+2. **Read-only role** `chatbot_ro`. Unchanged. *S3:* the executor also forces a single prepared statement, rolls back every transaction, and resets pooled connections (7.1 `execute`), so the role's read-only default and timeout cannot be switched off by a multi-statement string.
 3. **Separate connection.** Unchanged. Only the executor and the chat export hold the `chatbot_ro` engine.
 4. **Prompt contents.**
    - *Changed:* the `generate` prompt has schema, controlled values, and history (questions and SQL only).
@@ -413,6 +428,9 @@ The layers from assignment1 still apply. Changes are marked.
    - *New risk:* free text in results (e.g. Department) could carry prompt injection. Mitigations: `analyze` has no tools; its output is display-only and is never fed into later SQL generation; the result table remains the authority, and the analysis is labeled "AI-generated".
 5. **Query log** (`chat_turn`). Extended with `results_shared`, profile, provider, model, and attempts.
 6. **Secrets.** *New:* API keys are encrypted at rest; `HUB_SECRET_KEY` lives only in `.env`; keys are never sent to the browser or logged.
+   - *S3:* logs record exception types only, never messages that could carry row values.
+   - *S3:* the app engine hides bound parameters in error messages.
+   - *S3:* LangChain/LangSmith tracing is forced off in every code path, so prompts never reach a tracing service even if a developer's shell enables it.
 7. **Network.** Nginx is bound to 127.0.0.1. The only outbound traffic is HTTPS to the selected LLM.
 
 ## 14. Testing and acceptance
@@ -444,7 +462,7 @@ The layers from assignment1 still apply. Changes are marked.
 | A9 | An exported value starting with `=` is a string cell when the XLSX file is read back. |
 | A10 | Time from question to downloaded Excel is under 60 s (Playwright with a real profile, S5). |
 
-**Benchmark format:** `benchmark/questions.yaml` holds 20 entries (`id`, `question`, `reference_sql`, optional `ordered`, optional `notes`). The scorer compares result sets: order-insensitive unless `ordered`, numbers compared with a tolerance, column names ignored. The report is written to `benchmark/reports/<timestamp>-<profile>.md`.
+**Benchmark format:** `benchmark/questions.yaml` holds 20 entries (`id`, `question`, `reference_sql`, optional `ordered`, optional `notes`). The scorer compares result sets: order-insensitive unless `ordered`, numbers compared with a tolerance, column names ignored. In an `ordered` question, consecutive expected rows that are equal on every numeric column are ties and may appear in any order (decided in S3). The report is written to `benchmark/reports/<timestamp>-<profile>.md`.
 
 ## 15. Session plan
 
