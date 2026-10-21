@@ -1,12 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response, UploadFile
-from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.auth.schemas import CurrentUser
 from app.config import get_settings
-from app.db import get_session
+from app.db import SessionDep
 from app.imports import service
 from app.imports.schemas import (
     CommitSummary,
@@ -17,7 +16,6 @@ from app.imports.schemas import (
 
 router = APIRouter(prefix="/api")
 
-SessionDep = Annotated[Session, Depends(get_session)]
 UserDep = Annotated[CurrentUser, Depends(get_current_user)]
 
 

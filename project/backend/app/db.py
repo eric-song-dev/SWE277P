@@ -1,8 +1,9 @@
 from collections.abc import Iterator
 from datetime import datetime
 from functools import lru_cache
-from typing import ClassVar
+from typing import Annotated, ClassVar
 
+from fastapi import Depends
 from sqlalchemy import DateTime, MetaData, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -38,3 +39,9 @@ def get_session() -> Iterator[Session]:
         except Exception:
             session.rollback()
             raise
+
+
+# Function scope runs the commit before the response is sent, so a failed commit becomes an
+# error response. Every route and get_current_user must use this alias: the dependency cache
+# is keyed by scope, so mixing scopes would open two sessions per request.
+SessionDep = Annotated[Session, Depends(get_session, scope="function")]

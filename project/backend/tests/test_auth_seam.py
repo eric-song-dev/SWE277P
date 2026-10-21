@@ -1,7 +1,7 @@
 from sqlalchemy import text
 
 from app.auth.dependencies import get_current_user
-from tests.route_utils import routes_missing_dependency
+from tests.route_utils import api_routes, routes_missing_dependency
 
 
 def test_me_returns_local_user(client):
@@ -40,3 +40,18 @@ def test_route_guard_sees_routes_on_included_routers():
     probe = FastAPI()
     probe.include_router(router)
     assert routes_missing_dependency(probe, get_current_user) == ["GET /api/open"]
+
+
+def test_every_session_dependency_ends_before_the_response(app):
+    """Every use of get_session is function-scoped, so the commit runs before the response is
+    sent, and all uses share one cache key, so a request gets exactly one session."""
+    from app.db import get_session
+
+    def session_scopes(dependant):
+        for sub in dependant.dependencies:
+            if sub.call is get_session:
+                yield sub.scope
+            yield from session_scopes(sub)
+
+    scopes = [s for _m, _p, dependant in api_routes(app) for s in session_scopes(dependant)]
+    assert scopes and set(scopes) == {"function"}

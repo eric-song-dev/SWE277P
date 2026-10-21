@@ -88,3 +88,31 @@ def test_discard_committed_is_409(client):
     client.post(f"/api/imports/{import_id}/commit", json=DETAILS)
     res = client.delete(f"/api/imports/{import_id}")
     assert (res.status_code, res.json()["error"]["code"]) == (409, "import_not_pending")
+
+
+def test_failed_commit_returns_error_and_persists_nothing(app, db_session, monkeypatch):
+    from fastapi.testclient import TestClient
+    from sqlalchemy import func, select
+    from sqlalchemy.orm import Session
+
+    from app.dataset.models import Attendance
+    from app.events.models import Event
+    from app.imports.models import ImportFile
+
+    client = TestClient(app, raise_server_exceptions=False)
+    import_id = upload(client).json()["files"][0]["id"]
+
+    def failing_commit(self):
+        raise RuntimeError("simulated commit failure")
+
+    monkeypatch.setattr(Session, "commit", failing_commit)
+    res = client.post(f"/api/imports/{import_id}/commit", json=DETAILS)
+
+    assert res.status_code >= 500
+    assert res.json() == {
+        "error": {"code": "internal_error", "message": "Internal server error", "details": None}
+    }
+    statuses = db_session.scalars(select(ImportFile.status)).all()
+    assert statuses == ["pending"]
+    assert db_session.scalar(select(func.count()).select_from(Event)) == 0
+    assert db_session.scalar(select(func.count()).select_from(Attendance)) == 0
