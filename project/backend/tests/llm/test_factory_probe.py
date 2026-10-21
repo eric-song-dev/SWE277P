@@ -115,6 +115,8 @@ def test_response_format_detection():
         (BadRequestError, 400, "Unsupported parameter: 'response_format'"),
         (BadRequestError, 400, "Invalid parameter: response format is not supported by this model"),
         (BadRequestError, 400, "This model does not support JSON mode"),
+        (BadRequestError, 400, "unsupported value: json_mode"),
+        (BadRequestError, 400, "unsupported value: json-mode"),
         (BadRequestError, 400, "'json_object' is not a valid type for this deployment"),
         (BadRequestError, 400, "Structured outputs are not supported by this model"),
         (UnprocessableEntityError, 422, "Extra inputs are not permitted: response_format"),

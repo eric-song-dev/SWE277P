@@ -64,7 +64,7 @@ def map_llm_error(exc: Exception) -> HubError:
 _REJECTION_STATUSES = frozenset({400, 404, 405, 415, 422, 501})
 # Wordings that name the JSON-mode / structured-output feature (never a key or model problem).
 _REJECTION_WORDING = re.compile(
-    r"response[_\s-]?format|json[_\s-]?object|json[_\s-]?schema|json mode|structured[_\s-]?output",
+    r"response[_\s-]?format|json[_\s-]?object|json[_\s-]?schema|json[_\s-]?mode|structured[_\s-]?output",
     re.IGNORECASE,
 )
 
