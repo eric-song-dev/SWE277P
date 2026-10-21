@@ -79,3 +79,15 @@ def committed_october(request):
     summary = commit_after_preview(session, name, sample_bytes(name), user)
     session.commit()
     return summary
+
+
+@pytest.fixture
+def loaded_samples(request):
+    """Load the 10 synthetic sample exports (293 attendance rows) and commit them."""
+    session = request.getfixturevalue("db_session")
+    user = request.getfixturevalue("user")
+    from app.samples import load_sample_exports
+
+    summaries = load_sample_exports(session, user)
+    session.commit()
+    return summaries
