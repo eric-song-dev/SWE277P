@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Build a complete, runnable P0 MVP of the Hub over five Claude Code sessions (S1–S5). The AI chatbot is the part that has to be strongest. Every P1 feature gets an extension point now, so it can be added later without restructuring.
+Build a complete, runnable P0 MVP of the Hub over six Claude Code sessions (S1–S6; S6 was added on 2026-10-21 for the UI redesign and the user-story walkthrough). The AI chatbot is the part that has to be strongest. Every P1 feature gets an extension point now, so it can be added later without restructuring.
 
 Success is the charter's MOV, automated as acceptance tests (Section 14):
 
@@ -125,6 +125,8 @@ Details settled in S4:
 - When the server is down, errors read "Could not reach the server." (`network_error`) or "The Hub server isn't responding…" (`server_unavailable`, any non-JSON 5xx), and the chat treats both as a lost connection. A render error or a page chunk that fails to load shows a plain error page with Reload.
 - localStorage holds only the last selected profile id (`hub.chat.profileId`).
 - The Playwright e2e runs on its own Compose project (`hub-e2e`, port 8081) with only the scripted "Demo" profile; it blanks every `LLM_SEED_*` and refuses to run if any other profile exists, so no real key is ever used.
+
+**Visual design (decided 2026-10-21, built in S6):** `docs/design/2026-10-21-ui-redesign.md` is the binding visual and copy spec. It uses the official UCI palette, Source Sans 3 (self-hosted), and a navy side nav that can collapse. The question box holds the share switch, and below it is the line "AI can make mistakes. Double-check important answers." Behavior stays as above.
 
 ## 5. Data model
 
@@ -403,7 +405,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 - **Details settled in S4:**
   - A `base_url` carrying a username or password (`https://user:pass@host`) is a 422: credentials belong in the API key field, and the URL is returned to the browser.
   - A `PATCH` with an empty or whitespace-only `api_key` keeps the stored key, like omitting the field.
-- **Selection:** the chat page shows a profile drop-down (default preselected) and, next to the question box, the "Let AI see the results" switch (D2) with the helper text "Off: AI only writes the SQL. Results stay on this computer." When the selected profile does not allow sharing, the switch is off and disabled, with the tooltip "This AI model isn't allowed to receive results. Change it in Settings." The selected `llm_profile_id` and `share_results` are sent with each question. The turn records the profile and the effective `results_shared`.
+- **Selection:** the chat page shows a profile drop-down (default preselected) and, next to the question box, the "Let AI see the results" switch (D2). Its helper text changes with the switch (S6, from `docs/design/2026-10-21-ui-redesign.md`): on, "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI."; off, "Off: the AI sees only your question. You get the results without an AI summary." Until S6 ships, the S4 text "Off: AI only writes the SQL. Results stay on this computer." is shown. When the selected profile does not allow sharing, the switch is off and disabled, with the tooltip "This AI model isn't allowed to receive results. Change it in Settings." The selected `llm_profile_id` and `share_results` are sent with each question. The turn records the profile and the effective `results_shared`.
 - **Benchmark:** `uv run python -m benchmark.run --profile "<name>"` uses a stored profile. Running it once per profile satisfies "runs with each provider after a settings change".
 - **Fake model:** a `fake` preset exists only when `HUB_ENABLE_FAKE_LLM=true` (tests, Playwright, and offline demos). It returns scripted drafts keyed by question.
 
@@ -503,6 +505,7 @@ The layers from assignment1 still apply. Changes are marked.
 | S3 | LLM profiles (encryption, API, test connection), chat graph, guard, executor, sanitizer, SSE, conversations, chat export, benchmark runner and questions | A6 and A8 pass; the graph passes integration tests with the fake model; a first benchmark run works on a real profile |
 | S4 | Frontend: upload and event form, chat (streaming steps, answer card, clarifications, profile drop-down), Settings, Dataset page | Vitest passes; Playwright happy path passes with the fake preset |
 | S5 | Benchmark tuning to at least 18/20, A10 timing, README and setup guide, user guide, known limitations, polish | All acceptance tests green except A7 |
+| S6 (added 2026-10-21) | UI and UX: build the approved redesign (`docs/design/2026-10-21-ui-redesign.md`) across all pages; write every user story to `docs/user-stories/`; walk through each story in the running app and fix the UX problems found | Redesign shipped; every story has a recorded walkthrough result, and every problem found is fixed or listed with a reason; Vitest, lint, build and both Playwright runs green; screenshots regenerated |
 
 Each session follows the protocol in `project/CLAUDE.md` ("Working across sessions"): read `CLAUDE.md`, `PROGRESS.md`, this spec, and the plan first, and update `PROGRESS.md` before ending.
 

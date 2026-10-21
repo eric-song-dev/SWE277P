@@ -15,7 +15,7 @@ Every time you finish a change, commit it before ending your turn. Never leave u
 
 ## Rule #2: work in sessions, keep state in PROGRESS.md
 
-The MVP is built over five separate Claude Code conversations, S1–S5. Spec Section 15 lists what each one covers. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
+The MVP is built over six separate Claude Code conversations, S1–S6 (S6, the UI redesign and user-story walkthrough, was added on 2026-10-21). Spec Section 15 lists what each one covers. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
 
 At the start of a session:
 
@@ -61,6 +61,8 @@ project/
   db/init/             Postgres init scripts (app and read-only roles)
   docs/specs/          design specs
   docs/plans/          implementation plans
+  docs/design/         approved visual design and its mockup source (UI redesign, built in S6)
+  docs/user-stories/   user stories and their walkthrough results (written in S6)
   docs/screenshots/    UI screenshots from the Playwright e2e run (synthetic data)
   backend/             FastAPI app (app/), Alembic (alembic/), sample_data/, tests/, Dockerfile
   frontend/            React + Vite app (src/api client, src/app shell), nginx.conf, Dockerfile

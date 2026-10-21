@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A. Campus blue and gold</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#255799}a:hover{color:#1B3D6D}
+p,li,a,h1,h2,span{text-wrap:pretty}
+</style>
+</helmet>
+<div style="min-height: 1640px; display: flex; flex-wrap: wrap; background: #F3F6FA; font-family: 'Source Sans 3', 'Segoe UI', sans-serif; color: #002244; font-size: 16px; line-height: 1.5">
+
+  <nav aria-label="Main navigation" style="flex: 1 0 {{navWidth}}; background: #1B3D6D; color: #FFFFFF; display: flex; flex-direction: column; padding: 0 0 20px; transition: flex-basis 150ms ease">
+    <div style="min-height: 88px; box-sizing: border-box; padding: {{brandPad}}; display: flex; align-items: center; justify-content: {{brandJustify}}; gap: 8px">
+      <div style="display: {{wordmarkDisplay}}; min-width: 0">
+        <div style="font-size: 19px; font-weight: 700; line-height: 1.25; white-space: nowrap">GPSRC Data Hub</div>
+        <div style="font-size: 13px; color: #C9D6E8; line-height: 1.35; margin-top: 4px">Graduate &amp; Postdoctoral Scholar Resource Center</div>
+      </div>
+      <button type="button" aria-label="{{navToggleLabel}}" title="{{navToggleLabel}}" aria-expanded="{{navExpanded}}" onClick="{{toggleNav}}" onMouseEnter="{{toggleOn}}" onMouseLeave="{{toggleOff}}" onFocus="{{toggleOn}}" onBlur="{{toggleOff}}" style="flex: 0 0 auto; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0; border: none; border-radius: 8px; background: {{toggleBg}}; color: {{toggleColor}}; cursor: pointer; transition: background-color 120ms ease, color 120ms ease">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path><path d="{{toggleArrow}}"></path></svg>
+      </button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 16px">
+      <a href="#" aria-current="page" aria-label="Chat" title="Chat" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{activePad}}; border-left: 3px solid #FECC07; background: rgba(255,255,255,0.10); color: #FFFFFF; text-decoration: none; font-weight: 600">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg><span style="display: {{labelDisplay}}">Chat</span></a>
+      <a href="#" aria-label="Upload" title="Upload" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0l-5 5m5-5l5 5M5 20h14"></path></svg><span style="display: {{labelDisplay}}">Upload</span></a>
+      <a href="#" aria-label="Dataset" title="Dataset" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M4 10h16M10 10v10"></path></svg><span style="display: {{labelDisplay}}">Dataset</span></a>
+      <a href="#" aria-label="Settings" title="Settings" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6l2.1-2.1"></path></svg><span style="display: {{labelDisplay}}">Settings</span></a>
+    </div>
+    <div style="display: {{labelDisplay}}; margin-top: auto; padding: 20px 24px 0; font-size: 14px; color: #C9D6E8">Signed in as GPSRC Staff</div>
+  </nav>
+
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <header style="min-height: 88px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 16px 40px; background: #FFFFFF; border-bottom: 1px solid #D3DCE8">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; line-height: 1.2; color: #1B3D6D">Chat</h1>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <label for="model-a" style="font-size: 15px; font-weight: 600; color: #555759">AI model</label>
+        <div style="position: relative; display: flex">
+          <select id="model-a" style="appearance: none; -webkit-appearance: none; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.4; padding: 9px 42px 9px 14px; min-width: 200px; border: 1px solid #7B8FAE; border-radius: 8px; background: #FFFFFF; color: #002244; cursor: pointer">
+            <option>DeepSeek</option>
+          </select>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555759" stroke-width="2" aria-hidden="true" style="position: absolute; right: 14px; top: 50%; margin-top: -9px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+        </div>
+      </div>
+    </header>
+
+    <div style="flex: 1 1 auto; display: flex; flex-wrap: wrap">
+      <aside aria-label="Conversations" style="flex: 1 0 256px; background: #FFFFFF; border-right: 1px solid #D3DCE8; padding: 20px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px">
+        <button type="button" onMouseEnter="{{newChatOn}}" onMouseLeave="{{newChatOff}}" onFocus="{{newChatOn}}" onBlur="{{newChatOff}}" style="font: inherit; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 14px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #255799; background: {{newChatBg}}; color: {{newChatColor}}; cursor: pointer; transition: background-color 120ms ease, color 120ms ease">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>New chat</button>
+        <a href="#" aria-current="page" style="padding: 10px 12px; border-radius: 8px; background: #E4ECF6; color: #1B3D6D; text-decoration: none; font-weight: 600; font-size: 15px; line-height: 1.35">How many unique people attended Bagel Breakfast, October?</a>
+        <a href="#" style="padding: 10px 12px; border-radius: 8px; color: #002244; text-decoration: none; font-size: 15px; line-height: 1.35">How many people attended events this year?</a>
+        <a href="#" style="padding: 10px 12px; border-radius: 8px; color: #002244; text-decoration: none; font-size: 15px; line-height: 1.35">Emails of everyone who attended any Bagel Breakfast</a>
+      </aside>
+
+      <section aria-label="Conversation" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column">
+        <div style="flex: 1 1 auto; padding: 28px 40px 32px">
+          <div style="max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 32px">
+
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <p style="align-self: flex-end; margin: 0; max-width: 75%; padding: 10px 16px; border-radius: 18px 18px 4px 18px; background: #255799; color: #FFFFFF">How many unique people attended Bagel Breakfast, October?</p>
+              <article style="background: #FFFFFF; border: 1px solid #D3DCE8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+                <div>
+                  <div style="font-size: 13px; color: #555759">AI-generated summary. Check it against the table.</div>
+                  <p style="margin: 4px 0 0; font-size: 18px; line-height: 1.45">38 unique people attended the October Bagel Breakfast.</p>
+                </div>
+                <div style="border: 1px solid #D3DCE8; border-radius: 10px; overflow: hidden">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 15px">
+                    <thead><tr style="background: #EDF2F8; color: #1B3D6D"><th scope="col" style="text-align: right; padding: 10px 16px; font-weight: 600">unique_people</th></tr></thead>
+                    <tbody><tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">38</td></tr></tbody>
+                  </table>
+                </div>
+                <div>
+                  <h2 style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #1B3D6D">How I read your question</h2>
+                  <ul style="margin: 0; padding-left: 20px">
+                    <li>Count the distinct people who attended the October Bagel Breakfast.</li>
+                  </ul>
+                </div>
+                <button type="button" aria-expanded="false" style="font: inherit; font-weight: 600; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 10px 16px; border: 1px solid #D3DCE8; border-radius: 10px; background: #F6F8FB; color: #002244; cursor: pointer">Show the SQL query<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid #E3E9F1">
+                  <span style="color: #555759">1 row</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                    <button type="button" style="font: inherit; font-weight: 600; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid #255799; background: #255799; color: #FFFFFF; cursor: pointer">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download Excel (.xlsx)</button>
+                    <button type="button" style="font: inherit; font-weight: 600; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid #7B8FAE; background: #FFFFFF; color: #002244; cursor: pointer">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download CSV (.csv)</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <p style="align-self: flex-end; margin: 0; max-width: 75%; padding: 10px 16px; border-radius: 18px 18px 4px 18px; background: #255799; color: #FFFFFF">Break that down by school</p>
+              <article style="background: #FFFFFF; border: 1px solid #D3DCE8; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 20px">
+                <div>
+                  <div style="font-size: 13px; color: #555759">AI-generated summary. Check it against the table.</div>
+                  <p style="margin: 4px 0 0; font-size: 18px; line-height: 1.45">School of Engineering sent the most people (7). Biological Sciences, Humanities and Medicine had 6 each.</p>
+                </div>
+                <div style="border: 1px solid #D3DCE8; border-radius: 10px; overflow: hidden">
+                  <table style="width: 100%; border-collapse: collapse; font-size: 15px">
+                    <thead><tr style="background: #EDF2F8; color: #1B3D6D"><th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">school</th><th scope="col" style="text-align: right; padding: 10px 16px; font-weight: 600">people</th></tr></thead>
+                    <tbody>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Engineering</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">7</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Biological Sciences</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">6</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Humanities</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">6</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Medicine</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">6</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">Paul Merage School of Business</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">4</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Social Sciences</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">3</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Information and Computer Sciences</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">2</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Physical Sciences</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">2</td></tr>
+                      <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">School of Social Ecology</td><td style="padding: 9px 16px; text-align: right; font-variant-numeric: tabular-nums">2</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <h2 style="margin: 0 0 4px; font-size: 16px; font-weight: 700; color: #1B3D6D">How I read your question</h2>
+                  <ul style="margin: 0; padding-left: 20px">
+                    <li>Count the distinct people at the October Bagel Breakfast, grouped by school.</li>
+                    <li>"That" means the event from your previous question.</li>
+                  </ul>
+                </div>
+                <button type="button" aria-expanded="false" style="font: inherit; font-weight: 600; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; padding: 10px 16px; border: 1px solid #D3DCE8; border-radius: 10px; background: #F6F8FB; color: #002244; cursor: pointer">Show the SQL query<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid #E3E9F1">
+                  <span style="color: #555759">9 rows</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                    <button type="button" style="font: inherit; font-weight: 600; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid #255799; background: #255799; color: #FFFFFF; cursor: pointer">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download Excel (.xlsx)</button>
+                    <button type="button" style="font: inherit; font-weight: 600; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid #7B8FAE; background: #FFFFFF; color: #002244; cursor: pointer">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download CSV (.csv)</button>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+          </div>
+        </div>
+
+        <form style="background: #FFFFFF; border-top: 1px solid #D3DCE8; padding: 16px 40px 12px">
+          <div style="max-width: 880px; margin: 0 auto">
+            <div style="border: 1px solid #7B8FAE; border-radius: 12px; background: #FFFFFF; padding: 12px 12px 10px 16px; display: flex; flex-direction: column; gap: 10px">
+              <label for="ask-a" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Question</label>
+              <textarea id="ask-a" rows="2" placeholder="Ask a question about your data" style="font: inherit; line-height: 1.5; padding: 0; border: none; resize: none; color: #002244; background: transparent"></textarea>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px">
+                <div style="flex: 1 1 auto; display: flex; align-items: flex-start; gap: 10px; min-width: 0">
+                  <button type="button" role="switch" aria-checked="{{shareChecked}}" aria-labelledby="share-label" aria-describedby="share-help" onClick="{{toggleShare}}" style="flex: 0 0 auto; position: relative; width: 40px; height: 22px; margin-top: 1px; padding: 0; border: none; border-radius: 999px; background: {{trackColor}}; cursor: pointer; transition: background-color 150ms ease">
+                    <span aria-hidden="true" style="position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,34,68,0.3); transform: translateX({{knobShift}}); transition: transform 150ms ease"></span>
+                  </button>
+                  <div style="display: flex; flex-direction: column; min-width: 0">
+                    <span id="share-label" style="font-weight: 600; line-height: 1.5">Let AI see the results</span>
+                    <span id="share-help" style="font-size: 14px; line-height: 1.45; color: #555759">{{shareHelp}}</span>
+                  </div>
+                </div>
+                <button type="submit" style="flex: 0 0 auto; min-height: 40px; font: inherit; font-weight: 600; padding: 0 22px; border: none; border-radius: 8px; background: #255799; color: #FFFFFF; cursor: pointer">Send</button>
+              </div>
+            </div>
+            <p style="margin: 8px 0 0; text-align: center; font-size: 13px; color: #555759">AI can make mistakes. Double-check important answers.</p>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const share = s.share !== undefined ? s.share : true;
+    const collapsed = !!s.collapsed;
+    return {
+      navWidth: collapsed ? '72px' : '248px',
+      brandPad: collapsed ? '16px 0' : '16px 12px 16px 24px',
+      brandJustify: collapsed ? 'center' : 'space-between',
+      wordmarkDisplay: collapsed ? 'none' : 'block',
+      labelDisplay: collapsed ? 'none' : 'inline',
+      linkJustify: collapsed ? 'center' : 'flex-start',
+      linkPad: collapsed ? '11px 0' : '11px 24px',
+      activePad: collapsed ? '11px 3px 11px 0' : '11px 24px 11px 21px',
+      navToggleLabel: collapsed ? 'Expand navigation' : 'Collapse navigation',
+      navExpanded: collapsed ? 'false' : 'true',
+      toggleArrow: collapsed ? 'M13 10l2 2-2 2' : 'M15 10l-2 2 2 2',
+      toggleNav: () => this.setState({ collapsed: !collapsed }),
+      toggleBg: s.toggleHover ? 'rgba(255,255,255,0.12)' : 'transparent',
+      toggleColor: s.toggleHover ? '#FFFFFF' : '#C9D6E8',
+      toggleOn: () => this.setState({ toggleHover: true }),
+      toggleOff: () => this.setState({ toggleHover: false }),
+      newChatBg: s.newChatHover ? '#255799' : '#FFFFFF',
+      newChatColor: s.newChatHover ? '#FFFFFF' : '#255799',
+      newChatOn: () => this.setState({ newChatHover: true }),
+      newChatOff: () => this.setState({ newChatHover: false }),
+      shareChecked: share ? 'true' : 'false',
+      trackColor: share ? '#255799' : '#555759',
+      knobShift: share ? '18px' : '0px',
+      shareHelp: share
+        ? 'On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI.'
+        : 'Off: the AI sees only your question. You get the results without an AI summary.',
+      toggleShare: () => this.setState({ share: !share }),
+    };
+  }
+}
+</script>
+</body>
+</html>

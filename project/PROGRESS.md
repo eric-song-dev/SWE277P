@@ -7,7 +7,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - **Session:** S4 of 5 (2026-10-21) is complete.
   - Task 0 (backend carry-overs) and plan Tasks 1–7 are done. Every task passed its task review; Tasks 0, 2, 3 and 5 needed fix rounds.
   - A final whole-branch review and one fix wave followed. The fix wave's re-review is clean.
-- **Phase:** the MVP is feature-complete. Next is S5: benchmark tuning, timing, hardening, and handoff docs.
+- **Phase:** the MVP is feature-complete. Next is S5: benchmark tuning, timing, hardening, and handoff docs. After S5, S6 builds the approved UI redesign and walks through every user story (see "After S5: S6").
 
 ## Done
 
@@ -85,11 +85,34 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
     - a split multi-byte UTF-8 SSE test;
     - the e2e teardown error masking and the health-fetch timeout.
   - **With ZotGPT (verify by 10/28):** widen `response_format` rejection detection, and merge consecutive human messages if the gateway needs alternation.
+  - **Handoff docs (S5 Task 5):** S6 restyles the whole UI, so keep UI screenshots out of S5's README and user guide, or mark them for refresh in S6. Describe screens by their labels; "Let AI see the results", "New chat" and "Download Excel (.xlsx)" survive the redesign.
 - **Exit:** all acceptance tests green except A7, benchmark at least 18/20, A10 under 60 s, docs done.
 - **Before the sponsor demo (week 7):**
   - Run `docker compose up --build -d` on the main stack.
   - Click through with a real profile.
   - Try one export in Safari.
+
+## After S5: S6 (UI and user experience)
+
+- **Start:** open a new conversation in `SWE277P/` and say: "Read project/CLAUDE.md, then follow Rule #2 and start S6."
+- **Read:** `CLAUDE.md`, this file, the spec, and `docs/design/2026-10-21-ui-redesign.md`. There is no S6 plan yet; S6 writes it.
+- **Scope (the user's request, 2026-10-21):**
+  1. **Build the approved redesign** on every page. It is "Campus blue and gold":
+     - the official UCI palette and Source Sans 3, self-hosted;
+     - a collapsible navy side nav;
+     - the share switch inside the question box, plus the new copy.
+
+     The design doc has every value and lists what must change with it: the spec §8.2 text, Vitest copy assertions, and the screenshots. Its mockup is https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs, with the source in `docs/design/`.
+  2. **Write every user story** to `docs/user-stories/`: who, the story, acceptance criteria, and the steps to walk it. Cover every page and the empty, error and edge states, not only happy paths. Examples: a duplicate upload, a rejected file, a clarifying question, a dropped stream, no profiles, sharing off.
+  3. **Walk through every story** in the running app.
+     - Use the Docker stack with the fake "Demo" profile, plus a real profile where answer quality matters.
+     - Record each story's result in `docs/user-stories/walkthrough-<date>.md`, with screenshots where useful.
+     - Fix the UX problems found, and list anything left with a reason.
+- **First steps:**
+  - Use brainstorming only for what the design doc leaves open, such as how Upload, Dataset and Settings adopt the style.
+  - Write `docs/plans/<date>-s6-ui-ux.md` with `superpowers:writing-plans`.
+  - Execute it subagent-driven, as in S2–S5.
+- **Exit:** see the S6 row in spec §15.
 
 ## Open issues and blockers
 
@@ -118,7 +141,12 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 - **Spec decisions:** D1–D10 (spec Section 2). S2, S3 and S4 decisions are in the spec sections marked with their session.
   - S4 frontend decisions are in §4.3: the `/chat` draft conversation, one chat route, no router transitions, one card per question, Retry with the current settings, the SQL on failed turns, plain error texts, and the e2e isolation.
-- **Execution method:** S2–S5 are subagent-driven. The controller rules on plan conflicts and records the rulings.
+- **Execution method:** S2–S6 are subagent-driven. The controller rules on plan conflicts and records the rulings.
+- **UI redesign (2026-10-21, after S4):**
+  - The user approved direction A, "Campus blue and gold", over B (a reading column) and C (a split data desk). For the question box they chose the toolbar-inside-the-box layout.
+  - The user wrote the switch copy. "On" now says plainly that PII, such as emails and names, may reach the AI when sharing is on. The user caught that "Student IDs are never shared" was true but misleading.
+  - The design is recorded in `docs/design/` and spec §4.3, §8.2 and §15.
+  - Building it was moved to a new session, S6, together with the user-story walkthrough, so S5 stays focused on the benchmark and the docs.
 - **S4 execution choices:**
   - Added Task 0 for backend carry-overs.
   - Lint with oxlint `no-restricted-globals`, not ESLint.
@@ -140,3 +168,4 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
   - every upload batch's cards and errors kept;
   - the SQL shown on failed turns.
   The e2e caught a router transition race. The final review's fix wave covered Retry with the current settings, kept the conversation on a failed refetch, added one fetch seam, plain error texts, and an error page. Vitest has 132 tests, the Playwright happy path passes, and the midterm screenshots are in `docs/screenshots/`.
+- S4 follow-up (2026-10-21): verified the DeepSeek seed model (`deepseek-flash`; `deepseek-v4-flash` is only an alias) and fixed `.env`. Designed and approved the UI redesign over several mockup rounds, and added S6 to build it and walk through every user story.
