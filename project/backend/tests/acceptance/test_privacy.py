@@ -76,7 +76,11 @@ def all_prompt_text(calls) -> str:
 
 
 def leaked(db_session, blob: str) -> list[str]:
-    return [v for v in identifying_values(db_session) if re.search(rf"\b{re.escape(v)}\b", blob)]
+    return [
+        v
+        for v in identifying_values(db_session)
+        if re.search(rf"\b{re.escape(v)}\b", blob, re.IGNORECASE)
+    ]
 
 
 def inject(fake_llm, model) -> None:
@@ -113,11 +117,11 @@ def test_a6_sharing_on_sends_only_capped_result_rows(client, db_session, loaded_
     assert len(model.calls) == 2  # one generate call, one analyze call
     analyze_prompt = str(model.calls[-1][-2].content)
     shared = sum(1 for line in analyze_prompt.splitlines() if "@uci.edu" in line)
-    assert 0 < shared <= 50
+    assert shared == 50  # exactly the cap: more rows exist, none beyond it
     student_ids = {s for s in db_session.scalars(select(Attendance.student_id)) if s}
     assert student_ids
     assert not any(sid in all_prompt_text(model.calls) for sid in student_ids)
     emails = {e for e in db_session.scalars(select(Attendance.email)) if e}
     assert len(emails) > 50
     generate_blob = all_prompt_text(model.calls[:-1])
-    assert not any(e in generate_blob for e in emails)
+    assert not any(e.lower() in generate_blob.lower() for e in emails)
