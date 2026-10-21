@@ -209,6 +209,18 @@ BAD = {
     "SELECT * FROM attendance_view FOR UPDATE NOWAIT": "lock",
     "SELECT * FROM (SELECT * FROM attendance_view FOR UPDATE) s": "lock",
     "SELECT * INTO TEMP t FROM attendance_view": "INTO",
+    # PostgreSQL folds only ASCII A-Z: U+212A must not make a CTE shadow pg_locks
+    "WITH pg_loc\u212as AS (SELECT 1 AS x) SELECT locktype, pid, mode FROM pg_locks": "ASCII",
+    # bare SQL value functions disclose role / identity
+    "SELECT user FROM attendance_view": "session and identity",
+    "SELECT USER FROM attendance_view": "session and identity",
+    "SELECT current_role FROM attendance_view": "session and identity",
+    "SELECT system_user FROM attendance_view": "session and identity",
+    "SELECT session_user FROM attendance_view": "",
+    "SELECT current_user FROM attendance_view": "",
+    "SELECT current_catalog FROM attendance_view": "",
+    "SELECT current_schema FROM attendance_view": "",
+    "SELECT email FROM attendance_view WHERE email = current_user": "",
 }
 
 

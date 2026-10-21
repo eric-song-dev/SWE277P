@@ -163,9 +163,27 @@ def strip_sql_wrapping(text: str) -> str:
     return text.strip().rstrip(";").rstrip()
 
 
+_ASCII_UPPER_TO_LOWER = {c: c + 32 for c in range(ord("A"), ord("Z") + 1)}
+_NON_ASCII_MESSAGE = "unquoted identifiers must use ASCII characters only"
+# SQL value functions PostgreSQL evaluates when written as bare words; sqlglot may
+# parse some of them as plain columns. None is a column of attendance_view.
+_RESERVED_VALUE_NAMES = frozenset(
+    {
+        "user", "current_role", "system_user", "session_user", "current_user",
+        "current_catalog", "current_schema",
+    }
+)  # fmt: skip
+
+
 def _norm(ident: exp.Identifier) -> str:
-    # PostgreSQL folds unquoted identifiers to lower case; quoted ones are exact.
-    return ident.name if ident.args.get("quoted") else ident.name.lower()
+    # PostgreSQL folds only ASCII A-Z in unquoted identifiers (Python's str.lower()
+    # would also fold e.g. U+212A KELVIN SIGN to "k"); quoted ones are exact.
+    name = ident.name
+    if ident.args.get("quoted"):
+        return name
+    if not name.isascii():
+        raise GuardError(_NON_ASCII_MESSAGE)
+    return name.translate(_ASCII_UPPER_TO_LOWER)
 
 
 def _function_name(f: exp.Expression) -> str:
@@ -195,6 +213,14 @@ def _check_nodes(root: exp.Expression) -> None:
             if isinstance(node, exp.Func):
                 raise GuardError(f"function {_function_name(node)} is not allowed")
             raise GuardError(f"the SQL construct {type(node).__name__} is not allowed")
+        if isinstance(node, exp.Identifier):
+            _norm(node)  # rejects unquoted non-ASCII names
+        if isinstance(node, exp.Column) and isinstance(node.this, exp.Identifier):
+            if not node.table and _norm(node.this) in _RESERVED_VALUE_NAMES:
+                raise GuardError(
+                    f"{_norm(node.this)} is not a column of attendance_view; "
+                    "session and identity values are not available"
+                )
         if isinstance(node, exp.Cast):
             _check_data_type(node.args.get("to"))
         elif isinstance(node, exp.DataType):
