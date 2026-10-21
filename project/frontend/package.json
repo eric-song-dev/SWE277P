@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "e2e": "playwright test e2e/happy-path.spec.ts",
+    "e2e:timing": "playwright test -c playwright.timing.config.ts",
     "e2e:screenshots": "playwright test e2e/screenshots.spec.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",

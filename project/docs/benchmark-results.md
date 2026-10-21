@@ -13,7 +13,7 @@ The status cell is exactly `PASS`, `FAIL` or `PENDING`.
 |---|---|---|
 | A3 | PASS | 20/20 on two consecutive runs on prompt 2026-10-29.4 (DeepSeek, deepseek-flash, 2026-10-21 05:03 and 05:04); holdout 10/10 on three runs of the same prompt |
 | A4 | PASS | The same benchmark ran against two profiles with no code change: DeepSeek (deepseek, deepseek-flash) 20/20 main and 10/10 holdout, and DeepSeek Pro (deepseek, deepseek-v4-pro) 19/20 main and 10/10 holdout, both on prompt 2026-10-29.4 (2026-10-21) |
-| A10 | PENDING | |
+| A10 | PASS | Question to downloaded Excel on a cold-started api, profile DeepSeek (deepseek-flash), 2026-10-21 05:59: q01 4.4 s, q04 5.4 s, q14 5.4 s (limit 60 s); see Timings |
 
 ## Runs
 
@@ -79,3 +79,17 @@ The holdout scoring 10/10 like the main set suggests the rules are not fitted on
 questions, but both sets use one model and the same 293 sample rows from one term.
 
 ## Timings
+
+A10 (spec 14): the time from pressing Enter on a question to the `.xlsx` download event, in a new
+chat each, on the main stack with the samples loaded. `docker compose restart api` ran first, so
+q01 is a cold start. Run with `HUB_E2E_PROFILE="DeepSeek" npm run e2e:timing` (Playwright
+`e2e/timing.spec.ts`), 3 passed, 2026-10-21 05:59, profile DeepSeek (deepseek, deepseek-flash).
+
+| Question | Time (ms) | Limit |
+|---|---|---|
+| q01 | 4367 | 60000 |
+| q04 | 5359 | 60000 |
+| q14 | 5381 | 60000 |
+
+Log scan after the run: `docker compose logs api nginx db | grep -E "sk-|@uci\.edu" | wc -l` gave 0
+(also 0 when scoped with `--since` the start of the run).

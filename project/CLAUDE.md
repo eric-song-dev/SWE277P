@@ -169,9 +169,12 @@ npm run build                            # type-check + production build
 npm run lint                             # oxlint
 npm run e2e                              # Playwright happy path on its own stack (needs Docker)
 npm run e2e:screenshots                  # regenerate docs/screenshots/ (midterm report)
+HUB_E2E_PROFILE="DeepSeek" npm run e2e:timing   # A10: question to Excel under 60 s, real LLM, main stack
 ```
 
 Each e2e run starts a separate `hub-e2e` Compose project on 127.0.0.1:8081 (`HUB_HTTP_PORT`) with the scripted "Demo" profile, blanks every `LLM_SEED_*` so no real API key is used, and removes the stack and its volume afterwards. First time: `npx playwright install chromium`.
+
+`e2e:timing` is different: it uses `playwright.timing.config.ts` (no global setup), runs against the main stack at `HUB_E2E_BASE_URL` (default `http://127.0.0.1:8080`) with the samples loaded, and makes real LLM calls. Start that stack first from `project/` with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d`. `HUB_E2E_PROFILE` is the name of the AI profile to select; without it the spec skips. The spec restarts the `api` container first (cold start).
 
 Chatbot benchmark (from `project/backend`, needs a saved LLM profile and the sample data loaded):
 
