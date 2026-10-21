@@ -184,15 +184,16 @@ def test_concurrent_second_commit_waits_then_conflicts(db_session, user):
                 b.rollback()
                 outcome["error"] = exc
 
+        thread = threading.Thread(target=second_commit)
         try:
             commit_import(a, pending.id, details(), user)  # A holds the import row, uncommitted
-            thread = threading.Thread(target=second_commit)
             thread.start()
             _wait_until_lock_wait(db_session, b_pid)
             a.commit()
         finally:
             a.rollback()
-            thread.join(timeout=10)
+            if thread.ident is not None:  # started; joining an unstarted thread raises
+                thread.join(timeout=10)
         assert not thread.is_alive()
 
     error = outcome.get("error")
