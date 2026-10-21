@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
@@ -102,3 +103,35 @@ class IdentityLinker:
     def _add(self, kind: str, value: str, person_id: int) -> None:
         self._session.add(PersonIdentifier(person_id=person_id, kind=kind, value=value))
         self._session.flush()
+
+
+def count_in_file_duplicates(keys: Iterable[tuple[str | None, str | None]]) -> int:
+    """Rows that repeat a person already seen earlier in the file.
+
+    Applies IdentityLinker's rules 1-4 to the file alone (no database): a row repeats a person
+    when its NetID was seen, when it has a new NetID and its email belongs to an in-file person
+    with no NetID (the attach case), or when it has no NetID and its email was seen. Two NetIDs
+    sharing one email are two people. A row with neither NetID nor email is never a duplicate.
+    """
+    netids: set[str] = set()
+    email_netid: dict[str, str | None] = {}  # email -> its in-file owner's NetID, if any
+    duplicates = 0
+    for netid, email in keys:
+        if not netid and not email:
+            continue
+        if netid:
+            if netid in netids:
+                duplicates += 1
+                continue
+            netids.add(netid)
+            if email and email in email_netid and email_netid[email] is None:
+                email_netid[email] = netid
+                duplicates += 1
+            elif email and email not in email_netid:
+                email_netid[email] = netid
+        elif email in email_netid:
+            duplicates += 1
+        else:
+            assert email
+            email_netid[email] = None
+    return duplicates

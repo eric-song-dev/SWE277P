@@ -13,7 +13,7 @@ from app.errors import HubError
 from app.events.models import Event
 from app.imports.adapters import ADAPTERS, detect_adapter
 from app.imports.adapters.base import Adapter, ParseResult, RowFlag
-from app.imports.identity import IdentityLinker
+from app.imports.identity import IdentityLinker, count_in_file_duplicates
 from app.imports.models import ImportFile
 from app.imports.normalize import academic_year
 from app.imports.reader import Grid, content_fingerprint, read_sheet
@@ -61,6 +61,8 @@ def _preview_from(
     import_id: int, file_name: str, adapter: Adapter, result: ParseResult, user: CurrentUser
 ) -> ImportPreview:
     counts: Counter[str] = Counter(f.code for row in result.rows for f in row.flags)
+    if n := count_in_file_duplicates((r.netid, r.email) for r in result.rows):
+        counts["duplicate_in_event"] = n
     if result.skipped:
         counts["not_attended_skipped"] = len(result.skipped)
     draft = adapter.prefill(file_name, result)
