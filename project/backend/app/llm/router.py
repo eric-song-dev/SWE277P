@@ -1,6 +1,8 @@
 from datetime import UTC, datetime
+from functools import partial
 from typing import Annotated
 
+import anyio.from_thread
 from fastapi import APIRouter, Depends, Response
 
 from app.auth.dependencies import get_current_user
@@ -51,13 +53,19 @@ def set_default(profile_id: int, session: SessionDep, _user: UserDep) -> LlmProf
 
 
 @router.post("/{profile_id}/test", response_model=ProbeResultOut)
-async def test_connection(profile_id: int, session: SessionDep, _user: UserDep) -> ProbeResultOut:
+def test_connection(profile_id: int, session: SessionDep, _user: UserDep) -> ProbeResultOut:
+    # A plain def runs in the threadpool, so DB and decrypt work stays off the event loop.
     profile, api_key = service.get_profile_with_key(session, profile_id)
-    result = await probe_profile(profile, api_key, settings=get_settings())
+    session.expunge(profile)  # keep the loaded values; the commit below must not expire them
+    session.commit()  # end the transaction so no connection is held during the network probe
+    result = anyio.from_thread.run(
+        partial(probe_profile, profile, api_key, settings=get_settings())
+    )
+    stored = service.get_profile(session, profile_id)
     now = datetime.now(UTC)
-    profile.last_tested_at = now
-    profile.last_test_ok = result.ok
+    stored.last_tested_at = now
+    stored.last_test_ok = result.ok
     if result.json_mode is not None:
-        profile.json_mode = result.json_mode
-    profile.updated_at = now
+        stored.json_mode = result.json_mode
+    stored.updated_at = now
     return result
