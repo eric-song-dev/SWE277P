@@ -104,6 +104,15 @@ export const gridSx: SxProps<Theme> = {
     color: tokens.navy,
     fontWeight: 600,
   },
+  // Inset, because the grid clips outlines drawn outside its cells.
+  "& .MuiDataGrid-columnHeader:focus, & .MuiDataGrid-columnHeader:focus-within": {
+    outline: `2px solid ${tokens.primary}`,
+    outlineOffset: "-2px",
+  },
+  "& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within": {
+    outline: `2px solid ${tokens.primary}`,
+    outlineOffset: "-2px",
+  },
   "& .MuiDataGrid-row, & .MuiDataGrid-cell": {
     borderColor: tokens.divider,
   },

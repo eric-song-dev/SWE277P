@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { theme, tokens } from "./theme";
+import { gridSx, theme, tokens } from "./theme";
 
 describe("theme", () => {
   it("uses the official UCI palette tokens", () => {
@@ -26,5 +26,15 @@ describe("theme", () => {
     const text = JSON.stringify(theme).toLowerCase();
     expect(text).not.toContain("#0064a4");
     expect(text).not.toContain("#ffd200");
+  });
+
+  it("rings focused grid headers and cells with an inset 2 px primary outline", () => {
+    const sx = gridSx as Record<string, Record<string, string>>;
+    for (const part of ["columnHeader", "cell"]) {
+      expect(sx[`& .MuiDataGrid-${part}:focus, & .MuiDataGrid-${part}:focus-within`]).toMatchObject({
+        outline: `2px solid ${tokens.primary}`,
+        outlineOffset: "-2px",
+      });
+    }
   });
 });
