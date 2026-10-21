@@ -8,7 +8,9 @@ the benchmark scores the generated SQL's result, so no rows are ever sent to the
 reference SQL runs through the same guard and read-only role. The report (SQL and scores only,
 never result rows) goes to ``benchmark/reports/<YYYYMMDD-HHMM>-<profile>.md``.
 
-Exit codes: 0 done, 1 below ``--min-score``, 2 the benchmark could not run.
+Exit codes: 0 done, 1 below ``--min-score``, 2 the benchmark could not run (no sample data,
+unknown profile or question id, or any unexpected error; for an unexpected error only its
+type is printed, never its message, which could carry a URL or a key).
 """
 
 import argparse
@@ -308,15 +310,22 @@ def _render(outcomes: list[Outcome], profile: Profile, started: datetime, today:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
-    settings = get_settings()
-    started = datetime.now()
     try:
-        questions = _select(load_questions(), args.only)
-        model, profile = _load_profile(args.profile, settings)
-        references = {q["id"]: _reference(q) for q in questions}
+        return _main(args)
     except BenchmarkError as exc:
         print(str(exc), file=sys.stderr)
         return 2
+    except Exception as exc:  # noqa: BLE001 - type only: a message could carry a URL or a key
+        print(f"The benchmark could not run ({type(exc).__name__}).", file=sys.stderr)
+        return 2
+
+
+def _main(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    started = datetime.now()
+    questions = _select(load_questions(), args.only)
+    model, profile = _load_profile(args.profile, settings)
+    references = {q["id"]: _reference(q) for q in questions}
 
     print(f"Running {len(questions)} question(s) with profile {profile.name!r}", flush=True)
     outcomes = asyncio.run(_run_all(questions, references, model, profile, settings, args.today))

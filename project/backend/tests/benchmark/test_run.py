@@ -6,7 +6,7 @@ import logging
 import re
 
 import pytest
-from sqlalchemy import select, text
+from sqlalchemy import create_engine, select, text
 
 from app.chat.graph.prompts import ANALYZE_SYSTEM
 from app.config import get_settings
@@ -206,7 +206,7 @@ def test_default_today_is_fall_2026(loaded_samples, add_profile, reports, use_mo
     add_profile()
     model = ScriptedChatModel.default()
     use_model(model)
-    run.main(["--profile", "Demo Fake", "--only", "q06"])
+    assert run.main(["--profile", "Demo Fake", "--only", "q06"]) == 0
     assert "2026-11-02" in "\n".join(str(m.content) for m in model.calls[0])
 
 
@@ -239,3 +239,39 @@ def test_question_timeout_is_a_failure(
     assert run.main(["--profile", "Demo Fake", "--only", "q04"]) == 0
     q04 = section(only_report(reports), "q04")
     assert "FAIL" in q04 and "turn_timeout" in q04
+
+
+def test_unexpected_error_building_the_model_exits_2(
+    loaded_samples, add_profile, reports, monkeypatch, capsys, caplog
+):
+    add_profile(name="OpenAI Test", preset="openai", key=KEY)
+
+    def broken(profile, api_key, *, settings, http_async_client=None):
+        raise RuntimeError(f"cannot build a client for {api_key}")
+
+    monkeypatch.setattr(run, "build_chat_model", broken)
+    assert run.main(["--profile", "OpenAI Test"]) == 2  # not 1, which means "below --min-score"
+    out = capsys.readouterr()
+    assert "The benchmark could not run (RuntimeError)." in out.err
+    for text_ in (out.out, out.err, caplog.text):
+        assert KEY not in text_ and "SECRET" not in text_
+    assert not reports.exists()
+
+
+def test_database_connection_error_exits_2(reports, monkeypatch, capsys, caplog):
+    caplog.set_level(logging.DEBUG)  # psycopg logs connection failures at DEBUG
+    password = "pw-never-shown-9876"
+    unreachable = create_engine(
+        f"postgresql+psycopg://bench:{password}@127.0.0.1:1/nowhere",
+        connect_args={"connect_timeout": 2},
+    )
+    monkeypatch.setattr(run, "get_app_engine", lambda: unreachable)
+    try:
+        assert run.main(["--profile", "Demo Fake"]) == 2
+    finally:
+        unreachable.dispose()
+    out = capsys.readouterr()
+    assert "The benchmark could not run (OperationalError)." in out.err
+    for text_ in (out.out, out.err, caplog.text):
+        assert password not in text_
+    assert not reports.exists()
