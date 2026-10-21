@@ -427,3 +427,64 @@ def test_unreadable_saved_key_gives_409_on_test_route(client, db_session):
     pid = _profile_with_unreadable_key(client, db_session)
     res = client.post(f"/api/llm-profiles/{pid}/test")
     assert res.status_code == 409 and res.json()["error"]["code"] == "profile_missing_key"
+
+
+def _stream_turn(cid, user, fake_profile, **body):
+    from app.chat.schemas import MessageIn
+
+    return service.run_turn(
+        cid, MessageIn(question=FAKE_Q1, llm_profile_id=fake_profile, **body), user
+    )
+
+
+def _only_turn(db_session) -> ChatTurn:
+    db_session.expire_all()
+    return db_session.scalars(select(ChatTurn)).one()
+
+
+async def test_disconnect_mid_stream_records_partial_turn(
+    client, fake_profile, user, db_session, monkeypatch
+):
+    import asyncio
+
+    slow_model(monkeypatch, only_analysis=True)
+    cid = new_conversation(client)
+    gen = _stream_turn(cid, user, fake_profile, share_results=True)
+    seen: list[str] = []
+
+    async def consume():
+        async for chunk in gen:
+            seen.append(chunk)
+
+    task = asyncio.create_task(consume())
+    while not any('"analyzing"' in c for c in seen):
+        await asyncio.sleep(0.01)
+    task.cancel()  # the client went away
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    turn = _only_turn(db_session)
+    assert turn.kind == "error" and turn.error_code == "client_disconnected"
+    assert turn.sql and turn.row_count == 1 and turn.results_shared is True
+    assert not any("event: error" in c or "event: done" in c for c in seen)
+
+
+async def test_disconnect_at_a_yield_records_one_turn(client, fake_profile, user, db_session):
+    cid = new_conversation(client)
+    gen = _stream_turn(cid, user, fake_profile)
+    await anext(gen)  # the first event; the generator is now suspended at its yield
+    await gen.aclose()
+    turn = _only_turn(db_session)
+    assert turn.error_code == "client_disconnected"
+
+
+async def test_disconnect_after_done_adds_no_second_turn(client, fake_profile, user, db_session):
+    cid = new_conversation(client)
+    gen = _stream_turn(cid, user, fake_profile)
+    chunks = []
+    async for chunk in gen:
+        chunks.append(chunk)
+        if chunk.startswith("event: done"):
+            break
+    await gen.aclose()
+    turn = _only_turn(db_session)
+    assert turn.kind == "answer" and turn.error_code is None

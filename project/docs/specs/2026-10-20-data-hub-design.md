@@ -329,6 +329,10 @@ Details settled in S3:
 - A missing conversation is a 404 `conversation_not_found` before the stream starts. A question over 2,000 characters is a 422.
 - Rerun and export accept only `kind = answer` turns with SQL. Other turns get 409 `turn_has_no_result`.
 
+Details settled in S4:
+
+- If the client disconnects mid-stream, the turn is still logged once, with `kind = error` and `error_code = "client_disconnected"` (what already happened: SQL, row count, attempts, `results_shared` erring toward true). This code is logged only and never sent, since no one is listening. A disconnect after `done` adds nothing.
+
 Other chat endpoints:
 
 - `POST /api/conversations` (title = first question, truncated)

@@ -46,6 +46,10 @@ TIMEOUT_ERROR = {
     "code": "turn_timeout",
     "message": "The question took too long to answer. Try a simpler question.",
 }
+DISCONNECT_ERROR = {  # logged only, never sent: nobody is listening
+    "code": "client_disconnected",
+    "message": "The client disconnected before the answer finished.",
+}
 
 
 def create_conversation(session: Session, user: CurrentUser) -> Conversation:
@@ -249,73 +253,85 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
             return None
 
     failure: dict | None = None
-    stream = None
     try:
+        stream = None
         try:
-            prepared = await asyncio.to_thread(_prepare, conversation_id, body.llm_profile_id)
-        except HubError as exc:
-            if body.llm_profile_id is not None and exc.code == "profile_missing_key":
-                profile_id = body.llm_profile_id
-            failure = {"code": exc.code, "message": exc.message}
-        else:
-            profile_id = prepared.profile_id
-            preset = prepared.preset
-            model_name = prepared.model_name
-            transient = LlmProfile(  # not attached to a session; only the fields the factory reads
-                preset=prepared.preset, base_url=prepared.base_url, model=prepared.model_name
-            )
-            model = build_chat_model(transient, prepared.api_key, settings=settings)
-            shared = prepared.share and body.share_results
-            deps = ChatDeps(
-                model=model,
-                json_mode=prepared.json_mode,
-                share_results=shared,
-                settings=settings,
-                chatbot_engine=get_chatbot_engine(),
-                record_turn=record,
-            )
-            stream = build_chat_graph(deps).astream(
-                {"question": body.question, "history": prepared.history},
-                stream_mode=["custom", "values"],
-            )
-            while True:
-                # The deadline covers only the wait for the next chunk, never a yield, so it
-                # cannot cancel Starlette's send.
-                try:
-                    async with asyncio.timeout_at(deadline) as scope:
-                        mode, payload = await anext(stream)
-                except StopAsyncIteration:
-                    break
-                except TimeoutError:
-                    if not scope.expired():  # some other timeout raised inside the graph
-                        raise
-                    failure = TIMEOUT_ERROR
-                    break
-                if mode == "values":
-                    last_state = payload
-                    continue
-                name = payload["event"]
-                if name == "step":
-                    attempts = max(attempts, payload["data"]["attempt"])
-                    analyzing = analyzing or payload["data"]["name"] == "analyzing"
-                error_sent = error_sent or name == "error"
-                done_sent = done_sent or name == "done"
-                yield format_sse(name, payload["data"])
-    except Exception as exc:  # noqa: BLE001 - CancelledError is a BaseException and propagates
-        # Type only: the message could carry row values or a key.
-        logger.error("Chat turn failed (%s)", type(exc).__name__, exc_info=False)
-        failure = INTERNAL_ERROR
-    finally:
-        if stream is not None:
-            with contextlib.suppress(Exception):
-                await stream.aclose()
+            try:
+                prepared = await asyncio.to_thread(_prepare, conversation_id, body.llm_profile_id)
+            except HubError as exc:
+                if body.llm_profile_id is not None and exc.code == "profile_missing_key":
+                    profile_id = body.llm_profile_id
+                failure = {"code": exc.code, "message": exc.message}
+            else:
+                profile_id = prepared.profile_id
+                preset = prepared.preset
+                model_name = prepared.model_name
+                transient = (
+                    LlmProfile(  # not attached to a session; only the fields the factory reads
+                        preset=prepared.preset,
+                        base_url=prepared.base_url,
+                        model=prepared.model_name,
+                    )
+                )
+                model = build_chat_model(transient, prepared.api_key, settings=settings)
+                shared = prepared.share and body.share_results
+                deps = ChatDeps(
+                    model=model,
+                    json_mode=prepared.json_mode,
+                    share_results=shared,
+                    settings=settings,
+                    chatbot_engine=get_chatbot_engine(),
+                    record_turn=record,
+                )
+                stream = build_chat_graph(deps).astream(
+                    {"question": body.question, "history": prepared.history},
+                    stream_mode=["custom", "values"],
+                )
+                while True:
+                    # The deadline covers only the wait for the next chunk, never a yield, so it
+                    # cannot cancel Starlette's send.
+                    try:
+                        async with asyncio.timeout_at(deadline) as scope:
+                            mode, payload = await anext(stream)
+                    except StopAsyncIteration:
+                        break
+                    except TimeoutError:
+                        if not scope.expired():  # some other timeout raised inside the graph
+                            raise
+                        failure = TIMEOUT_ERROR
+                        break
+                    if mode == "values":
+                        last_state = payload
+                        continue
+                    name = payload["event"]
+                    if name == "step":
+                        attempts = max(attempts, payload["data"]["attempt"])
+                        analyzing = analyzing or payload["data"]["name"] == "analyzing"
+                    error_sent = error_sent or name == "error"
+                    done_sent = done_sent or name == "done"
+                    yield format_sse(name, payload["data"])
+        except Exception as exc:  # noqa: BLE001 - CancelledError is a BaseException and propagates
+            # Type only: the message could carry row values or a key.
+            logger.error("Chat turn failed (%s)", type(exc).__name__, exc_info=False)
+            failure = INTERNAL_ERROR
+        finally:
+            if stream is not None:
+                with contextlib.suppress(Exception):
+                    await stream.aclose()
 
-    if done_sent:
-        return
-    if failure is not None and not error_sent:
-        yield format_sse("error", failure)
-    turn_id = await final_turn_id(failure)
-    yield format_sse("done", {"turn_id": turn_id})
+        if done_sent:
+            return
+        if failure is not None and not error_sent:
+            yield format_sse("error", failure)
+        turn_id = await final_turn_id(failure)
+        yield format_sse("done", {"turn_id": turn_id})
+    except (asyncio.CancelledError, GeneratorExit):
+        # The client is gone (Starlette cancelled the stream, or closed it at a yield). Record
+        # what happened, shielded so this very cancellation cannot abort the write, then let it
+        # propagate. Nothing is yielded: there is no one to send to.
+        if not done_sent:
+            await final_turn_id(failure or DISCONNECT_ERROR)
+        raise
 
 
 def _get_turn(session: Session, turn_id: int) -> ChatTurn:
