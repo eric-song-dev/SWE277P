@@ -73,6 +73,8 @@ function savedTurn(overrides: Partial<TurnOut>): TurnOut {
 }
 
 const RESULT: QueryResultOut = { columns: ["people"], rows: [[38]], row_count: 1, truncated: false };
+const LIVE_SQL = "SELECT count(DISTINCT person_key) AS people FROM attendance_view";
+const FAILED_SQL = "SELECT people FROM attendance_view WHERE term = 'Fall 2026'";
 
 let profiles: LlmProfileOut[];
 let details: Record<number, ConversationDetail | ApiError>;
@@ -214,6 +216,52 @@ describe("ChatPage", () => {
     expect(screen.getAllByText("people: 38")).toHaveLength(2); // the earlier turn's and this one's
     expect(screen.getAllByRole("grid")).toHaveLength(1);
     expect(screen.getAllByRole("button", { name: "Show results" })).toHaveLength(1); // the earlier turn only
+  });
+
+  it("keeps the live card's state when its saved copy arrives", async () => {
+    // An earlier turn, so the live turn is seq 2 both before and after the refetch.
+    details[1] = detail(1, [savedTurn({ id: 8, seq: 1, question: "An earlier question" })]);
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    await screen.findByText("An earlier question");
+    await ask(user, "How many came?");
+    await s.emit({ event: "sql", data: { sql: LIVE_SQL, interpretation: "Count attendees", assumptions: [] } });
+    await user.click(screen.getAllByRole("button", { name: "SQL" })[1]);
+    expect(await screen.findByText(LIVE_SQL)).toBeVisible();
+    await s.emit({ event: "result", data: RESULT });
+    // The earlier turn's text changes only so the test can see that the refetch has rendered.
+    details[1] = detail(1, [
+      savedTurn({ id: 8, seq: 1, question: "An earlier question", analysis_text: "Refetched" }),
+      savedTurn({ id: 9, seq: 2, question: "How many came?" }),
+    ]);
+    await s.emit({ event: "done", data: { turn_id: 9 } });
+    await s.finish();
+    expect(await screen.findByText("Refetched")).toBeInTheDocument();
+    expect(screen.getByText(LIVE_SQL)).toBeVisible(); // the accordion is still open: no remount
+  });
+
+  it("shows the SQL of a saved failed turn", async () => {
+    details[1] = detail(1, [
+      savedTurn({ id: 6, kind: "error", sql: FAILED_SQL, row_count: null, error_code: "query_failed", analysis_text: null }),
+    ]);
+    const { user } = renderPage("/chat/1");
+    expect(await screen.findByText("This question could not be answered (query_failed).")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "SQL" }));
+    expect(await screen.findByText(FAILED_SQL)).toBeVisible();
+  });
+
+  it("keeps showing the SQL when a live turn fails after it", async () => {
+    const s = pendingStream();
+    const { user } = renderPage("/chat/1");
+    await ask(user, "How many came?");
+    await s.emit({ event: "sql", data: { sql: FAILED_SQL, interpretation: "Count attendees", assumptions: [] } });
+    await s.emit({ event: "error", data: { code: "query_failed", message: "The query failed to run." } });
+    await s.emit({ event: "done", data: { turn_id: null } });
+    await s.finish();
+    expect(screen.getByText("The query failed to run.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "SQL" }));
+    expect(await screen.findByText(FAILED_SQL)).toBeVisible();
   });
 
   it("shows saved turns: answers re-run on demand, clarifications, and errors with Retry", async () => {

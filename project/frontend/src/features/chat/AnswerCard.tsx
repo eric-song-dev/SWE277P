@@ -1,6 +1,3 @@
-import Accordion from "@mui/material/Accordion";
-import AccordionDetails from "@mui/material/AccordionDetails";
-import AccordionSummary from "@mui/material/AccordionSummary";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -8,14 +5,13 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import DownloadIcon from "@mui/icons-material/Download";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useMutation } from "@tanstack/react-query";
 import { apiDownload } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
 import type { LiveTurn } from "./chatStream";
 import ResultGrid from "./ResultGrid";
+import SqlAccordion from "./SqlAccordion";
 import StepIndicator from "./StepIndicator";
 
 interface Props {
@@ -68,11 +64,6 @@ export default function AnswerCard({ turn, result, onShowResults, rerun, results
     mutationFn: (format: "xlsx" | "csv") => apiDownload(`/api/chat/turns/${v.id}/export?format=${format}`),
   });
 
-  function copySql() {
-    if (v.sql === null || !navigator.clipboard) return;
-    navigator.clipboard.writeText(v.sql).catch(() => {});
-  }
-
   return (
     <Card variant="outlined">
       <CardContent>
@@ -123,19 +114,7 @@ export default function AnswerCard({ turn, result, onShowResults, rerun, results
             </Box>
           )}
 
-          {v.sql !== null && (
-            <Accordion variant="outlined" disableGutters slotProps={{ transition: { unmountOnExit: true } }}>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>SQL</AccordionSummary>
-              <AccordionDetails>
-                <Box component="pre" sx={{ m: 0, mb: 1, whiteSpace: "pre-wrap", fontFamily: "monospace", fontSize: 13 }}>
-                  {v.sql}
-                </Box>
-                <Button size="small" startIcon={<ContentCopyIcon />} onClick={copySql}>
-                  Copy
-                </Button>
-              </AccordionDetails>
-            </Accordion>
-          )}
+          {v.sql !== null && <SqlAccordion sql={v.sql} />}
 
           {(rowCount !== null || v.id !== null) && (
             <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>

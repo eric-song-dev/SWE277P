@@ -9,6 +9,7 @@ import { apiGet } from "../../api/client";
 import type { QueryResultOut, TurnOut } from "../../api/types";
 import AnswerCard from "./AnswerCard";
 import type { LiveTurn } from "./chatStream";
+import SqlAccordion from "./SqlAccordion";
 
 interface Props {
   turns: TurnOut[];
@@ -21,19 +22,25 @@ interface Props {
 
 export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive, onResend }: Props) {
   const saved = [...turns].sort((a, b) => a.seq - b.seq);
-  // The live turn replaces its saved copy (it has the rows and the full error message).
-  const liveIsSaved = live !== null && saved.some((turn) => turn.id === live.turnId);
-  // Keyed by seq, so the live card keeps its state when its saved copy arrives at the same seq.
-  const nextSeq = (saved.at(-1)?.seq ?? 0) + 1;
+  // The live turn replaces its saved copy (it has the rows and the full error message), or
+  // comes last until that copy arrives. One list keyed by seq, so the live card keeps its state
+  // when it moves into its saved copy's place.
+  const items: { seq: number; turn: TurnOut | LiveTurn }[] = saved.map((turn) => ({
+    seq: turn.seq,
+    turn: live !== null && turn.id === live.turnId ? live : turn,
+  }));
+  if (live !== null && !items.some((item) => item.turn === live)) {
+    items.push({ seq: (saved.at(-1)?.seq ?? 0) + 1, turn: live });
+  }
 
   return (
     <Stack spacing={3}>
-      {saved.map((turn) =>
-        live !== null && turn.id === live.turnId ? (
-          <TurnItem key={turn.seq} turn={live} busy={busy} onRetry={onRetryLive} />
+      {items.map(({ seq, turn }) =>
+        "status" in turn ? (
+          <TurnItem key={seq} turn={turn} busy={busy} onRetry={onRetryLive} />
         ) : (
           <TurnItem
-            key={turn.seq}
+            key={seq}
             turn={turn}
             result={resultsByTurnId[turn.id]}
             busy={busy}
@@ -41,7 +48,6 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
           />
         ),
       )}
-      {live !== null && !liveIsSaved && <TurnItem key={nextSeq} turn={live} busy={busy} onRetry={onRetryLive} />}
     </Stack>
   );
 }
@@ -63,28 +69,35 @@ function TurnItem({
 
   let error: string | undefined;
   let clarification: string | null | undefined;
+  let sql: string | null | undefined;
   if ("status" in turn) {
     error = turn.status === "error" ? (turn.error?.message ?? "Something went wrong. Retry.") : undefined;
     clarification = turn.clarification;
+    sql = turn.sql?.sql;
   } else {
     // TurnOut keeps only the code, not the message.
     error = turn.kind === "error" ? `This question could not be answered (${turn.error_code}).` : undefined;
     clarification = turn.kind === "clarification" ? turn.clarification_question : undefined;
+    sql = turn.sql;
   }
 
   let answer: ReactNode;
   if (error) {
+    // A failed query is when the SQL matters most, so it stays visible.
     answer = (
-      <Alert
-        severity="error"
-        action={
-          <Button color="inherit" size="small" disabled={busy} onClick={onRetry}>
-            Retry
-          </Button>
-        }
-      >
-        {error}
-      </Alert>
+      <Stack spacing={1}>
+        <Alert
+          severity="error"
+          action={
+            <Button color="inherit" size="small" disabled={busy} onClick={onRetry}>
+              Retry
+            </Button>
+          }
+        >
+          {error}
+        </Alert>
+        {sql && <SqlAccordion sql={sql} />}
+      </Stack>
     );
   } else if (clarification) {
     answer = <Bubble from="assistant">{clarification}</Bubble>;
