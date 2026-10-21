@@ -12,6 +12,7 @@ import type { ImportFileOut } from "../../api/types";
 import { useImportHistory } from "../upload/useImports";
 
 const PLATFORMS: Record<string, string> = { campusgroups: "CampusGroups", twelvetwenty: "12twenty" };
+const STATUSES: Record<string, string> = { committed: "Committed", pending: "Pending" };
 
 const columns: GridColDef<ImportFileOut>[] = [
   { field: "file_name", headerName: "File", flex: 1.5, minWidth: 160 },
@@ -29,10 +30,13 @@ const columns: GridColDef<ImportFileOut>[] = [
   {
     field: "uploaded_at",
     headerName: "Uploaded at",
+    type: "dateTime",
     width: 180,
-    valueGetter: (_, row) => new Date(row.uploaded_at).toLocaleString(),
+    // A Date, so the column sorts by time; only the display is localized.
+    valueGetter: (_, row) => new Date(row.uploaded_at),
+    valueFormatter: (value: Date) => value.toLocaleString(),
   },
-  { field: "status", headerName: "Status", width: 110 },
+  { field: "status", headerName: "Status", width: 110, valueGetter: (_, row) => STATUSES[row.status] ?? row.status },
 ];
 
 export default function DatasetPage() {

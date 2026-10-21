@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -66,6 +66,35 @@ describe("DatasetPage", () => {
     expect(screen.getByText("12twenty")).toBeInTheDocument();
     expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
     expect(apiGet).toHaveBeenCalledWith("/api/imports");
+  });
+
+  it("shows the status in words", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    const statuses = screen
+      .getAllByRole("gridcell")
+      .filter((cell) => cell.getAttribute("data-field") === "status")
+      .map((cell) => cell.textContent);
+    expect(statuses).toEqual(["Committed", "Pending"]);
+  });
+
+  it("sorts Uploaded at by time, not by its text", async () => {
+    // As text, "10/10/2026" sorts before "10/8/2026" and "10/9/2026".
+    vi.mocked(apiGet).mockResolvedValueOnce([
+      { ...imports[0], uploaded_at: "2026-10-09T17:30:00Z" },
+      { ...imports[1], uploaded_at: "2026-10-08T17:30:00Z" },
+      { ...imports[0], id: 3, file_name: "panel.csv", uploaded_at: "2026-10-10T17:30:00Z" },
+    ]);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    await userEvent.click(within(screen.getByRole("columnheader", { name: "Uploaded at" })).getByText("Uploaded at"));
+    const files = screen
+      .getAllByRole("gridcell")
+      .filter((cell) => cell.getAttribute("data-field") === "file_name")
+      .map((cell) => cell.textContent);
+    expect(files).toEqual(["mixer.xlsx", "career-fair.csv", "panel.csv"]);
+    expect(screen.getByText(new Date("2026-10-08T17:30:00Z").toLocaleString())).toBeInTheDocument();
   });
 
   it("downloads the full dataset in either format", async () => {
