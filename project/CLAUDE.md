@@ -146,6 +146,7 @@ Run from `project/` unless noted. Copy `.env.example` to `.env` and fill it in f
 # Whole app (nginx + api + db) at http://127.0.0.1:8080
 docker compose up --build -d
 docker compose down                      # keeps the hub-pgdata volume
+docker compose exec api python -m app.samples   # load the synthetic samples into the running stack
 
 # Dev database only (published on 127.0.0.1:5432)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
