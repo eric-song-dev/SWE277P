@@ -17,8 +17,11 @@ def _needs_guard(value: object) -> bool:
     return isinstance(value, str) and value.startswith(_TRIGGERS)
 
 
-def guard_cell(value: object) -> object:
-    """Neutralise spreadsheet formula injection: mark trigger-leading strings as text."""
+def guard_csv_cell(value: object) -> object:
+    """Neutralise formula injection in a CSV cell by prefixing a ``'`` to trigger-leading strings.
+
+    CSV-only. XLSX does not use a prefix: ``to_xlsx`` marks such cells ``data_type = "s"``.
+    """
     return f"'{value}" if _needs_guard(value) else value
 
 
@@ -46,7 +49,7 @@ def _csv_value(value: object) -> object:
         return ""
     if isinstance(value, date | datetime):
         return value.isoformat()
-    return guard_cell(value)
+    return guard_csv_cell(value)
 
 
 def to_csv(columns: list[str], rows: Iterable[Sequence[object]]) -> bytes:

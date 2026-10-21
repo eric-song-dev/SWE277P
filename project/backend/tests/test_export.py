@@ -5,7 +5,7 @@ import openpyxl
 import pytest
 
 from app.dataset.service import GPSRC_HEADERS
-from app.export.writers import export_filename, export_response, guard_cell, to_csv, to_xlsx
+from app.export.writers import export_filename, export_response, guard_csv_cell, to_csv, to_xlsx
 
 
 def test_formula_value_is_text_in_xlsx():
@@ -19,14 +19,14 @@ def test_formula_value_prefixed_in_csv():
 
 
 def test_plain_values_untouched():
-    assert guard_cell("Biology") == "Biology" and guard_cell(5) == 5
-    assert guard_cell(None) is None and guard_cell(date(2026, 1, 2)) == date(2026, 1, 2)
+    assert guard_csv_cell("Biology") == "Biology" and guard_csv_cell(5) == 5
+    assert guard_csv_cell(None) is None and guard_csv_cell(date(2026, 1, 2)) == date(2026, 1, 2)
 
 
 @pytest.mark.parametrize("trigger", ["=", "+", "-", "@", "\t", "\r"])
-def test_guard_cell_each_trigger(trigger):
-    assert guard_cell(f"{trigger}x") == f"'{trigger}x"
-    assert guard_cell(f"a{trigger}") == f"a{trigger}"
+def test_guard_csv_cell_each_trigger(trigger):
+    assert guard_csv_cell(f"{trigger}x") == f"'{trigger}x"
+    assert guard_csv_cell(f"a{trigger}") == f"a{trigger}"
 
 
 def test_xlsx_none_and_dates():
