@@ -3,6 +3,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
+import SettingsPage from "../features/settings/SettingsPage";
 import AuthGate from "./AuthGate";
 import PlaceholderPage from "./PlaceholderPage";
 import { theme } from "./theme";
@@ -18,7 +19,7 @@ const router = createBrowserRouter([
       { path: "chat", element: <PlaceholderPage title="Chat" /> },
       { path: "upload", element: <PlaceholderPage title="Upload" /> },
       { path: "dataset", element: <PlaceholderPage title="Dataset" /> },
-      { path: "settings", element: <PlaceholderPage title="Settings" /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
 ]);
