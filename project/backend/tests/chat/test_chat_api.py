@@ -389,8 +389,7 @@ async def test_orphaned_failed_write_logs_no_values(
             pass
 
     task = asyncio.create_task(consume())
-    while not started.is_set():
-        await asyncio.sleep(0.01)
+    await _until(started.is_set, "the failing write never started")
     task.cancel()  # a client disconnect
     with pytest.raises(asyncio.CancelledError):
         await task
@@ -437,6 +436,17 @@ def _stream_turn(cid, user, fake_profile, **body):
     )
 
 
+async def _until(condition, message: str, timeout_s: float = 10.0) -> None:
+    """Poll `condition` until it holds; fail with `message` instead of looping forever."""
+    import asyncio
+    import time
+
+    deadline = time.monotonic() + timeout_s
+    while not condition():
+        assert time.monotonic() < deadline, message
+        await asyncio.sleep(0.01)
+
+
 def _only_turn(db_session) -> ChatTurn:
     db_session.expire_all()
     return db_session.scalars(select(ChatTurn)).one()
@@ -457,8 +467,7 @@ async def test_disconnect_mid_stream_records_partial_turn(
             seen.append(chunk)
 
     task = asyncio.create_task(consume())
-    while not any('"analyzing"' in c for c in seen):
-        await asyncio.sleep(0.01)
+    await _until(lambda: any('"analyzing"' in c for c in seen), "no analyzing step was streamed")
     task.cancel()  # the client went away
     with pytest.raises(asyncio.CancelledError):
         await task
@@ -526,3 +535,37 @@ def test_whitespace_only_question_is_422_and_question_is_stripped(client, fake_p
     res = client.post(url, json={"question": "x" * 2001 + "  "})
     assert res.status_code == 422
     assert turns(client, cid)[0]["question"] == "x" * 2000
+
+
+async def test_disconnect_with_a_redelivered_cancel_still_records_one_turn(
+    client, fake_profile, user, db_session, monkeypatch
+):
+    """anyio (which Starlette cancels with) re-delivers a cancellation at every await inside the
+    scope, not once like Task.cancel(): the shielded write must survive that."""
+    import anyio
+
+    slow_model(monkeypatch, only_analysis=True)
+    cid = new_conversation(client)
+    gen = _stream_turn(cid, user, fake_profile, share_results=True)
+    seen: list[str] = []
+
+    async def consume():
+        async for chunk in gen:
+            seen.append(chunk)
+
+    with anyio.CancelScope() as scope:
+        async with anyio.create_task_group() as tg:
+            tg.start_soon(consume)
+            await _until(lambda: any('"analyzing"' in c for c in seen), "no analyzing step")
+            scope.cancel()  # every later checkpoint in the scope raises again
+    assert scope.cancel_called
+    await _until(lambda: _turn_count(db_session) == 1, "the disconnected turn was never recorded")
+    turn = _only_turn(db_session)
+    assert turn.kind == "error" and turn.error_code == "client_disconnected"
+    assert turn.sql and turn.results_shared is True
+    assert not any("event: error" in c or "event: done" in c for c in seen)
+
+
+def _turn_count(db_session) -> int:
+    db_session.expire_all()
+    return len(db_session.scalars(select(ChatTurn)).all())
