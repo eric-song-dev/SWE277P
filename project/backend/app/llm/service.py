@@ -1,6 +1,7 @@
 import logging
 from datetime import UTC, datetime
 
+from cryptography.fernet import InvalidToken
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
@@ -186,7 +187,15 @@ def get_profile_with_key(session: Session, profile_id: int | None) -> tuple[LlmP
             "This AI profile has no API key. Add one in Settings.",
             status_code=409,
         )
-    return profile, decrypt_api_key(profile.api_key_ciphertext)
+    try:
+        return profile, decrypt_api_key(profile.api_key_ciphertext)
+    except InvalidToken:
+        raise HubError(
+            "profile_missing_key",
+            "The saved API key can't be read (the app's secret key changed). "
+            "Re-enter the API key in Settings.",
+            status_code=409,
+        ) from None
 
 
 def seed_profile_from_env(session: Session, settings: Settings) -> None:

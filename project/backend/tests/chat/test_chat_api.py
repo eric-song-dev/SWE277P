@@ -399,3 +399,31 @@ async def test_orphaned_failed_write_logs_no_values(
     await asyncio.sleep(0)
     assert "never retrieved" not in caplog.text and "SECRET" not in caplog.text
     assert "Recording the turn failed (RuntimeError)" in caplog.text
+
+
+def _profile_with_unreadable_key(client, db_session):
+    from cryptography.fernet import Fernet
+
+    from app.llm.models import LlmProfile
+
+    created = client.post(
+        "/api/llm-profiles",
+        json={"name": "Rotated", "preset": "openai", "model": "m", "api_key": "sk-test-1234567890"},
+    ).json()
+    row = db_session.get(LlmProfile, created["id"])
+    row.api_key_ciphertext = Fernet(Fernet.generate_key()).encrypt(b"sk-old")  # another secret key
+    db_session.commit()
+    return created["id"]
+
+
+def test_unreadable_saved_key_gives_error_event(client, db_session):
+    pid = _profile_with_unreadable_key(client, db_session)
+    err, turn = error_turn(client, new_conversation(client), llm_profile_id=pid)
+    assert err["code"] == "profile_missing_key" and "secret key changed" in err["message"]
+    assert turn["error_code"] == "profile_missing_key"
+
+
+def test_unreadable_saved_key_gives_409_on_test_route(client, db_session):
+    pid = _profile_with_unreadable_key(client, db_session)
+    res = client.post(f"/api/llm-profiles/{pid}/test")
+    assert res.status_code == 409 and res.json()["error"]["code"] == "profile_missing_key"
