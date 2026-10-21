@@ -46,3 +46,21 @@ def test_chatbot_ro_can_select_view(chatbot_engine):
 def test_chatbot_ro_cannot_touch_tables(chatbot_engine, sql):
     with chatbot_engine.connect() as c, pytest.raises(DBAPIError):
         c.execute(text(sql))
+
+
+CHATBOT_GRANTS = text(
+    """
+    SELECT c.relname, p.priv
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    CROSS JOIN unnest(ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE']) AS p(priv)
+    WHERE n.nspname = 'hub' AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
+      AND has_table_privilege('chatbot_ro', c.oid, p.priv)
+    ORDER BY c.relname, p.priv
+    """
+)
+
+
+def test_chatbot_ro_can_only_select_the_view(db_session):
+    """Covers every relation in schema hub, including tables added by later migrations."""
+    assert db_session.execute(CHATBOT_GRANTS).all() == [("attendance_view", "SELECT")]
