@@ -4,26 +4,28 @@ Only controlled values (event attributes and drop-down answers) and prior questi
 SQL reach the generate prompt; attendee row values never do (spec 13 item 4).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy import Engine, select, text
 from sqlalchemy.orm import Session
 
 from app.chat.models import ChatTurn
 
-MAX_EVENT_NAMES = 300
+MAX_EVENTS = 300
 
 
 @dataclass
 class ControlledValues:
     schools: list[str]
-    event_names: list[str]
+    event_names: list[str]  # names of the MAX_EVENTS most recent events (event_name + term)
     event_types: list[str]
     terms: list[str]
     academic_years: list[str]
     # A CampusGroups self-selection drop-down, so safe to send; the exact spelling matters
     # (Master’s Student uses U+2019).
     affiliations: list[str]
+    # event name -> the terms it was held in, oldest first; a recurring event keeps its name
+    event_terms: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -38,18 +40,19 @@ class TurnContext:
 
 # Column names are constants, never user input.
 _DISTINCT = "SELECT DISTINCT {col} FROM attendance_view WHERE {col} IS NOT NULL"
-# Most recent first: by term (year, then Winter < Spring < Summer < Fall), then by date.
-_RECENT_EVENT_NAMES = text(
+# One row per event (event_name + term), most recent first: by term (year, then
+# Winter < Spring < Summer < Fall), then by date.
+_RECENT_EVENTS = text(
     """
-    SELECT event_name FROM attendance_view
+    SELECT event_name, term,
+           split_part(term, ' ', 2)::int * 10
+           + CASE split_part(term, ' ', 1)
+               WHEN 'Winter' THEN 1 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 3 ELSE 4
+             END AS term_key
+    FROM attendance_view
     WHERE event_name IS NOT NULL
-    GROUP BY event_name
-    ORDER BY max(split_part(term, ' ', 2)::int * 10
-                 + CASE split_part(term, ' ', 1)
-                     WHEN 'Winter' THEN 1 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 3 ELSE 4
-                   END) DESC,
-             max(event_date) DESC NULLS LAST,
-             event_name
+    GROUP BY event_name, term
+    ORDER BY term_key DESC, max(event_date) DESC NULLS LAST, event_name
     LIMIT :n
     """
 )
@@ -62,13 +65,19 @@ def load_controlled_values(engine: Engine) -> ControlledValues:
         def distinct(col: str) -> list[str]:
             return sorted(conn.execute(text(_DISTINCT.format(col=col))).scalars())
 
+        events = conn.execute(_RECENT_EVENTS, {"n": MAX_EVENTS}).all()
+        keyed: dict[str, list[tuple[int, str]]] = {}
+        for name, term, term_key in events:
+            keyed.setdefault(name, []).append((term_key, term))
+        event_names = sorted(keyed)
         return ControlledValues(
             schools=distinct("school"),
-            event_names=sorted(conn.execute(_RECENT_EVENT_NAMES, {"n": MAX_EVENT_NAMES}).scalars()),
+            event_names=event_names,
             event_types=distinct("event_type"),
             terms=distinct("term"),
             academic_years=distinct("academic_year"),
             affiliations=distinct("affiliation"),
+            event_terms={name: [t for _, t in sorted(keyed[name])] for name in event_names},
         )
 
 

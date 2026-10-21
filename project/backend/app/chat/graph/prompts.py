@@ -11,7 +11,7 @@ from datetime import date
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from app.chat.context import MAX_EVENT_NAMES, ControlledValues, TurnContext
+from app.chat.context import MAX_EVENTS, ControlledValues, TurnContext
 from app.chat.executor import QueryResult, to_json_value
 from app.imports.normalize import academic_year, term_for_date
 
@@ -19,6 +19,12 @@ PROMPT_VERSION = "2026-10-29.2"  # bump on every prompt change
 
 REPAIR_PREFIX = "Your previous reply was rejected:"
 EXAMPLE_PREFIX = "Example question: "
+
+# ORDER BY expression for chronological terms (Winter < Spring < Summer < Fall within a year)
+TERM_ORDER = (
+    "split_part(term, ' ', 2)::int, CASE split_part(term, ' ', 1) WHEN 'Winter' THEN 1 "
+    "WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 3 ELSE 4 END"
+)
 
 VIEW_DESCRIPTION = """\
 attendance_view has one row per attendance record: one person at one event. Every row means \
@@ -33,7 +39,9 @@ Columns:
 - person_key (bigint): an internal ID for the person, the same across events and platforms \
 (people are linked by NetID, then by email). NULL for unlinked records, which had neither a \
 NetID nor an email (either platform). A linked person has at most one row per event.
-- event_name (text): the event's name. See the known values. Never NULL.
+- event_name (text): the event's name. See the known values. Never NULL. An event is \
+identified by event_name and term together: a recurring event (an annual one, say) has the \
+same name in every term it is held.
 - event_date (date): the day of the event. NULL when staff did not enter it, which is common \
 (12twenty exports never supply it).
 - term (text): the UCI quarter of the event, written like 'Fall 2026' (Winter, Spring, Summer or \
@@ -108,6 +116,9 @@ ILIKE, OR and CASE instead.
 - Give computed columns short snake_case names (AS unique_people, AS attendance_records).
 - Order the rows usefully: counts from highest to lowest, names alphabetically, terms \
 chronologically.
+- With SELECT DISTINCT, ORDER BY may use only selected columns; PostgreSQL rejects any other \
+ORDER BY expression. To sort by something that is not selected, such as the chronological term \
+order below, use GROUP BY instead of DISTINCT.
 - Add LIMIT only when the question asks for a number of rows (a top 5, say); the application \
 caps the rows itself.
 
@@ -142,12 +153,13 @@ COUNT(DISTINCT person_key).
 - People over several events (any event, a type of event, a term, a school and so on): \
 COUNT(DISTINCT person_key), because one person can attend many events.
 - Attendees of one event, or of each event: COUNT(*), because a person has at most one row per \
-event.
+event. For each event, GROUP BY event_name, term.
 - "Attendance", "attendance records", "total attendance", "turnout", "visits", "check-ins": \
 COUNT(*).
 - COUNT(DISTINCT person_key) does not count records with no NetID or email (person_key is \
 NULL), because they cannot be told apart.
-- Events: COUNT(DISTINCT event_name), per term when the same name recurs in several terms.
+- Events: COUNT(DISTINCT (event_name, term)), because a recurring event has the same name in \
+every term it is held.
 - Percentages: ROUND(100.0 * part / NULLIF(whole, 0), 1), counting the part and the whole the \
 same way. ROUND with a number of decimals needs a numeric value (100.0 * ... or ::numeric).
 
@@ -158,7 +170,9 @@ master's students, postdocs).
 - person_key is an internal number: use it to count, group and match people, but show names \
 and emails, never person_key.
 - To list people, select the columns asked for (by default first_name, last_name, email) with \
-SELECT DISTINCT so that each person appears once, ordered by last_name, first_name.
+SELECT DISTINCT so that each person appears once. Order them by selected columns only: \
+last_name, first_name when those are selected, otherwise the first selected column (ORDER BY \
+email).
 - When you group by person_key (for example to count the events each person attended), show \
 MIN(first_name) AS first_name, MIN(last_name) AS last_name, MIN(email) AS email, and leave out \
 rows where person_key IS NULL.
@@ -169,6 +183,10 @@ Matching values
 event (event_name ILIKE 'LinkedIn Info Session'), or a distinctive part of the name for a \
 series or a partial name (event_name ILIKE '%info session%'). Check the pattern against the \
 list so that it matches exactly the events meant.
+- The known values list the terms each event was held in. If the question names an event held \
+in more than one term and gives no term, use its latest listed term (AND term = '...') and say \
+so in assumptions, unless the question asks about every time it was held ("any", "all", \
+"ever", "each time").
 - A kind of event that matches an event_type ("fellowship events") means that event_type. \
 Words such as "virtual", "online", "in person" and "hybrid" mean modality.
 - Compare school, affiliation, event_type, modality, platform, term and academic_year with = or \
@@ -186,9 +204,8 @@ Grouping and ranking
 where that column is NULL unless the question is about missing values.
 - For "which ... the most" or "the fewest" questions, return every row tied for first place: \
 rank in a subquery with RANK() OVER (ORDER BY ...) and keep rank 1. Include the count.
-- Chronological order of terms: ORDER BY split_part(term, ' ', 2)::int, CASE \
-split_part(term, ' ', 1) WHEN 'Winter' THEN 1 WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 3 ELSE 4 \
-END.
+- Chronological order of terms: ORDER BY {term_order}. That expression is not a selected \
+column, so list terms with GROUP BY term (or GROUP BY event_name, term), not SELECT DISTINCT.
 
 Clarifying
 - Ask (kind "clarify") only when the readings you are choosing between would give materially \
@@ -246,11 +263,6 @@ def _draft(
     return json.dumps(reply, ensure_ascii=False)
 
 
-_TERM_ORDER = (
-    "split_part(term, ' ', 2)::int, CASE split_part(term, ' ', 1) WHEN 'Winter' THEN 1 "
-    "WHEN 'Spring' THEN 2 WHEN 'Summer' THEN 3 ELSE 4 END"
-)
-
 # (question, reply) exchanges, disjoint from the benchmark questions. They use only controlled
 # values, never attendee values. The last two form one follow-up example.
 FEW_SHOT: list[tuple[str, str]] = [
@@ -283,8 +295,8 @@ FEW_SHOT: list[tuple[str, str]] = [
         "How many events were held in each term?",
         _draft(
             "sql",
-            sql="SELECT term, COUNT(DISTINCT event_name) AS events FROM attendance_view "
-            f"GROUP BY term ORDER BY {_TERM_ORDER}",
+            sql="SELECT term, COUNT(DISTINCT (event_name, term)) AS events FROM attendance_view "
+            f"GROUP BY term ORDER BY {TERM_ORDER}",
             interpretation="The number of events in each term, in chronological order.",
             assumptions=["Only events with at least one attendance record are counted."],
         ),
@@ -323,17 +335,17 @@ FEW_SHOT: list[tuple[str, str]] = [
         "Which events were virtual?",
         _draft(
             "sql",
-            sql="SELECT DISTINCT event_name FROM attendance_view WHERE modality = 'Virtual' "
-            "ORDER BY event_name",
-            interpretation="The events held virtually.",
+            sql="SELECT event_name, term FROM attendance_view WHERE modality = 'Virtual' "
+            f"GROUP BY event_name, term ORDER BY {TERM_ORDER}, event_name",
+            interpretation="The events held virtually, with their terms.",
         ),
     ),
     (
         "Of those, which had more than 30 attendees?",
         _draft(
             "sql",
-            sql="SELECT event_name, COUNT(*) AS attendees FROM attendance_view "
-            "WHERE modality = 'Virtual' GROUP BY event_name HAVING COUNT(*) > 30 "
+            sql="SELECT event_name, term, COUNT(*) AS attendees FROM attendance_view "
+            "WHERE modality = 'Virtual' GROUP BY event_name, term HAVING COUNT(*) > 30 "
             "ORDER BY attendees DESC, event_name",
             interpretation="The virtual events with more than 30 attendees, with their counts.",
             assumptions=["Those refers to the virtual events from the previous question."],
@@ -346,19 +358,31 @@ def _literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+def _render_event(name: str, terms: list[str]) -> str:
+    held_in = f" (held in {', '.join(_literal(t) for t in terms)})" if terms else ""
+    return _literal(name) + held_in
+
+
 def _render_controlled(cv: ControlledValues) -> str:
+    events = [_render_event(n, cv.event_terms.get(n, [])) for n in cv.event_names]
     sections = (
-        ("school", cv.schools),
-        (f"event_name (up to the {MAX_EVENT_NAMES} most recent events)", cv.event_names),
-        ("event_type", cv.event_types),
-        ("term", cv.terms),
-        ("academic_year", cv.academic_years),
-        ("affiliation", cv.affiliations),
+        ("school", [_literal(v) for v in cv.schools]),
+        (
+            (
+                f"event_name, with the terms each was held in, oldest first (up to the {MAX_EVENTS} "
+                "most recent events)"
+            ),
+            events,
+        ),
+        ("event_type", [_literal(v) for v in cv.event_types]),
+        ("term", [_literal(v) for v in cv.terms]),
+        ("academic_year", [_literal(v) for v in cv.academic_years]),
+        ("affiliation", [_literal(v) for v in cv.affiliations]),
     )
     lines: list[str] = []
-    for label, values in sections:
+    for label, rendered in sections:
         lines.append(f"{label}:")
-        lines.extend([f"  {_literal(v)}" for v in values] or ["  (none yet)"])
+        lines.extend([f"  {r}" for r in rendered] or ["  (none yet)"])
     return "\n".join(lines)
 
 
@@ -400,6 +424,7 @@ def build_generate_messages(
         today=today.isoformat(),
         current_term=term,
         academic_year=academic_year(term),
+        term_order=TERM_ORDER,
     )
     msgs: list[BaseMessage] = [SystemMessage(system)]
     for example_question, reply in FEW_SHOT:

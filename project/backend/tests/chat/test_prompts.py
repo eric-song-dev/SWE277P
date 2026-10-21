@@ -3,6 +3,7 @@ import re
 from datetime import date
 from decimal import Decimal
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from sqlalchemy import text
 
@@ -19,6 +20,7 @@ from app.chat.graph.prompts import (
     EXAMPLE_PREFIX,
     FEW_SHOT,
     REPAIR_PREFIX,
+    TERM_ORDER,
     VIEW_DESCRIPTION,
     build_analyze_messages,
     build_generate_messages,
@@ -189,6 +191,91 @@ def test_scripted_fake_model_still_matches_the_question():
     assert model.invoke(analyze).content == "38 unique people attended the October Bagel Breakfast."
 
 
+# --- events and SQL shapes the prompt recommends ------------------------------------------
+
+
+def test_events_are_identified_by_name_and_term():
+    event_line = re.search(r"^- event_name .*$", VIEW_DESCRIPTION, re.MULTILINE).group(0)
+    assert "term" in event_line
+    system = build_generate_messages("q", EMPTY_CV, [], TODAY, [])[0].content
+    assert "COUNT(DISTINCT (event_name, term))" in system
+    assert "COUNT(DISTINCT event_name)" not in system
+    assert "latest" in system  # a named event without a term means its latest term
+    for _question, reply in FEW_SHOT:
+        sql = json.loads(reply)["sql"]
+        assert "COUNT(DISTINCT event_name)" not in sql
+        if "GROUP BY event_name" in sql:
+            assert "GROUP BY event_name, term" in sql
+
+
+def test_known_events_rendered_with_their_terms():
+    cv = ControlledValues(
+        [], ["Annual Mixer", "One-off Talk"], [], [], [], [],
+        event_terms={"Annual Mixer": ["Winter 2026", "Fall 2026"], "One-off Talk": ["Fall 2026"]},
+    )  # fmt: skip
+    system = build_generate_messages("q", cv, [], TODAY, [])[0].content
+    assert "'Annual Mixer' (held in 'Winter 2026', 'Fall 2026')" in system
+    assert "'One-off Talk' (held in 'Fall 2026')" in system
+
+
+def test_prompt_states_distinct_order_by_rule():
+    system = build_generate_messages("q", EMPTY_CV, [], TODAY, [])[0].content
+    assert "With SELECT DISTINCT, ORDER BY may use only selected columns" in system
+    assert TERM_ORDER in system and "GROUP BY term" in system
+
+
+# One query per pattern the prompt recommends; each must pass the guard and run.
+PROMPT_SQL_SHAPES = [
+    # people lists: SELECT DISTINCT, ordered by the selected columns only
+    "SELECT DISTINCT email FROM attendance_view WHERE email IS NOT NULL ORDER BY email",
+    (
+        "SELECT DISTINCT first_name, last_name, email FROM attendance_view "
+        "ORDER BY last_name, first_name"
+    ),
+    # chronological terms: GROUP BY, because the ORDER BY expression is not a selected column
+    f"SELECT term FROM attendance_view GROUP BY term ORDER BY {TERM_ORDER}",
+    (
+        f"SELECT event_name, term FROM attendance_view GROUP BY event_name, term "
+        f"ORDER BY {TERM_ORDER}, event_name"
+    ),
+    # an event is event_name + term
+    "SELECT COUNT(DISTINCT (event_name, term)) AS events FROM attendance_view",
+    (
+        "SELECT event_name, term, COUNT(*) AS attendees FROM attendance_view "
+        "GROUP BY event_name, term ORDER BY attendees DESC, event_name"
+    ),
+    (
+        "SELECT COUNT(*) AS attendees FROM attendance_view "
+        "WHERE event_name ILIKE 'LinkedIn Info Session' AND term = 'Fall 2026'"
+    ),
+    # per person
+    (
+        "SELECT MIN(first_name) AS first_name, MIN(last_name) AS last_name, MIN(email) AS email, "
+        "COUNT(*) AS events FROM attendance_view WHERE person_key IS NOT NULL GROUP BY person_key "
+        "ORDER BY events DESC, last_name, first_name"
+    ),
+    # every row tied for first place
+    (
+        "SELECT school, unique_attendees FROM (SELECT school, COUNT(DISTINCT person_key) AS "
+        "unique_attendees, RANK() OVER (ORDER BY COUNT(DISTINCT person_key) DESC) AS rnk "
+        "FROM attendance_view WHERE school IS NOT NULL GROUP BY school) AS ranked WHERE rnk = 1"
+    ),
+    # percentages, calendar years, dates
+    (
+        "SELECT ROUND(100.0 * COUNT(*) FILTER (WHERE affiliation = 'Postdoc') / NULLIF(COUNT(*), 0), "
+        "1) AS pct FROM attendance_view"
+    ),
+    "SELECT COUNT(*) AS n FROM attendance_view WHERE term LIKE '% 2026'",
+    "SELECT COUNT(*) AS n FROM attendance_view WHERE event_date >= DATE '2026-01-31'",
+]
+
+
+@pytest.mark.parametrize("sql", PROMPT_SQL_SHAPES)
+def test_prompt_sql_shapes_run(sql, loaded_samples, chatbot_engine):
+    result = run_readonly(guard_sql(sql, limit=1001).sql, max_rows=1000, engine=chatbot_engine)
+    assert result.row_count > 0
+
+
 # --- few-shot ------------------------------------------------------------------------------
 
 
@@ -229,13 +316,15 @@ def test_load_controlled_values(loaded_samples, chatbot_engine):
     assert "School of Biological Sciences" in cv.schools
     assert len(cv.event_names) == 10 and cv.event_names == sorted(cv.event_names)
     assert "Bagel Breakfast, October" in cv.event_names
+    assert cv.event_terms == {name: ["Fall 2026"] for name in cv.event_names}
 
 
 def test_load_controlled_values_empty(db_session, chatbot_engine):
     assert load_controlled_values(chatbot_engine) == EMPTY_CV
 
 
-def test_event_names_limited_to_300_most_recent(db_session, chatbot_engine):
+def _seed_events(db_session, *event_inserts: str) -> None:
+    """One import file, the given hub.event INSERTs, and one unlinked attendance row per event."""
     db_session.execute(
         text(
             "INSERT INTO hub.import_file (file_name, file_sha256, content_sha256, source, "
@@ -244,21 +333,8 @@ def test_event_names_limited_to_300_most_recent(db_session, chatbot_engine):
             "FROM hub.app_user"
         )
     )
-    # 299 Fall 2026 events plus two older ones; Spring 2020 is more recent than Winter 2020
-    db_session.execute(
-        text(
-            "INSERT INTO hub.event (name, term, academic_year) "
-            "SELECT 'Event ' || lpad(i::text, 3, '0'), 'Fall 2026', '2026-27' "
-            "FROM generate_series(1, 299) AS i"
-        )
-    )
-    db_session.execute(
-        text(
-            "INSERT INTO hub.event (name, term, academic_year) VALUES "
-            "('Old Spring Event', 'Spring 2020', '2019-20'), "
-            "('Old Winter Event', 'Winter 2020', '2019-20')"
-        )
-    )
+    for stmt in event_inserts:
+        db_session.execute(text(stmt))
     db_session.execute(
         text(
             "INSERT INTO hub.attendance (event_id, import_file_id, match_method) "
@@ -266,9 +342,37 @@ def test_event_names_limited_to_300_most_recent(db_session, chatbot_engine):
         )
     )
     db_session.commit()
+
+
+def test_event_names_limited_to_300_most_recent(db_session, chatbot_engine):
+    # 299 Fall 2026 events plus two older ones; Spring 2020 is more recent than Winter 2020
+    _seed_events(
+        db_session,
+        "INSERT INTO hub.event (name, term, academic_year) "
+        "SELECT 'Event ' || lpad(i::text, 3, '0'), 'Fall 2026', '2026-27' "
+        "FROM generate_series(1, 299) AS i",
+        "INSERT INTO hub.event (name, term, academic_year) VALUES "
+        "('Old Spring Event', 'Spring 2020', '2019-20'), "
+        "('Old Winter Event', 'Winter 2020', '2019-20')",
+    )
     names = load_controlled_values(chatbot_engine).event_names
     assert len(names) == 300 and names == sorted(names)
     assert "Old Spring Event" in names and "Old Winter Event" not in names
+
+
+def test_recurring_event_listed_once_with_its_terms_oldest_first(db_session, chatbot_engine):
+    _seed_events(
+        db_session,
+        "INSERT INTO hub.event (name, term, academic_year) VALUES "
+        "('Annual Mixer', 'Fall 2026', '2026-27'), ('Annual Mixer', 'Winter 2026', '2025-26'), "
+        "('Annual Mixer', 'Spring 2026', '2025-26'), ('One-off Talk', 'Spring 2026', '2025-26')",
+    )
+    cv = load_controlled_values(chatbot_engine)
+    assert cv.event_names == ["Annual Mixer", "One-off Talk"]
+    assert cv.event_terms == {
+        "Annual Mixer": ["Winter 2026", "Spring 2026", "Fall 2026"],
+        "One-off Talk": ["Spring 2026"],
+    }
 
 
 def test_load_history_oldest_first_and_limited(db_session, user):
