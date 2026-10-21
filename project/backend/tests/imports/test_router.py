@@ -116,3 +116,22 @@ def test_failed_commit_returns_error_and_persists_nothing(app, db_session, monke
     assert statuses == ["pending"]
     assert db_session.scalar(select(func.count()).select_from(Event)) == 0
     assert db_session.scalar(select(func.count()).select_from(Attendance)) == 0
+
+
+def test_pending_preview_matches_the_upload_preview(client):
+    uploaded = upload(client).json()["files"][0]
+    res = client.get(f"/api/imports/{uploaded['id']}/preview")
+    assert res.status_code == 200
+    assert res.json() == uploaded
+
+
+def test_preview_of_unknown_import_is_404(client):
+    res = client.get("/api/imports/999999/preview")
+    assert (res.status_code, res.json()["error"]["code"]) == (404, "import_not_found")
+
+
+def test_preview_of_committed_import_is_409(client):
+    import_id = upload(client).json()["files"][0]["id"]
+    client.post(f"/api/imports/{import_id}/commit", json=DETAILS)
+    res = client.get(f"/api/imports/{import_id}/preview")
+    assert (res.status_code, res.json()["error"]["code"]) == (409, "import_not_pending")

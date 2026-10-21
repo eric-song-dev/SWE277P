@@ -11,6 +11,7 @@ from app.imports.schemas import (
     CommitSummary,
     EventDetailsIn,
     ImportFileOut,
+    ImportPreview,
     ImportPreviewBatch,
 )
 
@@ -39,6 +40,11 @@ def list_imports(session: SessionDep, _user: UserDep) -> list[ImportFileOut]:
 @router.get("/imports/{import_id}", response_model=ImportFileOut)
 def get_import(import_id: int, session: SessionDep, _user: UserDep) -> ImportFileOut:
     return service.get_import(session, import_id)
+
+
+@router.get("/imports/{import_id}/preview", response_model=ImportPreview)
+def get_import_preview(import_id: int, session: SessionDep, user: UserDep) -> ImportPreview:
+    return service.pending_preview(session, import_id, user)
 
 
 @router.post("/imports/{import_id}/commit", response_model=CommitSummary)

@@ -175,6 +175,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
    - Return a preview: the source, the row count, the rows skipped (with reasons), the flags found, and prefilled event details.
 2. Staff confirm the event details in the form.
 3. `POST /api/imports/{id}/commit`. In **one transaction**: create the event, re-parse the stored bytes, link identities, insert the attendance rows and flags, and mark the file `committed`. Return a summary: linked by NetID, linked by email, new people, unlinked, flagged, skipped.
+3a. `GET /api/imports/{id}/preview` returns the same preview `POST /api/imports` returns for a pending file, rebuilt from the stored bytes, so the Upload page can show a pending import again after the staff member left the page or reloaded. An unknown id is 404 `import_not_found`; a committed import is 409 `import_not_pending`. (Decided in S5.)
 4. `DELETE /api/imports/{id}` discards a pending import. Committed imports cannot be deleted in the MVP (backlog).
 
 **Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module.
@@ -432,7 +433,7 @@ Every route depends on `get_current_user` except `GET /api/health`, which touche
 | Area | Routes |
 |---|---|
 | Me | `GET /api/me` |
-| Imports | `POST /api/imports`, `GET /api/imports`, `GET /api/imports/{id}`, `POST /api/imports/{id}/commit`, `DELETE /api/imports/{id}` |
+| Imports | `POST /api/imports`, `GET /api/imports`, `GET /api/imports/{id}`, `GET /api/imports/{id}/preview`, `POST /api/imports/{id}/commit`, `DELETE /api/imports/{id}` |
 | Events | `GET /api/events` |
 | Dataset | `GET /api/dataset/export` |
 | Chat | Section 7.6 |

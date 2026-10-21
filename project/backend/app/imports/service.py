@@ -154,6 +154,16 @@ def _existing_preview(existing: ImportFile, file_name: str, user: CurrentUser) -
     return _preview_from(existing.id, existing.file_name, adapter, result, user)
 
 
+def pending_preview(session: Session, import_id: int, user: CurrentUser) -> ImportPreview:
+    """The preview of a pending import, rebuilt from its stored bytes (a card after a reload)."""
+    record = session.get(ImportFile, import_id)
+    if record is None:
+        raise HubError("import_not_found", "Import not found.", 404)
+    if record.status != "pending":
+        raise HubError("import_not_pending", "This import has already been committed.", 409)
+    return _existing_preview(record, record.file_name, user)
+
+
 def _get_pending(session: Session, import_id: int) -> ImportFile:
     # Row lock: a concurrent commit or discard of the same import waits here until this
     # transaction ends, then re-reads the row and sees it is no longer pending.
