@@ -145,6 +145,8 @@ All tables live in schema `hub` and are owned by `hub_app`. Migrations use Alemb
 | `conversation` | A chat thread | `id`, `title`, `created_by`, `created_at`, `updated_at` |
 | `chat_turn` | One question and its outcome. This is the query log (safety layer 5), the source for exports, and the F14 seam. | `id`, `conversation_id`, `seq`, `question`, `kind` (`answer` \| `clarification` \| `error`), `sql`, `interpretation`, `assumptions` jsonb, `clarification_question`, `row_count`, `truncated`, `analysis_text`, `analysis_source` (`llm` \| `local`), `results_shared` bool, `llm_profile_id`, `provider`, `model`, `prompt_version`, `attempts`, `error_code`, `latency_ms`, `created_by`, `created_at` |
 
+**Enumerated columns are checked by the database.** Migration 0005 adds a CHECK constraint (`ck_<table>_<column>`) to each column whose allowed values are listed above: `import_file.source` and `status`, `event.modality`, `person_identifier.kind`, `attendance.match_method`, `llm_profile.preset` (`zotgpt`, `openai`, `deepseek`, `custom`, `fake`), `chat_turn.kind` and `analysis_source`. NULL passes on the nullable ones. `data_quality_flag.code` is not constrained because the F12 seam adds codes. (Decided in S5.)
+
 **`hub.attendance_view`** is the only object the chatbot can read. It is the GPSRC layout without Student ID or `raw_row`:
 
 `person_key`, `event_name`, `event_date`, `term`, `academic_year`, `modality`, `sponsors_hosts`, `event_type`, `platform`, `first_name`, `last_name`, `email`, `netid`, `affiliation`, `domestic_international`, `school`, `department` (17 columns). `platform` is `CampusGroups` or `12twenty`, taken from `import_file.source`.
