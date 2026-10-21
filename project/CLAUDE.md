@@ -58,7 +58,7 @@ Layout:
 ```
 project/
   README.md  CLAUDE.md  PROGRESS.md  docker-compose.yml  docker-compose.dev.yml  .env.example
-  scripts/             acceptance.sh (final acceptance run)
+  scripts/             acceptance.sh (final acceptance run), story_files.py (edge-case upload files for the user stories)
   db/init/             Postgres init scripts (app and read-only roles)
   docs/*.md            handoff guides (setup, user, data dictionary, known limitations, handoff) and benchmark-results.md
   docs/specs/          design specs
@@ -165,6 +165,9 @@ uv run python -m app.samples             # load the synthetic sample files
 
 # Everything: lint, all tests, build, e2e, then the A1-A10 table (stops on first failure)
 bash scripts/acceptance.sh               # from project/; needs the dev db and Docker
+
+# Edge-case upload files for the user-story walks (docs/user-stories/README.md); never commit them
+uv run --project backend python scripts/story_files.py <out_dir>   # from project/; out_dir outside the repo
 
 # Frontend (from project/frontend)
 npm install
