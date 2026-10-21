@@ -20,3 +20,23 @@ def test_me_errors_clearly_when_local_user_missing(client, db_session):
 
 def test_every_api_route_depends_on_current_user(app):
     assert routes_missing_dependency(app, get_current_user) == ["GET /api/health"]
+
+
+def test_route_guard_sees_routes_on_included_routers():
+    from typing import Annotated
+
+    from fastapi import APIRouter, Depends, FastAPI
+
+    router = APIRouter(prefix="/api")
+
+    @router.get("/open")
+    def open_route() -> dict:
+        return {}
+
+    @router.get("/guarded")
+    def guarded(_user: Annotated[object, Depends(get_current_user)]) -> dict:
+        return {}
+
+    probe = FastAPI()
+    probe.include_router(router)
+    assert routes_missing_dependency(probe, get_current_user) == ["GET /api/open"]
