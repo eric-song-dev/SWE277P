@@ -17,24 +17,36 @@ import { useImportHistory } from "../upload/useImports";
 const PLATFORMS: Record<string, string> = { campusgroups: "CampusGroups", twelvetwenty: "12twenty" };
 const STATUSES: Record<string, string> = { committed: "Committed", pending: "Pending" };
 
+// Long values truncate with an ellipsis; the title keeps the full text available.
+const titled = ({ formattedValue }: { formattedValue?: unknown }) => (
+  <span title={String(formattedValue ?? "")}>{String(formattedValue ?? "")}</span>
+);
+
 const columns: GridColDef<ImportFileOut>[] = [
-  { field: "file_name", headerName: "File", flex: 1.5, minWidth: 160 },
-  { field: "event", headerName: "Event", flex: 1.5, minWidth: 160, valueGetter: (_, row) => row.event?.name ?? "" },
-  { field: "term", headerName: "Term", width: 120, valueGetter: (_, row) => row.event?.term ?? "" },
+  { field: "file_name", headerName: "File", flex: 1.5, minWidth: 120, renderCell: titled },
+  {
+    field: "event",
+    headerName: "Event",
+    flex: 1.5,
+    minWidth: 120,
+    valueGetter: (_, row) => row.event?.name ?? "",
+    renderCell: titled,
+  },
+  { field: "term", headerName: "Term", width: 100, valueGetter: (_, row) => row.event?.term ?? "" },
   {
     field: "source",
     headerName: "Platform",
-    width: 130,
+    width: 120,
     valueGetter: (_, row) => PLATFORMS[row.source] ?? row.source,
   },
-  { field: "row_count", headerName: "Rows", type: "number", width: 90 },
-  { field: "flag_count", headerName: "Flags", type: "number", width: 90 },
-  { field: "uploaded_by", headerName: "Uploaded by", flex: 1, minWidth: 140, valueGetter: (_, row) => row.uploaded_by.display_name },
+  { field: "row_count", headerName: "Rows", type: "number", width: 70 },
+  { field: "flag_count", headerName: "Flags", type: "number", width: 70 },
+  { field: "uploaded_by", headerName: "Uploaded by", flex: 1, minWidth: 120, valueGetter: (_, row) => row.uploaded_by.display_name, renderCell: titled },
   {
     field: "uploaded_at",
     headerName: "Uploaded at",
     type: "dateTime",
-    width: 180,
+    width: 175,
     // A Date, so the column sorts by time; only the display is localized.
     valueGetter: (_, row) => new Date(row.uploaded_at),
     valueFormatter: (value: Date) => value.toLocaleString(),
@@ -42,7 +54,7 @@ const columns: GridColDef<ImportFileOut>[] = [
   {
     field: "status",
     headerName: "Status",
-    width: 110,
+    width: 100,
     valueGetter: (_, row) => STATUSES[row.status] ?? row.status,
     // A pending import is finished on the Upload page.
     renderCell: ({ row, value }) =>

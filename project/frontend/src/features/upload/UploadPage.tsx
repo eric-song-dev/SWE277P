@@ -69,6 +69,7 @@ export default function UploadPage() {
             cursor: "pointer",
             transition: "border-color 120ms, background-color 120ms",
             "&:hover": { borderColor: tokens.primary },
+            "&:focus-visible": { outline: `2px solid ${tokens.primary}`, outlineOffset: "2px" },
           }}
         >
           <input {...getInputProps()} />
