@@ -93,10 +93,10 @@ These features are not built, but the code has a seam for each (spec section 12)
 | F11 filter table | `dataset/service.py::query_dataset(filters, sort, limit, offset)` over `attendance_view`, with an allow-listed column set and bound parameters. Pages are stable. | A route and a DataGrid page. |
 | F12 data quality | The `data_quality_flag` table with `resolved_at` and `resolved_by`. Flags are written at import. | A list or resolve UI and an "edit blank field" endpoint. |
 | F14 saved queries | `chat_turn` keeps the question, SQL and interpretation. | A `saved_query` table referencing a turn, and a one-click run that reuses the export and re-run path. |
-| F15 historical import | The adapter registry (`imports/adapters/__init__.py`). | A `gpsrc_sheet` adapter. Its event details come from the rows, so the form is skipped. |
+| F15 historical import | The adapter registry (`imports/adapters/__init__.py`). | A `gpsrc_sheet` adapter plus one migration (see below). Its event details come from the rows, so the form is skipped. |
 | F16 multiple accounts | `app_user`, `get_current_user`, and `created_by` columns everywhere. | An auth mode, an admin page, and per-user filtering if wanted. |
 
-To add a platform adapter: add one module under `imports/adapters/` that declares its `source`, its identifying headers, `parse(rows)` and `prefill(file_name, rows)`, and register it. New flag codes need no migration.
+To add a platform adapter: add one module under `imports/adapters/` that declares its `source`, its identifying headers, `parse(rows)` and `prefill(file_name, rows)`, and register it. Also add one Alembic migration that widens the `ck_import_file_source` CHECK to accept the new `source` and adds that source to the `platform` CASE in `attendance_view` (otherwise it is labelled 12twenty). Without the migration, every upload of the new format returns 500. New flag codes need no migration.
 
 ## Backlog
 

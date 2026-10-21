@@ -150,7 +150,7 @@ All tables live in schema `hub` and are owned by `hub_app`. Migrations use Alemb
 | `conversation` | A chat thread | `id`, `title`, `created_by`, `created_at`, `updated_at` |
 | `chat_turn` | One question and its outcome. This is the query log (safety layer 5), the source for exports, and the F14 seam. | `id`, `conversation_id`, `seq`, `question`, `kind` (`answer` \| `clarification` \| `error`), `sql`, `interpretation`, `assumptions` jsonb, `clarification_question`, `row_count`, `truncated`, `analysis_text`, `analysis_source` (`llm` \| `local`), `results_shared` bool, `llm_profile_id`, `provider`, `model`, `prompt_version`, `attempts`, `error_code`, `latency_ms`, `created_by`, `created_at` |
 
-**Enumerated columns are checked by the database.** Migration 0005 adds a CHECK constraint (`ck_<table>_<column>`) to each column whose allowed values are listed above: `import_file.source` and `status`, `event.modality`, `person_identifier.kind`, `attendance.match_method`, `llm_profile.preset` (`zotgpt`, `openai`, `deepseek`, `custom`, `fake`), `chat_turn.kind` and `analysis_source`. NULL passes on the nullable ones. `data_quality_flag.code` is not constrained because the F12 seam adds codes. (Decided in S5.)
+**Enumerated columns are checked by the database.** Migration 0005 adds a CHECK constraint (`ck_<table>_<column>`) to each column whose allowed values are listed above: `import_file.source` and `status`, `event.modality`, `person_identifier.kind`, `attendance.match_method`, `llm_profile.preset` (`zotgpt`, `openai`, `deepseek`, `custom`, `fake`), `chat_turn.kind` and `analysis_source`. NULL passes on the nullable ones. `data_quality_flag.code` is not constrained because the F12 seam adds codes. A new adapter source is the exception: it needs a migration that widens `ck_import_file_source` and adds the source to the `platform` CASE in `attendance_view`, which labels anything that is not `campusgroups` as 12twenty. (Decided in S5.)
 
 **`hub.attendance_view`** is the only object the chatbot can read. It is the GPSRC layout without Student ID or `raw_row`:
 
@@ -183,7 +183,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
    - `GET /api/imports/{id}/preview` returns the same preview `POST /api/imports` returns for a pending file, rebuilt from the stored bytes, so the Upload page can show a pending import again after the staff member left the page or reloaded. An unknown id is 404 `import_not_found`; a committed import is 409 `import_not_pending`. (Decided in S5.)
 4. `DELETE /api/imports/{id}` discards a pending import. Committed imports cannot be deleted in the MVP (backlog).
 
-**Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module.
+**Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module plus one migration: the migration widens `ck_import_file_source` to accept the new `source` and adds it to the `platform` CASE in `attendance_view`. Without it, every upload of that format would fail the CHECK and return 500. (Decided in S5.)
 
 The required headers are a small identifying set, not every column, because CampusGroups registration-form questions vary from event to event:
 
@@ -459,7 +459,7 @@ Errors use one JSON shape, `{"error": {"code", "message", "details"}}`.
 | F11 filter table | `dataset/service.py::query_dataset(filters, sort, limit, offset)` over `attendance_view`, with an allow-listed column set and bound parameters. The full export uses `gpsrc_layout_rows` instead, because it needs Student ID, which the view leaves out. Pages are stable: with no sort the order is `event_date`, `event_name`, `last_name`, `first_name`, `person_key` (NULLs last), and a given sort is followed by the default columns and then every other view column, so pages never repeat or skip a row (ties remain only between identical rows). An `eq` or `ilike` filter with no value is a 422 `invalid_filter`; use `is_null`. (Settled in S4.) | A route and a DataGrid page |
 | F12 data quality | `data_quality_flag` table with `resolved_*` columns; flags written at import | A list or resolve UI and an "edit blank field" endpoint |
 | F14 saved queries | `chat_turn` keeps question, SQL, and interpretation | A `saved_query` table referencing a turn, and a one-click run that reuses the export and rerun path |
-| F15 historical import | Adapter registry | A `gpsrc_sheet` adapter (event details come from the rows, so the form is skipped) |
+| F15 historical import | Adapter registry | A `gpsrc_sheet` adapter module plus one migration (widen `ck_import_file_source`, add the source to the `attendance_view` `platform` CASE). Event details come from the rows, so the form is skipped |
 | F16 multiple accounts | `app_user`, `get_current_user`, `created_by` everywhere | Auth mode, an admin page, and per-user filtering if wanted |
 
 ## 13. Security and privacy summary
