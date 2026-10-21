@@ -209,6 +209,25 @@ describe("ChatPage", () => {
     await s.finish();
   });
 
+  it("drops the draft's turn when New chat is clicked after its first answer", async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    vi.mocked(apiSend).mockResolvedValueOnce({ id: 7, title: null, created_at: stamp, updated_at: stamp });
+    const s = pendingStream();
+    const { user, router } = renderPage("/chat");
+    await ask(user, "First draft question");
+    await waitFor(() => expect(router.state.location.pathname).toBe("/chat/7"));
+    await s.emit({ event: "done", data: { turn_id: null } });
+    await s.finish();
+    expect(screen.getByText("First draft question")).toBeInTheDocument();
+    scrollIntoView.mockClear();
+    await user.click(screen.getByRole("button", { name: "New chat" }));
+    expect(router.state.location.pathname).toBe("/chat");
+    expect(await screen.findByText("Ask a question about your data to start.")).toBeInTheDocument();
+    expect(screen.queryByText("First draft question")).not.toBeInTheDocument();
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it("scrolls the new question's bubble into view on a follow-up", async () => {
     const scrollIntoView = vi.fn();
     Element.prototype.scrollIntoView = scrollIntoView;

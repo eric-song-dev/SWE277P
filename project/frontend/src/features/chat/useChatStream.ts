@@ -34,10 +34,9 @@ export function useChatStream(
   // The conversation the live turn belongs to (null: the /chat draft, which `created` then names), so a
   // turn is not shown in another conversation during the render before the reset effect clears it.
   const [owner, setOwner] = useState<{ id: number | null; created: number | null }>({ id: null, created: null });
-  const live =
-    liveTurn !== null && (owner.id === conversationId || (owner.id === null && owner.created === conversationId))
-      ? liveTurn
-      : null;
+  // Once the draft has created its conversation it belongs to that one only, so /chat no longer matches.
+  const ownerId = owner.id === null && owner.created !== null ? owner.created : owner.id;
+  const live = liveTurn !== null && ownerId === conversationId ? liveTurn : null;
   const [resultsByTurnId, setResultsByTurnId] = useState<Record<number, QueryResultOut>>({});
 
   const controllerRef = useRef<AbortController | null>(null);

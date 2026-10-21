@@ -113,9 +113,10 @@ describe("useChatStream", () => {
   it("starts a new conversation's turn at afterSeq 0", async () => {
     vi.mocked(apiSend).mockResolvedValueOnce({ id: 9 });
     const s = pendingStream();
-    const { result } = setup(null);
+    const { result, rerender } = setup(null);
     act(() => result.current.send("q", null, true));
     await waitFor(() => expect(streamSse).toHaveBeenCalled());
+    rerender({ id: 9 }); // the page navigates to the conversation it created
     expect(result.current.live?.afterSeq).toBe(0);
     await s.finish();
   });
