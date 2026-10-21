@@ -1,14 +1,16 @@
 import CssBaseline from "@mui/material/CssBaseline";
 import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy } from "react";
 import { Navigate, RouterProvider, createBrowserRouter } from "react-router";
 import AppShell from "./AppShell";
-import ChatPage from "../features/chat/ChatPage";
-import SettingsPage from "../features/settings/SettingsPage";
-import UploadPage from "../features/upload/UploadPage";
 import AuthGate from "./AuthGate";
-import PlaceholderPage from "./PlaceholderPage";
 import { theme } from "./theme";
+
+const ChatPage = lazy(() => import("../features/chat/ChatPage"));
+const DatasetPage = lazy(() => import("../features/dataset/DatasetPage"));
+const SettingsPage = lazy(() => import("../features/settings/SettingsPage"));
+const UploadPage = lazy(() => import("../features/upload/UploadPage"));
 
 const queryClient = new QueryClient();
 
@@ -21,7 +23,7 @@ const router = createBrowserRouter([
       // One route for /chat and /chat/:id, so the page (and its stream) survives the first send.
       { path: "chat/:conversationId?", element: <ChatPage /> },
       { path: "upload", element: <UploadPage /> },
-      { path: "dataset", element: <PlaceholderPage title="Dataset" /> },
+      { path: "dataset", element: <DatasetPage /> },
       { path: "settings", element: <SettingsPage /> },
     ],
   },

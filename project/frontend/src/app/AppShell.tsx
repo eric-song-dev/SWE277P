@@ -1,5 +1,6 @@
 import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
@@ -12,6 +13,7 @@ import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { useQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { NavLink, Outlet } from "react-router";
 import { apiGet } from "../api/client";
 import type { MeOut } from "../api/types";
@@ -63,7 +65,9 @@ export default function AppShell() {
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Toolbar />
-        <Outlet />
+        <Suspense fallback={<CircularProgress size={24} aria-label="Loading page" />}>
+          <Outlet />
+        </Suspense>
       </Box>
     </Box>
   );

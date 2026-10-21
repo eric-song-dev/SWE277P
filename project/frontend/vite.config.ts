@@ -8,6 +8,19 @@ export default defineConfig({
   server: {
     proxy: { '/api': 'http://localhost:8000' },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Keep the shared libraries out of the entry chunk so it stays small.
+        codeSplitting: {
+          groups: [
+            { name: 'vendor-react', test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/ },
+            { name: 'vendor-mui', test: /node_modules[\\/]@(mui[\\/](?!x-)|emotion[\\/])/ },
+          ],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
