@@ -21,6 +21,7 @@ COMPILED = Path(__file__).resolve().parents[2] / "sample_data" / "GSPRC Compiled
 # The sheet's exact headers (trailing spaces included) -> short names.
 COLUMNS = {
     "Event Term": "term",
+    "On Campus Groups?": "on_campus_groups",
     "Event Name ": "event",
     "Virtual/ In-Person/ Hybrid ": "modality",
     "Event type (Professional Development, Wellness/Mental Health, Fellowships)": "event_type",
@@ -60,6 +61,10 @@ def _sheet() -> pd.DataFrame:
         n if isinstance(n, str) else owner.get(e, e) if isinstance(e, str) else None
         for n, e in pairs
     ]
+    # the platform is CampusGroups for events on CampusGroups, else the 12twenty export
+    df["platform"] = df["on_campus_groups"].map(
+        lambda v: "CampusGroups" if v == "Yes" else "12twenty"
+    )
     assert len(df) == 293, len(df)
     return df
 
@@ -243,6 +248,78 @@ def q20() -> QueryResult:
     return _list("email", set(df[m]["email"].dropna()))
 
 
+# The holdout (benchmark/holdout.yaml): same readings, written before any prompt tuning.
+
+
+def h01() -> QueryResult:
+    df = sheet()
+    return _scalar("turnout", int(_starts(df, "event", BAGEL).sum()))
+
+
+def h02() -> QueryResult:
+    df = sheet()
+    missing = df[df["email"].isna()].groupby("event").size()
+    return _result(["event_name", "missing_email"], [[e, n] for e, n in missing.items()])
+
+
+def h03() -> QueryResult:
+    df = sheet()
+    m = _is(df, "event", "Building your Brand Workshop") & df["school"].notna()
+    per_school = df[m].groupby("school")["person"].nunique()
+    return _result(["school", "people"], [[s, n] for s, n in per_school.items()])
+
+
+def h04() -> QueryResult:
+    linked = _linked()
+    pd_people = set(linked[_is(linked, "event_type", "Professional Development")]["person"])
+    wellness = set(linked[_is(linked, "event_type", "Wellness/Mental Health")]["person"])
+    return _scalar("people", len(wellness - pd_people))
+
+
+def h05() -> QueryResult:
+    df = sheet()  # every sample event is in Fall 2026, the first term of academic year 2026-27
+    return _scalar("unique_people", df[_is(df, "modality", "In Person")]["person"].nunique())
+
+
+def h06() -> QueryResult:
+    df = sheet()
+    m = df["event"].map(lambda v: "academic jobs" in v.lower())
+    return _scalar("unique_people", df[m]["person"].nunique())
+
+
+def h07() -> QueryResult:
+    df = sheet()
+    per_event = (
+        df[_is(df, "domestic_international", "International")].groupby(["event", "term"]).size()
+    )
+    top = per_event[per_event == per_event.max()]
+    return _list("event_name", {event for event, _term in top.index})
+
+
+def h08() -> QueryResult:
+    per_platform = sheet().groupby("platform")["person"].nunique()
+    return _result(["platform", "unique_people"], [[p, n] for p, n in per_platform.items()])
+
+
+def h09() -> QueryResult:
+    df = sheet()
+    m = (
+        _is(df, "domestic_international", "Domestic")
+        & _is(df, "affiliation", "Doctoral Student")
+        & _is(df, "modality", "In Person")
+    )
+    return _scalar("unique_people", df[m]["person"].nunique())
+
+
+def h10() -> QueryResult:
+    linked = _linked()
+    lunch = set(linked[_is(linked, "event", "Postdoc Wellness Lunch")]["person"])
+    bagel = set(linked[_starts(linked, "event", BAGEL)]["person"])
+    both = _events_per_person().loc[sorted(lunch & bagel)]
+    return _result(["first_name", "last_name"], both[["first_name", "last_name"]].values.tolist())
+
+
 PANDAS: dict[str, Callable[[], QueryResult]] = {
-    f"q{i:02d}": globals()[f"q{i:02d}"] for i in range(1, 21)
+    **{f"q{i:02d}": globals()[f"q{i:02d}"] for i in range(1, 21)},
+    **{f"h{i:02d}": globals()[f"h{i:02d}"] for i in range(1, 11)},
 }

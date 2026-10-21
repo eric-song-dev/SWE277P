@@ -5,7 +5,7 @@ import pytest
 
 from app.chat.executor import run_readonly
 from app.chat.guard import guard_sql
-from benchmark import load_questions
+from benchmark import load_holdout, load_questions
 from benchmark.score import results_match
 from tests.benchmark.pandas_expected import PANDAS
 
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.acceptance
 CAP = 100_000
 
 
-@pytest.mark.parametrize("q", load_questions(), ids=lambda q: q["id"])
+@pytest.mark.parametrize("q", load_questions() + load_holdout(), ids=lambda q: q["id"])
 def test_reference_sql_matches_independent_pandas(q, loaded_samples, chatbot_engine):
     actual = run_readonly(
         guard_sql(q["reference_sql"], limit=CAP).sql, max_rows=CAP, engine=chatbot_engine
@@ -29,3 +29,12 @@ def test_reference_sql_matches_independent_pandas(q, loaded_samples, chatbot_eng
 
 def test_known_answers():  # pins assignment1 Appendix A values
     assert PANDAS["q01"]().rows == [[6]] and PANDAS["q02"]().rows == [[8]]
+
+
+def test_holdout_answers_are_not_trivial(loaded_samples, chatbot_engine):
+    for q in load_holdout():
+        result = run_readonly(
+            guard_sql(q["reference_sql"], limit=CAP).sql, max_rows=CAP, engine=chatbot_engine
+        )
+        assert 0 < result.row_count < 293, q["id"]
+    assert PANDAS["h01"]().rows == [[93]] and PANDAS["h07"]().row_count == 2

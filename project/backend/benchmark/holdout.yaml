@@ -1,0 +1,156 @@
+# The holdout set (spec 8.2, 14 A3/A4): 10 sponsor-style questions written before any prompt
+# tuning and never used to tune the prompts. Run it with
+#   uv run python -m benchmark.run --profile "<name>" --set holdout
+#
+# Same format as questions.yaml (id, question, reference_sql, ordered, notes), and the same
+# readings (see the header of questions.yaml): a person is a person_key, "unique" means distinct
+# person_key, a count without "unique" counts attendance records, "students" means everyone
+# GPSRC serves, and a record with no school or department is not a group of its own.
+# Each reference answer is cross-checked against an independent pandas computation over the
+# sponsor's compiled sheet (tests/benchmark/pandas_expected.py, ids h01 to h10).
+# The questions are not paraphrases of questions.yaml or of the worked examples in
+# app/chat/graph/prompts.py. Platform: CampusGroups = events the sheet marks "On Campus Groups?
+# Yes" (the three Bagel Breakfasts, Postdoc Wellness Lunch, both Academic Jobs sessions);
+# 12twenty = the other four events.
+
+- id: h01
+  question: "What was the total turnout across all the Bagel Breakfasts?"
+  reference_sql: |
+    SELECT count(*) AS turnout
+    FROM attendance_view
+    WHERE event_name LIKE 'Bagel Breakfast%'
+  ordered: false
+  notes: >-
+    Total turnout is the number of attendance records at the three breakfasts (24 + 31 + 38),
+    counting someone once for each breakfast they came to. Distinct people would give a
+    smaller number (the "unique" reading), but the question does not say unique. Answer: 93.
+
+- id: h02
+  question: "For each event, how many attendees have no email address on file? Leave out events where everyone has one."
+  reference_sql: |
+    SELECT event_name, count(*) AS missing_email
+    FROM attendance_view
+    WHERE email IS NULL
+    GROUP BY event_name
+  ordered: false
+  notes: >-
+    Blank emails are NULL. Events where nobody lacks an email have no row. Answer: 2 events,
+    Bagel Breakfast, December 1 (NetID tzhang) and LinkedIn Info Session 1 (the unlinked row).
+
+- id: h03
+  question: "Give me a breakdown by school of who came to the Building your Brand Workshop."
+  reference_sql: |
+    SELECT school, count(DISTINCT person_key) AS people
+    FROM attendance_view
+    WHERE event_name = 'Building your Brand Workshop'
+      AND school IS NOT NULL
+    GROUP BY school
+  ordered: false
+  notes: >-
+    People per school at one event (one record per person, so records give the same numbers).
+    The one workshop attendee with no school (rwilson) is not a school and has no row, so the
+    counts add up to 26 of 27. Answer: 9 schools: Biological Sciences 5, ICS 4, Business 3,
+    Engineering 3, Social Ecology 3, Humanities 2, Medicine 2, Physical Sciences 2, Social
+    Sciences 2.
+
+- id: h04
+  question: "How many students came to wellness events but never to a professional development event?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS people
+    FROM attendance_view
+    WHERE event_type = 'Wellness/Mental Health'
+      AND person_key IS NOT NULL
+      AND person_key NOT IN (
+        SELECT person_key FROM attendance_view
+        WHERE event_type = 'Professional Development' AND person_key IS NOT NULL
+      )
+  ordered: false
+  notes: >-
+    Students means every attendee GPSRC serves. Linked people with a wellness record and no
+    professional development record; the NOT IN subquery leaves out NULL person_keys so it
+    cannot return nothing. Answer: 6.
+
+- id: h05
+  question: "This academic year, how many different people have been to an in-person event?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE academic_year = '2026-27'
+      AND modality = 'In Person'
+  ordered: false
+  notes: >-
+    The runner's default today is 2026-11-02, so this academic year is 2026-27 (Fall 2026 is
+    its first term). "Different people" means unique. In person is the stored modality 'In
+    Person' (not Virtual, not Hybrid). Answer: 68.
+
+- id: h06
+  question: "How many unique people went to the Academic Jobs events?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE event_name ILIKE '%Academic Jobs%'
+  ordered: false
+  notes: >-
+    The Academic Jobs events are the two whose names end in "for Academic Jobs" (Cover Letters
+    and Teaching Statements); a person who came to both counts once, and this is the union,
+    not the "both" intersection of benchmark q18. Answer: 43.
+
+- id: h07
+  question: "Which event had the most international attendees?"
+  reference_sql: |
+    WITH per_event AS (
+      SELECT event_name, count(*) AS international
+      FROM attendance_view
+      WHERE domestic_international = 'International'
+      GROUP BY event_name, term
+    )
+    SELECT event_name
+    FROM per_event
+    WHERE international = (SELECT max(international) FROM per_event)
+  ordered: false
+  notes: >-
+    A ranking with a tie: both events at the maximum are listed. Attendees are the event's
+    records (distinct people give the same numbers here). The 12twenty events have no
+    domestic/international value, so they cannot rank. Answer: Bagel Breakfast, October and
+    Teaching Statements for Academic Jobs, 8 each.
+
+- id: h08
+  question: "Compare how many unique people attended CampusGroups events with how many attended 12twenty events."
+  reference_sql: |
+    SELECT platform, count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    GROUP BY platform
+  ordered: false
+  notes: >-
+    Distinct people per platform; someone who came to events on both platforms is counted
+    under each, so the two numbers add up to more than the 79 people. Answer: CampusGroups
+    69, 12twenty 66.
+
+- id: h09
+  question: "How many domestic doctoral students attended an in-person event?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE domestic_international = 'Domestic'
+      AND affiliation = 'Doctoral Student'
+      AND modality = 'In Person'
+  ordered: false
+  notes: >-
+    Unique people, because staff ask about people who attended; a person counts once if any of
+    their in-person records is a doctoral student marked Domestic. 12twenty rows have no
+    domestic/international value, so they cannot match "Domestic". Answer: 31.
+
+- id: h10
+  question: "Who went to the Postdoc Wellness Lunch and also to at least one Bagel Breakfast? Names please."
+  reference_sql: |
+    SELECT min(first_name) AS first_name, min(last_name) AS last_name
+    FROM attendance_view
+    WHERE person_key IS NOT NULL
+      AND (event_name = 'Postdoc Wellness Lunch' OR event_name LIKE 'Bagel Breakfast%')
+    GROUP BY person_key
+    HAVING count(*) FILTER (WHERE event_name = 'Postdoc Wellness Lunch') > 0
+       AND count(*) FILTER (WHERE event_name LIKE 'Bagel Breakfast%') > 0
+  ordered: false
+  notes: >-
+    Linked people with a record at the lunch and at one or more of the three breakfasts,
+    listed by first and last name (one name per person in the sample). Answer: 15 people (of the 18 at the lunch).
