@@ -24,6 +24,8 @@ def _hub_test(url: str) -> str:
 os.environ["DATABASE_URL"] = _hub_test(_configured("DATABASE_URL"))
 os.environ["CHATBOT_DATABASE_URL"] = _hub_test(_configured("CHATBOT_DATABASE_URL"))
 os.environ["TEST_ADMIN_DATABASE_URL"] = _configured("TEST_ADMIN_DATABASE_URL")
+os.environ["LANGSMITH_TRACING"] = "false"  # tests never send traces anywhere
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["HUB_SECRET_KEY"] = Fernet.generate_key().decode()
 # project/.env may hold a real LLM seed profile; tests must never read or seed it.
 for _name in (
