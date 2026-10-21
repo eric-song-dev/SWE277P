@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Response
@@ -8,7 +9,8 @@ from app.config import get_settings
 from app.db import SessionDep
 from app.llm import service
 from app.llm.presets import available_presets
-from app.llm.schemas import LlmProfileIn, LlmProfileOut, LlmProfilePatch, PresetOut
+from app.llm.probe import probe_profile
+from app.llm.schemas import LlmProfileIn, LlmProfileOut, LlmProfilePatch, PresetOut, ProbeResultOut
 
 router = APIRouter(prefix="/api/llm-profiles")
 
@@ -46,3 +48,16 @@ def delete_profile(profile_id: int, session: SessionDep, _user: UserDep) -> Resp
 @router.post("/{profile_id}/default", response_model=LlmProfileOut)
 def set_default(profile_id: int, session: SessionDep, _user: UserDep) -> LlmProfileOut:
     return LlmProfileOut.from_profile(service.set_default(session, profile_id))
+
+
+@router.post("/{profile_id}/test", response_model=ProbeResultOut)
+async def test_connection(profile_id: int, session: SessionDep, _user: UserDep) -> ProbeResultOut:
+    profile, api_key = service.get_profile_with_key(session, profile_id)
+    result = await probe_profile(profile, api_key, settings=get_settings())
+    now = datetime.now(UTC)
+    profile.last_tested_at = now
+    profile.last_test_ok = result.ok
+    if result.json_mode is not None:
+        profile.json_mode = result.json_mode
+    profile.updated_at = now
+    return result

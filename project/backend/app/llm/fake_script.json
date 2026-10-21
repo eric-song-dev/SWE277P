@@ -1,0 +1,30 @@
+[
+  {
+    "match": "unique people attended Bagel Breakfast, October",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT COUNT(DISTINCT person_key) AS unique_people FROM attendance_view WHERE event_name = 'Bagel Breakfast, October'\", \"interpretation\": \"Count the distinct people who attended the October Bagel Breakfast.\", \"assumptions\": []}"
+    ],
+    "analyze": "38 unique people attended the October Bagel Breakfast."
+  },
+  {
+    "match": "of those, how many are international",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT COUNT(DISTINCT person_key) AS international_people FROM attendance_view WHERE event_name = 'Bagel Breakfast, October' AND domestic_international = 'International'\", \"interpretation\": \"Of the October Bagel Breakfast attendees, count the international people.\", \"assumptions\": [\"Those means the attendees of the previous question.\"]}"
+    ],
+    "analyze": "The result shows how many of the October Bagel Breakfast attendees are international."
+  },
+  {
+    "match": "emails of everyone who attended any bagel breakfast",
+    "generate": [
+      "{\"kind\": \"sql\", \"sql\": \"SELECT DISTINCT email FROM attendance_view WHERE event_name ILIKE 'Bagel Breakfast%' AND email IS NOT NULL ORDER BY email\", \"interpretation\": \"List the distinct email addresses of everyone who attended any Bagel Breakfast.\", \"assumptions\": [\"People without an email address are left out.\"]}"
+    ],
+    "analyze": "The result lists the email addresses of everyone who attended a Bagel Breakfast."
+  },
+  {
+    "match": "this year",
+    "generate": [
+      "{\"kind\": \"clarify\", \"clarification_question\": \"Do you mean the 2026-27 academic year or calendar year 2026?\"}"
+    ],
+    "analyze": "Please say whether you mean the academic year or the calendar year."
+  }
+]

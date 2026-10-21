@@ -181,3 +181,40 @@ def test_patch_rejects_unknown_or_unavailable_preset(client):
     for preset in ("bogus", "fake"):
         res = client.patch(f"/api/llm-profiles/{created['id']}", json={"preset": preset})
         assert res.status_code == 422 and res.json()["error"]["code"] == "validation_error"
+
+
+def test_test_route_stores_probe_result(client, db_session, monkeypatch):
+    from app.llm import router
+    from app.llm.schemas import ProbeResultOut
+
+    async def fake_probe(profile, api_key, *, settings, http_async_client=None):
+        assert api_key == KEY
+        return ProbeResultOut(ok=True, json_mode=False, models=["m1"], latency_ms=5)
+
+    monkeypatch.setattr(router, "probe_profile", fake_probe)
+    created = make(client).json()
+    res = client.post(f"/api/llm-profiles/{created['id']}/test")
+    assert res.status_code == 200 and res.json()["models"] == ["m1"] and KEY not in res.text
+    db_session.expire_all()
+    p = db_session.get(LlmProfile, created["id"])
+    assert p.json_mode is False and p.last_test_ok is True and p.last_tested_at is not None
+
+
+def test_test_route_failure_keeps_json_mode(client, db_session, monkeypatch):
+    from app.llm import router
+    from app.llm.schemas import ProbeResultOut
+
+    async def fake_probe(profile, api_key, *, settings, http_async_client=None):
+        return ProbeResultOut(ok=False, error="The AI provider rejected the API key.", latency_ms=1)
+
+    monkeypatch.setattr(router, "probe_profile", fake_probe)
+    created = make(client).json()
+    client.post(f"/api/llm-profiles/{created['id']}/test")
+    db_session.expire_all()
+    p = db_session.get(LlmProfile, created["id"])
+    assert p.json_mode is None and p.last_test_ok is False
+
+
+def test_test_route_unknown_profile(client):
+    res = client.post("/api/llm-profiles/9999/test")
+    assert res.status_code == 404 and res.json()["error"]["code"] == "profile_not_found"
