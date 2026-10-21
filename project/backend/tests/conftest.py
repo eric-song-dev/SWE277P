@@ -45,3 +45,27 @@ def app():
 def client(app, request):
     request.getfixturevalue("db_session")  # migrates the test DB and seeds the `local` user
     return TestClient(app)
+
+
+@pytest.fixture
+def user(request):
+    session = request.getfixturevalue("db_session")
+    from sqlalchemy import select
+
+    from app.auth.models import AppUser
+    from app.auth.schemas import CurrentUser
+
+    row = session.scalar(select(AppUser).where(AppUser.username == "local"))
+    return CurrentUser(id=row.id, username=row.username, display_name=row.display_name)
+
+
+@pytest.fixture
+def committed_october(request):
+    session = request.getfixturevalue("db_session")
+    user = request.getfixturevalue("user")
+    from tests.imports.helpers import commit_after_preview, sample_bytes
+
+    name = "Bagel Breakfast - October.csv"
+    summary = commit_after_preview(session, name, sample_bytes(name), user)
+    session.commit()
+    return summary

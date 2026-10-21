@@ -16,14 +16,3 @@ def tmp_xlsx():
         return buf.getvalue()
 
     return build
-
-
-@pytest.fixture
-def user(db_session):
-    from sqlalchemy import select
-
-    from app.auth.models import AppUser
-    from app.auth.schemas import CurrentUser
-
-    row = db_session.scalar(select(AppUser).where(AppUser.username == "local"))
-    return CurrentUser(id=row.id, username=row.username, display_name=row.display_name)
