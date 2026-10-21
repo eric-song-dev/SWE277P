@@ -30,7 +30,14 @@ export function useChatStream(
   onConversationCreated?: (id: number) => void,
 ) {
   const queryClient = useQueryClient();
-  const [live, setLive] = useState<LiveTurn | null>(null);
+  const [liveTurn, setLive] = useState<LiveTurn | null>(null);
+  // The conversation the live turn belongs to (null: the /chat draft, which `created` then names), so a
+  // turn is not shown in another conversation during the render before the reset effect clears it.
+  const [owner, setOwner] = useState<{ id: number | null; created: number | null }>({ id: null, created: null });
+  const live =
+    liveTurn !== null && (owner.id === conversationId || (owner.id === null && owner.created === conversationId))
+      ? liveTurn
+      : null;
   const [resultsByTurnId, setResultsByTurnId] = useState<Record<number, QueryResultOut>>({});
 
   const controllerRef = useRef<AbortController | null>(null);
@@ -76,6 +83,7 @@ export function useChatStream(
       const afterSeq = cached?.turns.reduce((max, t) => Math.max(max, t.seq), 0) ?? 0;
       let turn = startTurn(request.question, afterSeq);
       setLive(turn);
+      setOwner({ id: conversationId, created: null });
 
       try {
         if (id === null) {
@@ -83,6 +91,7 @@ export function useChatStream(
           if (controller.signal.aborted) return;
           id = created.id;
           createdIdRef.current = id;
+          setOwner({ id: null, created: id });
           onCreatedRef.current?.(id);
         }
         const targetId = id;

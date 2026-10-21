@@ -37,59 +37,59 @@ export default function ConversationList() {
           p: "20px 16px",
         }}
       >
-      {/* /chat is a draft; the first question creates the conversation. */}
-      <Button
-        fullWidth
-        variant="outlined"
-        startIcon={<AddIcon />}
-        onClick={() => void navigate("/chat")}
-        sx={{
-          minHeight: 44,
-          mb: "12px",
-          flexShrink: 0,
-          color: tokens.primary,
-          borderColor: tokens.primary,
-          transition: "background-color 120ms ease, color 120ms ease",
-          "&:hover, &:focus-visible": { bgcolor: tokens.primary, color: "#FFFFFF", borderColor: tokens.primary },
-        }}
-      >
-        New chat
-      </Button>
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
-      {conversations.isError && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          Could not load your conversations.
-        </Alert>
-      )}
-      {conversations.data?.length === 0 && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-          No conversations yet.
-        </Typography>
-      )}
-      <List disablePadding sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {conversations.data?.map((conversation) => (
-          <ListItemButton
-            key={conversation.id}
-            component={NavLink}
-            to={`/chat/${conversation.id}`}
-            title={conversation.title ?? "New conversation"}
-            sx={{
-              p: "10px 12px",
-              borderRadius: "8px",
-              fontSize: 15,
-              color: tokens.ink,
-              "&.active": { bgcolor: tokens.selected, color: tokens.navy, fontWeight: 600 },
-              "&.active .MuiListItemText-primary": { fontWeight: 600 },
-            }}
-          >
-            <ListItemText
-              primary={conversation.title ?? "New conversation"}
-              slotProps={{ primary: { noWrap: true, sx: { fontSize: 15 } } }}
-            />
-          </ListItemButton>
-        ))}
-      </List>
-      </Box>
+        {/* /chat is a draft; the first question creates the conversation. */}
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<AddIcon />}
+          onClick={() => void navigate("/chat")}
+          sx={{
+            minHeight: 44,
+            mb: "12px",
+            flexShrink: 0,
+            color: tokens.primary,
+            borderColor: tokens.primary,
+            transition: "background-color 120ms ease, color 120ms ease",
+            "&:hover, &:focus-visible": { bgcolor: tokens.primary, color: "#FFFFFF", borderColor: tokens.primary },
+          }}
+        >
+          New chat
+        </Button>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}>
+          {conversations.isError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              Could not load your conversations.
+            </Alert>
+          )}
+          {conversations.data?.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+              No conversations yet.
+            </Typography>
+          )}
+          <List disablePadding sx={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {conversations.data?.map((conversation) => (
+              <ListItemButton
+                key={conversation.id}
+                component={NavLink}
+                to={`/chat/${conversation.id}`}
+                title={conversation.title ?? "New conversation"}
+                sx={{
+                  p: "10px 12px",
+                  borderRadius: "8px",
+                  fontSize: 15,
+                  color: tokens.ink,
+                  "&.active": { bgcolor: tokens.selected, color: tokens.navy, fontWeight: 600 },
+                  "&.active .MuiListItemText-primary": { fontWeight: 600 },
+                }}
+              >
+                <ListItemText
+                  primary={conversation.title ?? "New conversation"}
+                  slotProps={{ primary: { noWrap: true, sx: { fontSize: 15 } } }}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </Box>
       </Box>
     </Box>
   );
