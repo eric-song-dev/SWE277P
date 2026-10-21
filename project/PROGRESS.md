@@ -88,6 +88,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 ## Decisions
 
 - Spec D1–D10 (spec Section 2). Execution method for S2–S5: subagent-driven, with the controller generating `.env` when asked.
+- **Per-question result sharing (added after S2, spec D2):** a "Let AI see the results" switch sits next to the question box, capped by the profile's `share_results_with_llm`. The server sends rows only when both are on. There is no global env flag. The S3, S4 and S5 plans already include it.
 - **S2 design decisions, now in the spec:**
   - 12twenty affiliation falls back to `Degree Level` and flags `missing_degree` (§6).
   - Linker: rule 2's attach case is `match_method = email`, and a NetID/email conflict gets only `netid_email_conflict` (§6).

@@ -20,7 +20,7 @@ Success is the charter's MOV, automated as acceptance tests (Section 14):
 | # | Decision | Replaces | Status |
 |---|---|---|---|
 | D1 | **The LLM may see query results.** The chatbot sends the rows returned by its own guarded query, capped, to the LLM so it can analyze them. It never sees the rest of the database. | assignment1 F7 and `CLAUDE.md` privacy rule: "never send row values to the LLM" | **Provisional.** Must be confirmed with the sponsor. Can be reverted per LLM profile with no code change (D2). |
-| D2 | **Result sharing is a per-profile switch** (`share_results_with_llm`). The ZotGPT preset defaults to on; every other preset defaults to off. When it is off, the analysis step is skipped and a summary is built locally, which is exactly assignment1's "Approach A". | n/a | Agreed |
+| D2 | **Result sharing has two switches, and results are sent only when both are on.** (a) Per profile, `share_results_with_llm` is the ceiling: whether this provider may receive query results at all. The ZotGPT preset defaults to on; every other preset defaults to off. (b) Per question, a "Let AI see the results" switch next to the question box. It starts at the profile's value, keeps the user's choice for follow-ups in the same conversation, and resets to the profile's value on a new conversation or a profile change. It is disabled when the profile does not allow sharing. The server computes the effective value, so the browser's request alone never turns sharing on. When sharing is off, the analysis step is skipped and a summary is built locally, which is exactly assignment1's "Approach A". There is no global env flag. | n/a | Agreed (per-question switch added 2026-10-20) |
 | D3 | **LangChain/LangGraph** is the chatbot framework, used as a **custom `StateGraph`** with our own nodes. We do not use LangChain's prebuilt SQL agent or toolkit. | assignment1 decision 5 ("our own pipeline, no framework") | Agreed. Moving to a tool-calling agent ("Approach B") later means swapping the graph, not the guard, executor, or API. |
 | D4 | **LLM settings are managed in the web UI.** Staff save several LLM profiles (name, provider preset, base URL, model, API key) and switch between them from a drop-down on the chat page. | `CLAUDE.md`: "select the provider through config or env vars" | Agreed |
 | D5 | **API keys are stored encrypted in PostgreSQL** (Fernet; the master key `HUB_SECRET_KEY` lives in `.env`). The browser sends a key once, when saving, and afterwards only ever receives a masked hint (`sk-…abcd`). | assignment1: keys in the server-side settings file | Agreed |
@@ -231,7 +231,7 @@ load_context ─► generate ─► route ─┬─► clarify ─────�
 | `guard` | sqlglot checks (7.4) and adds `LIMIT display_cap + 1` | No |
 | `execute` | Runs the SQL on `chatbot_ro` in a read-only transaction with `statement_timeout`. Fetches up to the display cap (default 1,000 rows) and records `row_count` and `truncated`. | No |
 | `repair` | Adds sanitized feedback (7.5) to the state and returns to `generate`. At most 3 generations per question. | No (loops to `generate`) |
-| `analyze` | **If the profile shares results (D2):** sends the question, SQL, interpretation, column names, and up to `LLM_RESULT_MAX_ROWS` rows / `LLM_RESULT_MAX_CHARS` characters of the result (defaults 200 / 20,000), plus row count and truncation. Streams back a short analysis of 150 words or fewer. **Otherwise:** builds a local summary: one cell → "`<column>`: `<value>`"; otherwise "`<n>` rows". | Only when sharing |
+| `analyze` | **If results are shared for this question (D2: the profile allows it and the request's `share_results` is true):** sends the question, SQL, interpretation, column names, and up to `LLM_RESULT_MAX_ROWS` rows / `LLM_RESULT_MAX_CHARS` characters of the result (defaults 200 / 20,000), plus row count and truncation. Streams back a short analysis of 150 words or fewer. **Otherwise:** builds a local summary: one cell → "`<column>`: `<value>`"; otherwise "`<n>` rows". | Only when sharing |
 | `finalize` | Writes the `chat_turn` row and emits `done` | No |
 
 We do **not** use a LangGraph checkpointer. `chat_turn` is the single source of truth for history, and the graph state lives for one request. A checkpointer only becomes useful if we move to an interrupt-based agent (Approach B).
@@ -305,7 +305,7 @@ The sanitizer applies whether or not results are shared.
 
 ### 7.6 Streaming API
 
-`POST /api/conversations/{id}/messages` with `{question, llm_profile_id}` returns `text/event-stream`. The client reads it with `fetch` streaming in `api/client.ts`, because `EventSource` cannot POST. Events:
+`POST /api/conversations/{id}/messages` with `{question, llm_profile_id, share_results}` returns `text/event-stream`. `share_results` is the per-question switch (D2). It defaults to `false` when omitted, and the analysis step uses `profile.share_results_with_llm and share_results`. The client reads it with `fetch` streaming in `api/client.ts`, because `EventSource` cannot POST. Events:
 
 | Event | Payload |
 |---|---|
@@ -359,7 +359,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
   - `PATCH` and `DELETE /api/llm-profiles/{id}`
   - `POST /api/llm-profiles/{id}/default`
   - `POST /api/llm-profiles/{id}/test`, which sends a tiny prompt with no data, detects `json_mode`, and also returns the provider's `/models` list when it has one, for the model field's suggestions
-- **Selection:** the chat page shows a profile drop-down (default preselected) and a badge, "Results shared with AI: on/off". The selected `llm_profile_id` is sent with each question and recorded on the turn.
+- **Selection:** the chat page shows a profile drop-down (default preselected) and, next to the question box, the "Let AI see the results" switch (D2) with the helper text "Off: AI only writes the SQL. Results stay on this computer." When the selected profile does not allow sharing, the switch is off and disabled, with the tooltip "This AI model isn't allowed to receive results. Change it in Settings." The selected `llm_profile_id` and `share_results` are sent with each question. The turn records the profile and the effective `results_shared`.
 - **Benchmark:** `uv run python -m benchmark.run --profile "<name>"` uses a stored profile. Running it once per profile satisfies "runs with each provider after a settings change".
 - **Fake model:** a `fake` preset exists only when `HUB_ENABLE_FAKE_LLM=true` (tests, Playwright, and offline demos). It returns scripted drafts keyed by question.
 
@@ -438,7 +438,7 @@ The layers from assignment1 still apply. Changes are marked.
 | A3 | Benchmark: at least 18/20 on the chosen profile (needs a real key; run manually in S5). Expected answers come from reference SQL that is cross-checked against the compiled sheet with an independent pandas computation. |
 | A4 | The benchmark runs against two profiles with no code change. |
 | A5 | Every chat result and the full dataset export to XLSX and CSV. |
-| A6 | Privacy, using a recording fake model: with sharing **off**, no attendee value from the database appears in any LLM request. With sharing **on**, only rows from the guarded result appear, at most the cap, and never `student_id`. |
+| A6 | Privacy, using a recording fake model: with sharing **off** (the profile disallows it, the question's switch is off, or both), no attendee value from the database appears in any LLM request. With sharing **on** (both switches on), only rows from the guarded result appear, at most the cap, and never `student_id`. |
 | A7 | Login. Deferred (D8). |
 | A8 | Harmful SQL (DROP, DELETE, multiple statements, `hub.app_user`, `pg_sleep`, `set_config`) is refused by the guard, and refused again by `chatbot_ro` with the guard bypassed. |
 | A9 | An exported value starting with `=` is a string cell when the XLSX file is read back. |
@@ -462,7 +462,7 @@ Each session follows the protocol in `project/CLAUDE.md` ("Working across sessio
 
 | Item | Mitigation / owner |
 |---|---|
-| The sponsor may reject D1 (results to LLM) | Turn sharing off per profile; no code change (D2). Confirm at the next sponsor meeting. |
+| The sponsor may reject D1 (results to LLM) | Turn sharing off per profile in Settings, which also disables the per-question switch; no code change (D2). Confirm at the next sponsor meeting. |
 | ZotGPT Gateway base URL, JSON mode, and model names are unknown | The Custom/ZotGPT preset takes any base URL; "Test connection" detects JSON mode. Verify by 10/28. |
 | Providers differ in JSON reliability | Pydantic validation plus repair loop; per-profile benchmark. |
 | An LLM analysis states a wrong number | The table is shown as the authority; the analysis is labeled and told to use only numbers in the data. |

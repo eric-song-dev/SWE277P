@@ -109,7 +109,7 @@ Then write the handoff documentation.
     - asking good questions and follow-ups;
     - reading an answer card (analysis vs. table, interpretation, SQL);
     - exports;
-    - Settings and the result-sharing switch, with the privacy explanation.
+    - the two result-sharing switches (per model in Settings, per question next to the question box), with the privacy explanation.
   - **Data dictionary:** the `attendance_view` columns, the GPSRC layout mapping per platform, and the flag codes.
   - **Known limitations:**
     - D1 is pending with the sponsor;
