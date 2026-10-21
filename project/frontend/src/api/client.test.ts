@@ -39,6 +39,21 @@ describe("api client", () => {
     await expect(apiGet("/api/health")).rejects.toMatchObject({ status: 502, code: "http_502" });
   });
 
+  it("sends same-origin credentials on a GET", async () => {
+    const fn = stubFetch(new Response(JSON.stringify({ status: "ok" }), { status: 200 }));
+    await apiGet("/api/health");
+    expect(fn.mock.calls[0][1].credentials).toBe("same-origin");
+  });
+
+  it("maps a fetch failure to network_error for JSON requests and uploads", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    const networkError = { status: 0, code: "network_error", message: "Could not reach the server." };
+    await expect(apiGet("/api/health")).rejects.toMatchObject(networkError);
+    await expect(apiSend("POST", "/api/things", { a: 1 })).rejects.toMatchObject(networkError);
+    await expect(apiUpload("/api/imports", [])).rejects.toMatchObject(networkError);
+    await expect(apiGet("/api/health")).rejects.toBeInstanceOf(ApiError);
+  });
+
   it("sends same-origin credentials and a JSON body", async () => {
     const fn = stubFetch(new Response(JSON.stringify({ id: 1 }), { status: 200 }));
     await apiSend("POST", "/api/things", { a: 1 });
@@ -68,6 +83,11 @@ describe("api client", () => {
     expect(init.credentials).toBe("same-origin");
     expect(init.headers?.["Content-Type"]).toBeUndefined();
     expect((init.body as FormData).getAll("files")).toEqual([a, b]);
+  });
+
+  it("returns undefined for an empty 2xx upload response", async () => {
+    stubFetch(new Response("", { status: 200 }));
+    await expect(apiUpload("/api/imports", [])).resolves.toBeUndefined();
   });
 
   it("maps upload errors to ApiError", async () => {
@@ -123,6 +143,18 @@ describe("apiDownload", () => {
       fileName: "download",
       truncated: true,
       rowCap: 100000,
+    });
+  });
+
+  it("sends same-origin credentials and maps a fetch failure to network_error", async () => {
+    stubUrls();
+    const fn = stubFetch(new Response("data", { status: 200 }));
+    await apiDownload("/api/dataset/export?format=csv");
+    expect(fn.mock.calls[0][1].credentials).toBe("same-origin");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    await expect(apiDownload("/api/dataset/export?format=csv")).rejects.toMatchObject({
+      status: 0,
+      code: "network_error",
     });
   });
 

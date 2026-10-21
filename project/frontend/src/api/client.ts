@@ -1,4 +1,5 @@
-// The only module that calls fetch. Auth headers or tokens attach here later.
+// The only module that calls fetch, all in hubFetch: credentials (and 401 handling, once login
+// exists) attach there.
 
 export class ApiError extends Error {
   status: number;
@@ -27,18 +28,32 @@ export async function toApiError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, `http_${res.status}`, res.statusText || `HTTP ${res.status}`);
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const headers: Record<string, string> = {};
-  const init: RequestInit = { method, headers, credentials: "same-origin" };
-  if (body !== undefined) {
-    headers["Content-Type"] = "application/json";
-    init.body = JSON.stringify(body);
+// The one fetch seam. Exported for sse.ts only; features use the helpers below.
+export async function hubFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  try {
+    return await fetch(path, { ...init, credentials: "same-origin" });
+  } catch (err) {
+    // An abort stays an AbortError, so callers can tell it from a lost connection.
+    if (init.signal?.aborted || !(err instanceof TypeError)) throw err;
+    throw new ApiError(0, "network_error", "Could not reach the server.");
   }
-  const res = await fetch(path, init);
+}
+
+async function readJson<T>(res: Response): Promise<T> {
   if (!res.ok) throw await toApiError(res);
   const text = await res.text();
   if (!text) return undefined as T;
   return JSON.parse(text) as T;
+}
+
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = {};
+  const init: RequestInit = { method, headers };
+  if (body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    init.body = JSON.stringify(body);
+  }
+  return readJson<T>(await hubFetch(path, init));
 }
 
 export function apiGet<T>(path: string): Promise<T> {
@@ -57,9 +72,7 @@ export async function apiUpload<T>(path: string, files: File[]): Promise<T> {
   const form = new FormData();
   for (const file of files) form.append("files", file);
   // No Content-Type: the browser adds the multipart boundary.
-  const res = await fetch(path, { method: "POST", body: form, credentials: "same-origin" });
-  if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as T;
+  return readJson<T>(await hubFetch(path, { method: "POST", body: form }));
 }
 
 export interface DownloadResult {
@@ -69,7 +82,7 @@ export interface DownloadResult {
 }
 
 export async function apiDownload(path: string): Promise<DownloadResult> {
-  const res = await fetch(path, { credentials: "same-origin" });
+  const res = await hubFetch(path);
   if (!res.ok) throw await toApiError(res);
   const disposition = res.headers.get("Content-Disposition") ?? "";
   const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "download";

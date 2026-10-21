@@ -1,4 +1,4 @@
-import { ApiError, toApiError } from "./client";
+import { ApiError, hubFetch, toApiError } from "./client";
 import type { SseEvent } from "./types";
 
 export type { SseEvent } from "./types";
@@ -40,19 +40,13 @@ export async function streamSse(
   onEvent: (e: SseEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  let res: Response;
-  try {
-    res = await fetch(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
-      body: JSON.stringify(body),
-      credentials: "same-origin",
-      signal,
-    });
-  } catch (err) {
-    if (signal?.aborted) throw err;
-    throw new ApiError(0, "network_error", "Could not reach the server.");
-  }
+  // A fetch failure rejects with network_error; an abort, with the AbortError.
+  const res = await hubFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+    body: JSON.stringify(body),
+    signal,
+  });
   if (!res.ok) throw await toApiError(res);
 
   let done = false;

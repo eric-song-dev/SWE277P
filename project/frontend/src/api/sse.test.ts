@@ -54,6 +54,7 @@ describe("streamSse", () => {
     expect(init.headers.Accept).toBe("text/event-stream");
     expect(init.headers["Content-Type"]).toBe("application/json");
     expect(init.body).toBe(JSON.stringify({ question: "hi" }));
+    expect(init.credentials).toBe("same-origin");
   });
 
   it("rejects with stream_interrupted when the stream ends without done", async () => {
@@ -92,6 +93,23 @@ describe("streamSse", () => {
     const p = streamSse("/s", {}, () => {});
     await expect(p).rejects.toBeInstanceOf(ApiError);
     await expect(p).rejects.toMatchObject({ status: 404, code: "conversation_not_found" });
+  });
+
+  it("aborting before the response arrives rejects with AbortError, not network_error", async () => {
+    const controller = new AbortController();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_path: string, init: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+          }),
+      ),
+    );
+    const p = streamSse("/s", {}, () => {}, controller.signal);
+    controller.abort();
+    await expect(p).rejects.toMatchObject({ name: "AbortError" });
+    await expect(p).rejects.not.toBeInstanceOf(ApiError);
   });
 
   it("aborting stops delivery and rejects with AbortError", async () => {

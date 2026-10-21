@@ -206,7 +206,7 @@ export interface QueryResultOut {
   truncated: boolean;
 }
 
-// SSE events from POST /api/chat/conversations/{id}/messages
+// SSE events from POST /api/conversations/{id}/messages
 export type SseEvent =
   | { event: "step"; data: { name: string; attempt: number } }
   | { event: "clarification"; data: { question: string } }
