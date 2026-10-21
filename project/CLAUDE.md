@@ -175,10 +175,10 @@ Each e2e run starts a separate `hub-e2e` Compose project on 127.0.0.1:8081 (`HUB
 Chatbot benchmark (from `project/backend`, needs a saved LLM profile and the sample data loaded):
 
 ```bash
-uv run python -m benchmark.run --profile "<name>" [--only q01,q05] [--today 2026-11-02] [--min-score 18]
+uv run python -m benchmark.run --profile "<name>" [--set main|holdout] [--only q01,q05] [--today 2026-11-02] [--min-score 18]
 ```
 
-It writes `backend/benchmark/reports/<YYYYMMDD-HHMM>-<slug>.md` and prints `Score: N/20`. Exit code 0 = ok, 1 = below `--min-score`, 2 = could not run.
+It writes `backend/benchmark/reports/<YYYYMMDD-HHMM>-<slug>.md` and prints `Score: N/20`. `--set holdout` runs the 10 held-out questions (`holdout.yaml`, ids h01-h10; never tune prompts on them) and writes `...-<slug>-holdout.md`. Exit code 0 = ok, 1 = below `--min-score`, 2 = could not run.
 
 ## Conventions
 

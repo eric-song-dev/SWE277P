@@ -1,12 +1,13 @@
 """Run the benchmark against a stored LLM profile (spec 8.2, 14 A3/A4).
 
-    uv run python -m benchmark.run --profile "<name>" [--today 2026-11-02] [--only q01,q05]
-                                   [--min-score 18]
+    uv run python -m benchmark.run --profile "<name>" [--set main|holdout] [--today 2026-11-02]
+                                   [--only q01,q05] [--min-score 18]
 
 Each question runs through the chat graph with an empty history and ``share_results=False``:
 the benchmark scores the generated SQL's result, so no rows are ever sent to the model. The
 reference SQL runs through the same guard and read-only role. The report (SQL and scores only,
-never result rows) goes to ``benchmark/reports/<YYYYMMDD-HHMM>-<profile>.md``.
+never result rows) goes to ``benchmark/reports/<YYYYMMDD-HHMM>-<profile>.md``, or
+``...-<profile>-holdout.md`` for ``--set holdout`` (the 10 holdout questions, ids h01 to h10).
 
 Exit codes: 0 done, 1 below ``--min-score``, 2 the benchmark could not run (no sample data,
 unknown profile or question id, or any unexpected error; for an unexpected error only its
@@ -38,13 +39,14 @@ from app.errors import HubError
 from app.llm.factory import build_chat_model
 from app.llm.models import LlmProfile
 from app.llm.service import get_profile_with_key
-from benchmark import load_questions
+from benchmark import load_holdout, load_questions
 from benchmark.score import results_match
 
 logger = logging.getLogger(__name__)
 
 REPORTS_DIR = Path(__file__).resolve().parent / "reports"
 SAMPLE_ROWS = 293
+SETS = ("main", "holdout")
 DEFAULT_TODAY = date(2026, 11, 2)  # Fall 2026, the term of the sample events
 REFERENCE_CAP = 100_000
 
@@ -81,9 +83,15 @@ class Outcome:
 def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="python -m benchmark.run",
-        description="Run the 20-question chatbot benchmark against a stored LLM profile.",
+        description="Run the chatbot benchmark against a stored LLM profile.",
     )
     parser.add_argument("--profile", required=True, help="the LLM profile's name")
+    parser.add_argument(
+        "--set",
+        choices=SETS,
+        default="main",
+        help="main: the 20 benchmark questions; holdout: the 10 held-out questions (default main)",
+    )
     parser.add_argument(
         "--today",
         type=date.fromisoformat,
@@ -247,8 +255,9 @@ def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "profile"
 
 
-def _report_path(started: datetime, profile_name: str) -> Path:
-    stem = f"{started:%Y%m%d-%H%M}-{_slug(profile_name)}"
+def _report_path(started: datetime, profile_name: str, question_set: str = "main") -> Path:
+    suffix = "" if question_set == "main" else f"-{question_set}"
+    stem = f"{started:%Y%m%d-%H%M}-{_slug(profile_name)}{suffix}"
     path = REPORTS_DIR / f"{stem}.md"
     n = 2
     while path.exists():  # never overwrite an earlier run's report
@@ -261,14 +270,22 @@ def _fence(sql: str) -> str:
     return f"```sql\n{sql.strip()}\n```"
 
 
-def _render(outcomes: list[Outcome], profile: Profile, started: datetime, today: date) -> str:
+def _render(
+    outcomes: list[Outcome],
+    profile: Profile,
+    started: datetime,
+    today: date,
+    question_set: str = "main",
+) -> str:
     score = sum(o.passed for o in outcomes)
+    title = f"Benchmark: {profile.name}" + (" (holdout)" if question_set == "holdout" else "")
     lines = [
-        f"# Benchmark: {profile.name}",
+        f"# {title}",
         "",
         f"Score: {score}/{len(outcomes)}",
         "",
         f"- Run: {started:%Y-%m-%d %H:%M}",
+        f"- Set: {question_set}",
         f"- Profile: {profile.name} (preset {profile.preset}, model {profile.model})",
         f"- Prompt version: {PROMPT_VERSION}",
         f"- Today: {today.isoformat()}",
@@ -323,16 +340,17 @@ def main(argv: list[str] | None = None) -> int:
 def _main(args: argparse.Namespace) -> int:
     settings = get_settings()
     started = datetime.now()
-    questions = _select(load_questions(), args.only)
+    pool = load_holdout() if args.set == "holdout" else load_questions()
+    questions = _select(pool, args.only)
     model, profile = _load_profile(args.profile, settings)
     references = {q["id"]: _reference(q) for q in questions}
 
     print(f"Running {len(questions)} question(s) with profile {profile.name!r}", flush=True)
     outcomes = asyncio.run(_run_all(questions, references, model, profile, settings, args.today))
     score = sum(o.passed for o in outcomes)
-    path = _report_path(started, profile.name)
+    path = _report_path(started, profile.name, args.set)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_render(outcomes, profile, started, args.today), encoding="utf-8")
+    path.write_text(_render(outcomes, profile, started, args.today, args.set), encoding="utf-8")
     print(f"Score: {score}/{len(outcomes)}")
     print(f"Report: {path}")
     if args.min_score is not None and score < args.min_score:

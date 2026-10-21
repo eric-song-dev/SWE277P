@@ -14,7 +14,7 @@ from app.dataset.models import Attendance
 from app.llm.crypto import api_key_hint, encrypt_api_key
 from app.llm.fake import ScriptedChatModel, ScriptEntry
 from app.llm.models import LlmProfile
-from benchmark import load_questions, run
+from benchmark import load_holdout, load_questions, run
 
 KEY = "sk-bench-0123456789-SECRET-tail"
 REPORT_NAME = re.compile(r"\d{8}-\d{4}-(?P<slug>[a-z0-9-]+?)(-\d+)?\.md")
@@ -141,6 +141,70 @@ def test_fake_profile_end_to_end(loaded_samples, db_session, add_profile, report
         assert value not in report
     # the benchmark does not write chat_turn rows
     assert db_session.scalar(text("SELECT count(*) FROM hub.chat_turn")) == 0
+
+
+def holdout(qid: str) -> dict:
+    return next(q for q in load_holdout() if q["id"] == qid)
+
+
+def test_default_set_is_main(loaded_samples, add_profile, reports, capsys):
+    add_profile()
+    assert run.main(["--profile", "Demo Fake", "--only", "q04"]) == 0
+    assert "Score: 1/1" in capsys.readouterr().out
+    (path,) = reports.iterdir()
+    assert "holdout" not in path.name
+    assert "Set: main" in path.read_text(encoding="utf-8")
+
+
+def test_holdout_set_runs_the_holdout_questions(
+    loaded_samples, add_profile, reports, use_model, capsys
+):
+    add_profile()
+    h01 = holdout("h01")
+    model = ScriptedChatModel(
+        script=[
+            ScriptEntry(
+                match="total turnout", generate=[sql_reply(h01["reference_sql"])], analyze=""
+            )
+        ]
+    )
+    use_model(model)
+    assert run.main(["--profile", "Demo Fake", "--set", "holdout", "--only", "h01,h02"]) == 0
+    out = capsys.readouterr().out
+    assert "h01 PASS" in out and "h02 FAIL" in out and "Score: 1/2" in out
+    (path,) = reports.iterdir()
+    match = REPORT_NAME.fullmatch(path.name)
+    assert match and path.name.endswith("-demo-fake-holdout.md")
+    report = path.read_text(encoding="utf-8")
+    assert report.startswith("# Benchmark: Demo Fake (holdout)")
+    assert "Set: holdout" in report and "Score: 1/2" in report
+    assert report.index("## h01 ") < report.index("## h02 ")
+    assert "q01" not in report  # only the holdout questions ran
+    sent = "\n".join(str(m.content) for call in model.calls for m in call)
+    assert h01["question"] in sent
+
+
+def test_holdout_runs_all_ten_questions(loaded_samples, add_profile, reports, capsys):
+    add_profile()
+    assert run.main(["--profile", "Demo Fake", "--set", "holdout"]) == 0
+    assert "Score: 0/10" in capsys.readouterr().out
+    assert only_report(reports).count("\n## h") == 10
+
+
+def test_only_is_checked_within_the_chosen_set(loaded_samples, add_profile, reports, capsys):
+    add_profile()
+    assert run.main(["--profile", "Demo Fake", "--set", "holdout", "--only", "q01"]) == 2
+    assert "q01" in capsys.readouterr().err
+    assert run.main(["--profile", "Demo Fake", "--only", "h01"]) == 2
+    assert "h01" in capsys.readouterr().err
+    assert not reports.exists()
+
+
+def test_unknown_set_is_refused(add_profile, reports, capsys):
+    with pytest.raises(SystemExit) as exc:
+        run.main(["--profile", "Demo Fake", "--set", "other"])
+    assert exc.value.code == 2
+    assert "invalid choice" in capsys.readouterr().err
 
 
 def test_min_score(loaded_samples, add_profile, reports, capsys):
