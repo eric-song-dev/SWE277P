@@ -121,6 +121,21 @@ describe("useChatStream", () => {
     await s.finish();
   });
 
+  it("keeps the draft's turn until the page opens the conversation it created, then drops it", async () => {
+    vi.mocked(apiSend).mockResolvedValueOnce({ id: 9 });
+    const s = pendingStream();
+    const { result, rerender } = setup(null);
+    act(() => result.current.send("First draft question", null, true));
+    await waitFor(() => expect(streamSse).toHaveBeenCalled());
+    // Created, but the URL has not changed yet.
+    expect(result.current.live?.question).toBe("First draft question");
+    rerender({ id: 9 });
+    expect(result.current.live?.question).toBe("First draft question");
+    rerender({ id: null }); // New chat
+    expect(result.current.live).toBeNull();
+    await s.finish();
+  });
+
   it("maps a network error the same way", async () => {
     const s = pendingStream();
     const { result } = setup(7);
