@@ -144,7 +144,9 @@ def _write_turn(
     with SessionLocal(bind=get_app_engine()) as session:
         # Serialize concurrent turns of one conversation so seq stays gap-free and unique.
         conversation = session.scalar(
-            select(Conversation).where(Conversation.id == conversation_id).with_for_update()
+            select(Conversation)
+            .where(Conversation.id == conversation_id, Conversation.created_by == user_id)
+            .with_for_update()
         )
         if conversation is None:
             raise HubError("conversation_not_found", "That conversation no longer exists.", 404)
