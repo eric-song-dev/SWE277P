@@ -8,6 +8,8 @@ import type { FullConfig } from "@playwright/test";
 const PROJECT = "hub-e2e";
 const PROJECT_DIR = path.resolve(import.meta.dirname, "../..");
 const HEALTH_TIMEOUT_MS = 3 * 60_000;
+// One request, so a connection that accepts and never answers cannot outlast the deadline.
+const REQUEST_TIMEOUT_MS = 5_000;
 const DEMO_PROFILE = { name: "Demo", preset: "fake", model: "scripted" };
 
 interface Profile {
@@ -46,7 +48,7 @@ async function waitForHealth(baseURL: string) {
   const deadline = Date.now() + HEALTH_TIMEOUT_MS;
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(`${baseURL}/api/health`);
+      const res = await fetch(`${baseURL}/api/health`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
       if (res.ok) return;
     } catch {
       // nginx or the API is still starting.
@@ -61,6 +63,7 @@ function send(baseURL: string, method: string, apiPath: string, body?: unknown):
     method,
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
 }
 
@@ -106,7 +109,12 @@ export default async function globalSetup(config: FullConfig) {
     await waitForHealth(baseURL);
     await createDemoProfile(baseURL);
   } catch (error) {
-    teardown();
+    // A teardown failure must not replace the error that got us here.
+    try {
+      teardown();
+    } catch (teardownError) {
+      console.error("e2e teardown after a failed setup also failed:", teardownError);
+    }
     throw error;
   }
   return () => teardown();
