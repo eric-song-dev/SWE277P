@@ -393,6 +393,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 
 - **Encryption:** `cryptography.fernet.Fernet(HUB_SECRET_KEY)`. The API refuses to start if the key is missing or invalid, and says how to generate one.
 - **Key handling:** API responses never include the key or its ciphertext. `PATCH` without `api_key` keeps the stored key. The key is decrypted only inside `llm/` when building a chat model.
+- **Deleting a profile:** past turns keep their `provider` and `model` and lose `llm_profile_id` (`ON DELETE SET NULL`). A profile deleted while a turn that loaded it is still running does not fail that turn: recording the turn locks the profile row, and if it is already gone the turn is saved once with `llm_profile_id` NULL. (Decided in S5.)
 - **Endpoints:**
   - `GET` and `POST /api/llm-profiles`
   - `GET /api/llm-profiles/presets` (the preset list; `fake` only when enabled)

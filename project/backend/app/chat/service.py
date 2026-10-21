@@ -145,6 +145,17 @@ def _write_turn(
         )
         if conversation is None:
             raise HubError("conversation_not_found", "That conversation no longer exists.", 404)
+        if profile_id is not None:
+            # The profile may have been deleted since the turn loaded it. FOR KEY SHARE keeps a
+            # concurrent delete waiting until this commit (then ON DELETE SET NULL applies);
+            # if the row is already gone, record the turn without it (provider and model stay).
+            still_there = session.scalar(
+                select(LlmProfile.id)
+                .where(LlmProfile.id == profile_id)
+                .with_for_update(read=True, key_share=True)
+            )
+            if still_there is None:
+                profile_id = None
         seq = (
             session.scalar(
                 select(func.max(ChatTurn.seq)).where(ChatTurn.conversation_id == conversation_id)
