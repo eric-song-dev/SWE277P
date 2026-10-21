@@ -3,8 +3,9 @@ from collections import Counter
 from app.errors import HubError
 from app.imports.adapters.base import Adapter
 from app.imports.adapters.campusgroups import CampusGroupsAdapter
+from app.imports.adapters.twelvetwenty import TwelveTwentyAdapter
 
-ADAPTERS: tuple[Adapter, ...] = (CampusGroupsAdapter(),)
+ADAPTERS: tuple[Adapter, ...] = (CampusGroupsAdapter(), TwelveTwentyAdapter())
 
 
 def _missing(adapter: Adapter, have: Counter[str]) -> list[str]:
