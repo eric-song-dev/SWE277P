@@ -14,37 +14,14 @@ from app.imports.normalize import (
     term_for_date,
 )
 
-REQUIRED_HEADERS = (
-    "First Name",
-    "Last Name",
-    "Email",
-    "Member Tags",
-    "User Tags",
-    "First name",
-    "Last name",
-    "Email",
-    "Student ID #",
-    "School (drop down menu)",
-    "Department",
-    "Please select what you identify as: Doctoral Student, Staff, Faculty, Master's Student, Postdoc",
-    "Are you an international or domestic student/postdoc?",
-    "Attendee's Comment",
-    "Officer's Notes",
-    "Member's Notes",
-    "Payment Date",
-    "On the Wait List",
-    "Promoted to Main List",
-    "Attendee's Rating",
-    "Attendee's Feedback",
-    "Net ID",
-    "Event Registration UID",
-    "CG Payment UID",
-    "CG Payment ID",
-    "Alumni ID",
-)
+# Only the columns that identify a CampusGroups attendee export. Every other column is optional:
+# registration-form questions vary per event, so an absent one reads as None and the usual
+# missing_* flag fires.
+REQUIRED_HEADERS = ("First Name", "Last Name", "Email", "Net ID", "Event Registration UID")
 
+# Form questions are matched loosely because their wording can change between events.
 _AFFILIATION_PREFIX = "Please select what you identify as"
-_DOMESTIC = "Are you an international or domestic student/postdoc?"
+_DOMESTIC_SUBSTRING = "international or domestic"
 
 
 class CampusGroupsAdapter:
@@ -63,6 +40,7 @@ class CampusGroupsAdapter:
             return cell(row, idx.find(name, occurrence))
 
         affiliation_pos = idx.find_prefix(_AFFILIATION_PREFIX)
+        domestic_pos = idx.find_containing(_DOMESTIC_SUBSTRING)
         rows: list[NormalizedRow] = []
         for i, row in enumerate(grid[1:], start=2):
             row = [*row, *([None] * (n - len(row)))]
@@ -74,7 +52,7 @@ class CampusGroupsAdapter:
                 "netid": normalize_netid(col(row, "Net ID")),
                 "student_id": clean(col(row, "Student ID #")),
                 "affiliation": clean(cell(row, affiliation_pos)),
-                "domestic_international": clean(col(row, _DOMESTIC)),
+                "domestic_international": clean(cell(row, domestic_pos)),
                 "school": clean(col(row, "School (drop down menu)")),
                 "department": clean(col(row, "Department")),
             }

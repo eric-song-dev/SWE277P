@@ -3,6 +3,7 @@ from pathlib import Path
 
 from app.imports.adapters.campusgroups import CampusGroupsAdapter
 from app.imports.reader import read_grid
+from tests.imports.helpers import drop_columns, rename_column
 
 SAMPLES = Path(__file__).parents[2] / "sample_data" / "exports"
 
@@ -87,3 +88,46 @@ def test_header_whitespace_tolerated_in_parse():
     grid = cg("Bagel Breakfast - October.csv")
     grid = [[f" {h} " for h in grid[0]], *grid[1:]]
     assert CampusGroupsAdapter().parse(grid).rows[0].netid == "aahmed"
+
+
+def test_parses_without_affiliation_and_student_id_columns():
+    grid = drop_columns(
+        cg("Bagel Breakfast - October.csv"), "Student ID #", "Please select what you identify as*"
+    )
+    rows = CampusGroupsAdapter().parse(grid).rows
+    assert len(rows) == 38
+    assert all(r.affiliation is None and r.student_id is None for r in rows)
+    assert all("missing_affiliation" in {f.code for f in r.flags} for r in rows)
+    assert rows[0].netid == "aahmed" and rows[0].school == "School of Biological Sciences"
+
+
+def test_parses_without_any_optional_column():
+    grid = cg("Bagel Breakfast - October.csv")
+    required = {"First Name", "Last Name", "Email", "Net ID", "Event Registration UID"}
+    keep = [i for i, h in enumerate(grid[0]) if h in required and not (h == "Email" and i == 7)]
+    grid = [[row[i] for i in keep] for row in grid]
+    r = CampusGroupsAdapter().parse(grid).rows[0]
+    assert (r.first_name, r.email, r.netid) == ("Aaliyah", "aahmed@uci.edu", "aahmed")
+    assert {f.code for f in r.flags} == {
+        "missing_school",
+        "missing_department",
+        "missing_affiliation",
+        "missing_domestic_international",
+    }
+
+
+def test_reworded_affiliation_and_domestic_questions_still_found():
+    grid = cg("Bagel Breakfast - October.csv")
+    grid = rename_column(
+        grid,
+        "Please select what you identify as: Doctoral Student, Staff, Faculty, Master's Student, "
+        "Postdoc",
+        "Please select what you identify as (choose one)",
+    )
+    grid = rename_column(
+        grid,
+        "Are you an international or domestic student/postdoc?",
+        "Are you an International or Domestic scholar?",
+    )
+    r = CampusGroupsAdapter().parse(grid).rows[0]
+    assert (r.affiliation, r.domestic_international) == ("Doctoral Student", "International")

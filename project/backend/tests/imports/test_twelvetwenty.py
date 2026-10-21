@@ -4,6 +4,7 @@ from app.imports.adapters import detect_adapter
 from app.imports.adapters.base import RowFlag, SkippedRow
 from app.imports.adapters.twelvetwenty import TwelveTwentyAdapter
 from app.imports.reader import read_grid
+from tests.imports.helpers import drop_columns
 
 SAMPLES = Path(__file__).parents[2] / "sample_data" / "exports"
 
@@ -105,3 +106,21 @@ def test_prefill_has_no_date():
     a = TwelveTwentyAdapter()
     d = a.prefill("Health Careers Mixer.xlsx", a.parse(tt("Health Careers Mixer.xlsx")))
     assert (d.name, d.event_date, d.on_campus_groups) == ("Health Careers Mixer", None, False)
+
+
+def test_parses_without_degree_school_and_major_columns():
+    grid = drop_columns(
+        tt("Health Careers Mixer.xlsx"),
+        "Degree",
+        "Degree Level",
+        "College/School",
+        "Major/Academic Program",
+        "Student Group",
+        "Assigned Adviser",
+    )
+    assert detect_adapter(grid[0]).source == "twelvetwenty"
+    r = TwelveTwentyAdapter().parse(grid).rows[0]
+    assert (r.affiliation, r.school, r.department) == (None, None, None)
+    assert {"missing_affiliation", "missing_degree", "missing_school", "missing_department"} <= {
+        f.code for f in r.flags
+    }

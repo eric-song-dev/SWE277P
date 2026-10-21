@@ -44,3 +44,18 @@ def commit_after_preview(session, file_name: str, content: bytes, user: CurrentU
     preview = preview_upload(session, file_name, content, user)
     assert preview.status == "pending", preview
     return commit_import(session, preview.id, details(**overrides), user)
+
+
+def drop_columns(grid: list[list], *names: str) -> list[list]:
+    """Remove every column whose header equals one of `names` or starts with one ending in '*'."""
+
+    def dropped(header: str | None) -> bool:
+        h = header or ""
+        return any(h.startswith(n[:-1]) if n.endswith("*") else h == n for n in names)
+
+    keep = [i for i, h in enumerate(grid[0]) if not dropped(h)]
+    return [[row[i] for i in keep] for row in grid]
+
+
+def rename_column(grid: list[list], old: str, new: str) -> list[list]:
+    return [[new if h == old else h for h in grid[0]], *grid[1:]]

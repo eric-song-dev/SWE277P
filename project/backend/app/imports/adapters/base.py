@@ -82,5 +82,13 @@ class HeaderIndex:
                 return positions[0]
         return None
 
+    def find_containing(self, text: str) -> int | None:
+        """First column whose header contains `text`, ignoring case."""
+        needle = text.casefold()
+        for name, positions in self._positions.items():
+            if needle in name.casefold():
+                return positions[0]
+        return None
+
     def raw(self, row: list[str | None]) -> dict[str, str | None]:
         return dict(zip(self.keys, row, strict=False))

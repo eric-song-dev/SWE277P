@@ -13,24 +13,9 @@ from app.imports.normalize import (
     normalize_email,
 )
 
-REQUIRED_HEADERS = (
-    "#",
-    "First Name",
-    "Last Name",
-    "Program",
-    "Graduation Term",
-    "Email",
-    "Registration Date",
-    "Attended?",
-    "Event Rating",
-    "Waitlist?",
-    "College/School",
-    "Degree",
-    "Degree Level",
-    "Major/Academic Program",
-    "Student Group",
-    "Assigned Adviser",
-)
+# Only the columns that identify a 12twenty attendee export; Degree, Degree Level,
+# College/School, Major/Academic Program and the rest are optional (absent reads as None).
+REQUIRED_HEADERS = ("First Name", "Last Name", "Email", "Registration Date", "Attended?")
 
 _DOCTORAL = "Doctoral Student"
 _MASTERS = "Master’s Student"
