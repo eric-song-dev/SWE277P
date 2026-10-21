@@ -8,6 +8,10 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
 
+# Validation errors are returned without `input` (the submitted value, e.g. an API key), `ctx`
+# or `url`.
+_VALIDATION_ERROR_KEYS = ("loc", "msg", "type")
+
 
 class HubError(Exception):
     def __init__(
@@ -43,7 +47,8 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(RequestValidationError)
     async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-        return error_response(422, "validation_error", "Request validation failed", exc.errors())
+        details = [{k: e[k] for k in _VALIDATION_ERROR_KEYS if k in e} for e in exc.errors()]
+        return error_response(422, "validation_error", "Request validation failed", details)
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
