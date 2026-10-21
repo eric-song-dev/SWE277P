@@ -63,6 +63,15 @@ def test_hub_error_uses_its_status_code_and_details(probe):
     }
 
 
+def test_unhandled_error_logs_the_type_only(probe, caplog):
+    TestClient(probe, raise_server_exceptions=False).get("/crash")
+    records = [r for r in caplog.records if r.name == "app.errors"]
+    assert len(records) == 1
+    assert "RuntimeError" in records[0].getMessage()
+    assert records[0].exc_info is None
+    assert SECRET not in caplog.text and "Traceback" not in caplog.text
+
+
 def test_unhandled_error_is_generic_500(probe):
     res = TestClient(probe, raise_server_exceptions=False).get("/crash")
     assert res.status_code == 500

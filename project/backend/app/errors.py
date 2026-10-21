@@ -52,5 +52,6 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
-        logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+        # Type only, no traceback: the message and frames can carry row values or a key.
+        logger.error("Unhandled %s on %s %s", type(exc).__name__, request.method, request.url.path)
         return error_response(500, "internal_error", "Internal server error")

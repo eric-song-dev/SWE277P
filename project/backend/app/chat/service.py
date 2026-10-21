@@ -328,7 +328,7 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
                     yield format_sse(name, payload["data"])
         except Exception as exc:  # noqa: BLE001 - CancelledError is a BaseException and propagates
             # Type only: the message could carry row values or a key.
-            logger.error("Chat turn failed (%s)", type(exc).__name__, exc_info=False)
+            logger.error("Chat turn failed (%s)", type(exc).__name__)
             failure = INTERNAL_ERROR
         finally:
             if stream is not None:
