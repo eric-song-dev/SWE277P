@@ -109,8 +109,22 @@ def test_response_format_detection():
 
 def test_build_chat_model(profile_openai, settings):
     m = build_chat_model(profile_openai, KEY, settings=settings)
-    assert isinstance(m, ChatOpenAI) and m.temperature == 0 and m.max_retries == 1
+    assert isinstance(m, ChatOpenAI) and m.temperature == 0 and m.max_retries == 0
     assert KEY not in repr(m) and KEY not in str(m)
     fake = LlmProfile(name="f", preset="fake", base_url="", model="d", is_default=False)
     assert isinstance(build_chat_model(fake, "", settings=settings), ScriptedChatModel)
     assert json_mode_kwargs() == {"response_format": {"type": "json_object"}}
+
+
+async def test_a_timeout_is_not_retried(profile_openai, settings):
+    calls = []
+
+    def h(req: httpx.Request) -> httpx.Response:
+        calls.append(req.url.path)
+        raise httpx.ReadTimeout("slow", request=req)
+
+    r = await probe_profile(
+        profile_openai, KEY, settings=settings, http_async_client=mock_openai(h)
+    )
+    assert not r.ok
+    assert len(calls) == 1  # no hidden client retry: one call costs at most one timeout

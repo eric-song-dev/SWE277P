@@ -23,7 +23,7 @@ def build_chat_model(
         model=profile.model,
         temperature=0,
         timeout=settings.llm_timeout_s,
-        max_retries=1,
+        max_retries=0,  # one call = one timeout; the graph has its own repair loop
         http_async_client=http_async_client,
     )
 
