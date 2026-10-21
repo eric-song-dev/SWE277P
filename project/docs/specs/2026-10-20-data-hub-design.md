@@ -379,6 +379,9 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
   - Provider failures map to the `llm_*` codes. The `/test` route returns HTTP 502 for upstream failures and 400 for `llm_bad_request`, never 401, which would read as the app's own login failing.
   - A saved key that can no longer be decrypted (because `HUB_SECRET_KEY` changed) gives `profile_missing_key` with "Re-enter the API key in Settings."
   - Profile names are unique (409 `profile_name_taken`). Deleting the default profile makes the oldest remaining one the default.
+- **Details settled in S4:**
+  - A `base_url` carrying a username or password (`https://user:pass@host`) is a 422: credentials belong in the API key field, and the URL is returned to the browser.
+  - A `PATCH` with an empty or whitespace-only `api_key` keeps the stored key, like omitting the field.
 - **Selection:** the chat page shows a profile drop-down (default preselected) and, next to the question box, the "Let AI see the results" switch (D2) with the helper text "Off: AI only writes the SQL. Results stay on this computer." When the selected profile does not allow sharing, the switch is off and disabled, with the tooltip "This AI model isn't allowed to receive results. Change it in Settings." The selected `llm_profile_id` and `share_results` are sent with each question. The turn records the profile and the effective `results_shared`.
 - **Benchmark:** `uv run python -m benchmark.run --profile "<name>"` uses a stored profile. Running it once per profile satisfies "runs with each provider after a settings change".
 - **Fake model:** a `fake` preset exists only when `HUB_ENABLE_FAKE_LLM=true` (tests, Playwright, and offline demos). It returns scripted drafts keyed by question.

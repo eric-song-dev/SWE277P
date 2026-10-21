@@ -113,11 +113,13 @@ def update_profile(
     if data.name is not None and data.name != profile.name:
         _name_free(session, data.name, profile.id)
         profile.name = data.name
+    # Empty or whitespace-only means "no change", like omitting the field.
+    new_key = data.api_key.get_secret_value().strip() if data.api_key else ""
     provider_changed = (
         preset_key != profile.preset
         or base_url != profile.base_url
         or (data.model is not None and data.model != profile.model)
-        or (data.api_key is not None and bool(data.api_key.get_secret_value()))
+        or bool(new_key)
     )
     profile.preset = preset_key
     profile.base_url = base_url
@@ -125,10 +127,9 @@ def update_profile(
         profile.model = data.model
     if data.share_results_with_llm is not None:
         profile.share_results_with_llm = data.share_results_with_llm
-    if data.api_key is not None and data.api_key.get_secret_value():
-        key = data.api_key.get_secret_value()
-        profile.api_key_ciphertext = encrypt_api_key(key)
-        profile.api_key_hint = api_key_hint(key)
+    if new_key:
+        profile.api_key_ciphertext = encrypt_api_key(new_key)
+        profile.api_key_hint = api_key_hint(new_key)
     if provider_changed:
         # Probe results describe the old endpoint/model/key; a stale json_mode=True would make
         # every question fail on a model that rejects response_format.

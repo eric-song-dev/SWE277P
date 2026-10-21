@@ -270,3 +270,33 @@ def test_patch_without_provider_change_keeps_probe_results(client, db_session, p
     assert client.patch(f"/api/llm-profiles/{pid}", json=patch).status_code == 200
     state = _probe_state(db_session, pid)
     assert state[0] is True and state[1] is True and state[2] is not None
+
+
+@pytest.mark.parametrize("blank", ["", "   ", "\t\n"])
+def test_patch_with_blank_key_keeps_key(client, db_session, blank):
+    created = make(client).json()
+    res = client.patch(f"/api/llm-profiles/{created['id']}", json={"api_key": blank})
+    assert res.status_code == 200
+    assert res.json()["api_key_hint"] == "sk-…abcd" and res.json()["has_api_key"] is True
+    db_session.expire_all()
+    assert service.get_profile_with_key(db_session, created["id"])[1] == KEY
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://user:s3cr3tpw@example.com/v1",
+        "https://s3cr3tpw@example.com/v1",
+        "https://:s3cr3tpw@h/v1",
+    ],
+)
+def test_base_url_with_userinfo_is_422(client, url):
+    res = client.post(
+        "/api/llm-profiles",
+        json={"name": "C", "preset": "custom", "model": "m", "base_url": url, "api_key": KEY},
+    )
+    assert res.status_code == 422 and res.json()["error"]["code"] == "validation_error"
+    assert "s3cr3tpw" not in res.text  # the error does not echo the credential
+    created = make(client).json()
+    res = client.patch(f"/api/llm-profiles/{created['id']}", json={"base_url": url})
+    assert res.status_code == 422

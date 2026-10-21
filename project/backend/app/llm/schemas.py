@@ -1,16 +1,34 @@
 from datetime import datetime
-from typing import Self
+from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, Field, HttpUrl, SecretStr, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    HttpUrl,
+    SecretStr,
+    model_validator,
+)
 
 from app.llm.models import LlmProfile
 from app.llm.presets import NO_URL_REQUIRED, PRESETS
 
 
+def _no_userinfo(url: HttpUrl) -> HttpUrl:
+    # Credentials belong in the API key field; the URL is returned to the browser.
+    if url.username is not None or url.password is not None:
+        raise ValueError("base_url must not contain a username or password; use the API key field")
+    return url
+
+
+BaseUrl = Annotated[HttpUrl, AfterValidator(_no_userinfo)]
+
+
 class LlmProfileIn(BaseModel):
     name: str = Field(min_length=1, max_length=80)
     preset: str
-    base_url: HttpUrl | None = None
+    base_url: BaseUrl | None = None
     model: str = Field(min_length=1, max_length=120)
     api_key: SecretStr | None = None
     share_results_with_llm: bool | None = None  # None: the preset default
@@ -28,7 +46,7 @@ class LlmProfileIn(BaseModel):
 class LlmProfilePatch(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=80)
     preset: str | None = None
-    base_url: HttpUrl | None = None
+    base_url: BaseUrl | None = None
     model: str | None = Field(default=None, min_length=1, max_length=120)
     api_key: SecretStr | None = None  # missing: keep the stored key
     share_results_with_llm: bool | None = None
