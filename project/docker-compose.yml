@@ -1,9 +1,11 @@
 services:
   db:
     image: postgres:16
-    env_file: .env
     environment:
       POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      HUB_APP_PASSWORD: ${HUB_APP_PASSWORD}
+      CHATBOT_RO_PASSWORD: ${CHATBOT_RO_PASSWORD}
     volumes:
       - hub-pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -12,6 +14,23 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://hub_app:${HUB_APP_PASSWORD}@db:5432/hub
+      CHATBOT_DATABASE_URL: postgresql+psycopg://chatbot_ro:${CHATBOT_RO_PASSWORD}@db:5432/hub
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - api
 
 volumes:
   hub-pgdata:
