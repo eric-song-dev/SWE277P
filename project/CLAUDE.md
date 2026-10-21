@@ -15,7 +15,7 @@ Every time you finish a change, commit it before ending your turn. Never leave u
 
 ## Rule #2: work in sessions, keep state in PROGRESS.md
 
-The MVP is built over six separate Claude Code conversations, S1–S6 (S6, the UI redesign and user-story walkthrough, was added on 2026-10-21). Spec Section 15 lists what each one covers. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
+The MVP is built over six separate Claude Code conversations, S1–S6 (S6, the UI redesign and user-story walkthrough, was added on 2026-10-21). Spec Section 15 lists what each one covers. S1–S5 are complete; S6 is next. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
 
 At the start of a session:
 
@@ -58,6 +58,7 @@ Layout:
 ```
 project/
   README.md  CLAUDE.md  PROGRESS.md  docker-compose.yml  docker-compose.dev.yml  .env.example
+  scripts/             acceptance.sh (final acceptance run)
   db/init/             Postgres init scripts (app and read-only roles)
   docs/*.md            handoff guides (setup, user, data dictionary, known limitations, handoff) and benchmark-results.md
   docs/specs/          design specs
@@ -161,6 +162,9 @@ uv run pytest -m acceptance              # A1/A2/A9 import, A5/A6/A8 chat, bench
 uv run ruff check .
 uv run ruff format --check .
 uv run python -m app.samples             # load the synthetic sample files
+
+# Everything: lint, all tests, build, e2e, then the A1-A10 table (stops on first failure)
+bash scripts/acceptance.sh               # from project/; needs the dev db and Docker
 
 # Frontend (from project/frontend)
 npm install
