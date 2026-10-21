@@ -2,7 +2,7 @@ import hashlib
 from collections import Counter
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.auth.models import AppUser
@@ -30,6 +30,9 @@ from app.imports.schemas import (
 )
 from app.quality.models import DataQualityFlag
 from app.quality.service import record_flags
+
+# Serializes the duplicate check and insert of uploads (see _preview). Arbitrary constant.
+UPLOAD_LOCK_KEY = 7_702_277_001
 
 REJECTABLE = {"unreadable_file", "unknown_format", "file_too_large", "empty_file", "no_data_rows"}
 
@@ -96,6 +99,11 @@ def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser
         raise HubError("file_too_large", f"File exceeds the {limit // 1_048_576} MB limit.", 413)
     if not content:
         raise HubError("empty_file", "The file is empty.", 422)
+
+    # Two simultaneous uploads of the same new file would both pass the checks below and the
+    # second insert would hit a unique index. A transaction-level advisory lock makes the second
+    # upload wait until the first commits, then find its row. Uploads are rare, so one global key.
+    session.execute(text("SELECT pg_advisory_xact_lock(:key)"), {"key": UPLOAD_LOCK_KEY})
 
     # Same bytes first (cheap), then same parsed content: a copy re-saved by Excel has new bytes.
     digest = hashlib.sha256(content).hexdigest()

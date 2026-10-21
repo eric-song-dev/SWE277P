@@ -167,6 +167,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
 1. `POST /api/imports` (multipart, one or more files). For each file:
    - Hash it with SHA-256. If the hash belongs to a committed file, return `duplicate` and save nothing. If it belongs to a pending file, return that pending import.
    - Read the cell grid and hash it too (`content_sha256`, SHA-256 of the grid as canonical JSON). Apply the same duplicate and pending checks to this hash. This catches a file that was opened and re-saved in Excel without changes, which gets new bytes but the same content. (Decided in S2.)
+   - The hash checks and the insert run under a transaction-level advisory lock, so two simultaneous uploads of the same new file both succeed: the second waits for the first to commit and then gets the same pending import (or `duplicate`). (Decided in S5.)
    - Read the header row and pick the adapter whose required headers are all present. If no adapter matches, reject the file and list the closest adapter's missing columns.
    - Parse and normalize every row, then store the file as `pending` with its original bytes.
    - Return a preview: the source, the row count, the rows skipped (with reasons), the flags found, and prefilled event details.
