@@ -291,3 +291,71 @@ def test_question_too_long_is_422(client, fake_profile):
     assert res.status_code == 422 and res.json()["error"]["code"] == "validation_error"
     res = client.post(f"/api/conversations/{cid}/messages", json={"question": ""})
     assert res.status_code == 422
+
+
+def slow_model(monkeypatch, *, only_analysis: bool):
+    import asyncio
+
+    from app.chat.graph.prompts import ANALYZE_SYSTEM
+
+    model = ScriptedChatModel.default()
+    real = ScriptedChatModel._agenerate
+
+    async def slow(self, messages, *a, **k):
+        if not only_analysis or any(m.content == ANALYZE_SYSTEM for m in messages):
+            await asyncio.sleep(10)
+        return await real(self, messages, *a, **k)
+
+    monkeypatch.setattr(ScriptedChatModel, "_agenerate", slow)
+    monkeypatch.setattr(service, "build_chat_model", lambda *a, **k: model)
+
+
+def test_timeout_during_analysis_keeps_partial_turn(client, fake_profile, monkeypatch):
+    monkeypatch.setenv("TURN_TIMEOUT_S", "2")
+    get_settings.cache_clear()
+    slow_model(monkeypatch, only_analysis=True)
+    cid = new_conversation(client)
+    ev = ask(client, cid, FAKE_Q1, llm_profile_id=fake_profile, share_results=True)
+    assert [e for e, _ in ev].count("error") == 1 and ev[-1][0] == "done"
+    assert next(d for e, d in ev if e == "error")["code"] == "turn_timeout"
+    turn = turns(client, cid)[-1]
+    assert turn["error_code"] == "turn_timeout" and ev[-1][1] == {"turn_id": turn["id"]}
+    assert turn["sql"] and turn["row_count"] == 1 and turn["results_shared"] is True
+    assert turns(client, cid) == [turn]
+    get_settings.cache_clear()
+
+
+def test_timeout_while_recording_writes_one_turn_and_done_has_id(client, fake_profile, monkeypatch):
+    import time
+
+    monkeypatch.setenv("TURN_TIMEOUT_S", "2")
+    get_settings.cache_clear()
+    real = service._write_turn
+
+    def slow_write(*a, **k):
+        time.sleep(3)
+        return real(*a, **k)
+
+    monkeypatch.setattr(service, "_write_turn", slow_write)
+    cid = new_conversation(client)
+    ev = ask(client, cid, FAKE_Q1, llm_profile_id=fake_profile)
+    rows = turns(client, cid)
+    assert len(rows) == 1 and ev[-1] == ("done", {"turn_id": rows[0]["id"]})
+    get_settings.cache_clear()
+
+
+def test_other_timeout_inside_graph_is_internal_error(client, fake_profile, monkeypatch):
+    def boom(engine):
+        raise TimeoutError
+
+    monkeypatch.setattr("app.chat.graph.nodes.load_controlled_values", boom)
+    err, _ = error_turn(client, new_conversation(client), llm_profile_id=fake_profile)
+    assert err["code"] == "internal_error"
+
+
+def test_prepared_repr_hides_key():
+    prepared = service._Prepared(
+        profile_id=1, preset="openai", model_name="m", share=True, json_mode=None,
+        api_key="sk-secret-1234567890", base_url="https://x", history=[],
+    )  # fmt: skip
+    assert "sk-secret" not in repr(prepared)

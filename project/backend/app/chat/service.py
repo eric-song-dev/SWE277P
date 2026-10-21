@@ -5,10 +5,11 @@
 """
 
 import asyncio
+import contextlib
 import logging
 import time
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from fastapi import Response
@@ -95,7 +96,7 @@ class _Prepared:
     model_name: str
     share: bool  # the profile's switch; the request's is ANDed in by run_turn
     json_mode: bool | None
-    api_key: str
+    api_key: str = field(repr=False)  # never in a repr or log
     base_url: str
     history: list[TurnContext]
 
@@ -187,34 +188,59 @@ def _write_turn(
 
 async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> AsyncIterator[str]:
     settings = get_settings()
+    loop = asyncio.get_running_loop()
     started = time.monotonic()
+    deadline = loop.time() + settings.turn_timeout_s
     profile_id: int | None = None
     preset: str | None = None
     model_name: str | None = None
-    recorded = False
+    record_task: asyncio.Future[int] | None = None  # the one write of this turn
     error_sent = False
     done_sent = False
-
-    def elapsed_ms() -> int:
-        return int((time.monotonic() - started) * 1000)
+    last_state: ChatState = {}  # latest "values" snapshot: what the graph did so far
+    attempts = 0
+    analyzing = False  # rows went (or were about to go) to the provider
+    shared = False
 
     async def record(state: ChatState) -> int:
-        nonlocal recorded
-        turn_id = await asyncio.to_thread(
-            _write_turn,
-            conversation_id,
-            user.id,
-            body.question,
-            state,
-            profile_id=profile_id,
-            preset=preset,
-            model=model_name,
-            latency_ms=elapsed_ms(),
+        nonlocal record_task
+        # Shielded: a timeout that cancels this await must not start a second write.
+        record_task = asyncio.ensure_future(
+            asyncio.to_thread(
+                _write_turn,
+                conversation_id,
+                user.id,
+                body.question,
+                state,
+                profile_id=profile_id,
+                preset=preset,
+                model=model_name,
+                latency_ms=int((time.monotonic() - started) * 1000),
+            )
         )
-        recorded = True
-        return turn_id
+        return await asyncio.shield(record_task)
+
+    async def final_turn_id(failure: dict | None) -> int | None:
+        """The id of this question's turn: the graph's write if there was one, else a write of
+        what the graph did so far plus the failure."""
+        if record_task is not None:
+            try:
+                return await asyncio.shield(record_task)
+            except Exception as exc:  # noqa: BLE001 - CancelledError propagates
+                logger.error("Recording the turn failed (%s)", type(exc).__name__)
+        state: ChatState = dict(last_state)  # type: ignore[assignment]
+        state["attempts"] = max(attempts, state.get("attempts", 0))
+        state["results_shared"] = analyzing and shared
+        state["outcome"] = "error"
+        state["error"] = failure or INTERNAL_ERROR
+        try:
+            return await record(state)
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Recording the failed turn failed (%s)", type(exc).__name__)
+            return None
 
     failure: dict | None = None
+    stream = None
     try:
         try:
             prepared = await asyncio.to_thread(_prepare, conversation_id, body.llm_profile_id)
@@ -230,50 +256,57 @@ async def run_turn(conversation_id: int, body: MessageIn, user: CurrentUser) -> 
                 preset=prepared.preset, base_url=prepared.base_url, model=prepared.model_name
             )
             model = build_chat_model(transient, prepared.api_key, settings=settings)
+            shared = prepared.share and body.share_results
             deps = ChatDeps(
                 model=model,
                 json_mode=prepared.json_mode,
-                share_results=prepared.share and body.share_results,
+                share_results=shared,
                 settings=settings,
                 chatbot_engine=get_chatbot_engine(),
                 record_turn=record,
             )
-            graph = build_chat_graph(deps)
-            try:
-                async with asyncio.timeout(settings.turn_timeout_s):
-                    async for chunk in graph.astream(
-                        {"question": body.question, "history": prepared.history},
-                        stream_mode="custom",
-                    ):
-                        name = chunk["event"]
-                        error_sent = error_sent or name == "error"
-                        done_sent = done_sent or name == "done"
-                        yield format_sse(name, chunk["data"])
-            except TimeoutError:
-                failure = TIMEOUT_ERROR
+            stream = build_chat_graph(deps).astream(
+                {"question": body.question, "history": prepared.history},
+                stream_mode=["custom", "values"],
+            )
+            while True:
+                # The deadline covers only the wait for the next chunk, never a yield, so it
+                # cannot cancel Starlette's send.
+                try:
+                    async with asyncio.timeout_at(deadline) as scope:
+                        mode, payload = await anext(stream)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError:
+                    if not scope.expired():  # some other timeout raised inside the graph
+                        raise
+                    failure = TIMEOUT_ERROR
+                    break
+                if mode == "values":
+                    last_state = payload
+                    continue
+                name = payload["event"]
+                if name == "step":
+                    attempts = max(attempts, payload["data"]["attempt"])
+                    analyzing = analyzing or payload["data"]["name"] == "analyzing"
+                error_sent = error_sent or name == "error"
+                done_sent = done_sent or name == "done"
+                yield format_sse(name, payload["data"])
     except Exception as exc:  # noqa: BLE001 - CancelledError is a BaseException and propagates
         # Type only: the message could carry row values or a key.
         logger.error("Chat turn failed (%s)", type(exc).__name__, exc_info=False)
         failure = INTERNAL_ERROR
+    finally:
+        if stream is not None:
+            with contextlib.suppress(Exception):
+                await stream.aclose()
 
     if done_sent:
         return
-    if failure is not None:
-        if not error_sent:
-            yield format_sse("error", failure)
-        if not recorded:
-            state: ChatState = {"outcome": "error", "error": failure}
-            try:
-                turn_id = await record(state)
-            except Exception as exc:  # noqa: BLE001
-                logger.error("Recording the failed turn failed (%s)", type(exc).__name__)
-                turn_id = None
-            if turn_id is not None:
-                yield format_sse("done", {"turn_id": turn_id})
-                return
-        yield format_sse("done", {"turn_id": None})
-    elif not recorded:  # the graph ended without finalizing; should not happen
-        yield format_sse("done", {"turn_id": None})
+    if failure is not None and not error_sent:
+        yield format_sse("error", failure)
+    turn_id = await final_turn_id(failure)
+    yield format_sse("done", {"turn_id": turn_id})
 
 
 def _get_turn(session: Session, turn_id: int) -> ChatTurn:
