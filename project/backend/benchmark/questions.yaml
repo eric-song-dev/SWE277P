@@ -1,0 +1,299 @@
+# The chatbot benchmark (spec 8.2, 14 A3/A4): 20 sponsor-style questions over the 10 synthetic
+# sample events (293 rows, all in Fall 2026). Run it with
+#   uv run python -m benchmark.run --profile "<name>"
+#
+# Each entry: id, question (verbatim), reference_sql, ordered, notes.
+# - reference_sql runs against attendance_view as chatbot_ro and returns only the columns that
+#   are essential to the answer; the scorer ignores column names and allows extra columns.
+# - Each reference answer is cross-checked against an independent pandas computation over the
+#   sponsor's compiled sheet (tests/benchmark/pandas_expected.py).
+# - notes records how the question was read where it is ambiguous, and the answer on the
+#   sample data.
+#
+# Readings used throughout (the plain meaning for GPSRC staff):
+# - A person is a linked person (person_key: NetID first, then email). The one LinkedIn Info
+#   Session row with neither NetID nor email has no person_key, so it is not counted as a
+#   person, but it is still an attendance record.
+# - "Unique" people means distinct person_key. Without "unique", an event's attendees are its
+#   attendance records (one per person per event).
+# - "Students" without a named affiliation means everyone GPSRC serves (graduate students and
+#   postdocs), as staff use the word ("unique students", "events per student"). A named
+#   affiliation (Master's students, doctoral students, postdocs) filters on affiliation.
+# - "Each school/department" means each named value: records with no school or department are
+#   not a group of their own.
+
+- id: q01
+  question: "How many unique Biological Sciences students came to a Bagel Breakfast in Fall 2026?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE school = 'School of Biological Sciences'
+      AND event_name LIKE 'Bagel Breakfast%'
+      AND term = 'Fall 2026'
+  ordered: false
+  notes: >-
+    A Bagel Breakfast is any event whose name starts with "Bagel Breakfast" (October, November
+    and December). Students means every attendee; here all six are doctoral students, so a
+    students-only reading gives the same answer. Answer: 6 (assignment1 Appendix A).
+
+- id: q02
+  question: "How many events did NetID aahmed attend in Fall 2026?"
+  reference_sql: |
+    SELECT count(DISTINCT event_name) AS events
+    FROM attendance_view
+    WHERE term = 'Fall 2026'
+      AND person_key IN (SELECT person_key FROM attendance_view WHERE netid = 'aahmed')
+  ordered: false
+  notes: >-
+    Events of the person who owns NetID aahmed, so a row linked to that person by email would
+    count too (all of aahmed's rows carry the NetID). Answer: 8 (assignment1 Appendix A).
+
+- id: q03
+  question: "Which school had the fewest unique attendees in Fall 2026?"
+  reference_sql: |
+    WITH per_school AS (
+      SELECT school, count(DISTINCT person_key) AS people
+      FROM attendance_view
+      WHERE term = 'Fall 2026' AND school IS NOT NULL
+      GROUP BY school
+    )
+    SELECT school
+    FROM per_school
+    WHERE people = (SELECT min(people) FROM per_school)
+  ordered: false
+  notes: >-
+    Only the school is essential (a count column is allowed as an extra). Every school tied
+    for the minimum would be listed; there is no tie here. The one record with no school
+    (Building your Brand Workshop) is not a school. Answer: School of Information and Computer
+    Sciences, 7 unique attendees (assignment1 Appendix A).
+
+- id: q04
+  question: "List the emails of everyone who attended any Bagel Breakfast."
+  reference_sql: |
+    SELECT DISTINCT email
+    FROM attendance_view
+    WHERE event_name LIKE 'Bagel Breakfast%'
+      AND email IS NOT NULL
+  ordered: false
+  notes: >-
+    Distinct emails recorded on Bagel Breakfast attendance rows; a blank email is not an email.
+    One December row (NetID tzhang) has no email and is left out; looking up that person's
+    email from other events would give 56. Answer: 55 emails (assignment1 Appendix A).
+
+- id: q05
+  question: "How many unique people attended each event type?"
+  reference_sql: |
+    SELECT event_type, count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    GROUP BY event_type
+  ordered: false
+  notes: >-
+    Distinct people per event type. Answer: Professional Development 73, Wellness/Mental
+    Health 59 (assignment1 Appendix A).
+
+- id: q06
+  question: "How many unique people attended any event this term?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE term = 'Fall 2026'
+  ordered: false
+  notes: >-
+    The runner's default today is 2026-11-02, so this term is Fall 2026. The LinkedIn Info
+    Session row with no NetID or email is not a person; the November Bagel Breakfast row with
+    only an email is cdiaz. Answer: 79 (assignment1 Appendix A).
+
+- id: q07
+  question: "How many people attended the Health Careers Mixer?"
+  reference_sql: |
+    SELECT count(*) AS attendees
+    FROM attendance_view
+    WHERE event_name = 'Health Careers Mixer'
+  ordered: false
+  notes: >-
+    The event's headcount: its attendance records, one per person. Every row of this event is
+    a linked person, so distinct people give the same answer. Answer: 45.
+
+- id: q08
+  question: "Show the number of attendance records for each school, highest first."
+  reference_sql: |
+    SELECT school, count(*) AS records
+    FROM attendance_view
+    WHERE school IS NOT NULL
+    GROUP BY school
+    ORDER BY records DESC, school
+  ordered: true
+  notes: >-
+    Attendance records (rows), not people, as the question says. The one record with no school
+    (Building your Brand Workshop, rwilson) is not a school, so it has no row: 9 schools.
+    School of Information and Computer Sciences and School of Social Sciences tie at 25; the
+    tie is broken by school name (A to Z), so ICS comes first. Answer: Engineering 55,
+    Biological Sciences 38, Humanities 33, Medicine 32, Physical Sciences 31, Business 29,
+    ICS 25, Social Sciences 25, Social Ecology 24.
+
+- id: q09
+  question: "How many unique international students or postdocs attended at least one event?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE domestic_international = 'International'
+  ordered: false
+  notes: >-
+    "International" applies to both nouns: international students or international postdocs.
+    Every attendee is a student or a postdoc, so this is every international person (5
+    doctoral, 7 master's, 4 postdocs). 12twenty rows have no domestic/international value; a
+    person counts once if any of their records says International. The other parse,
+    international students plus all postdocs, gives 28. Answer: 16.
+
+- id: q10
+  question: "Which School of Medicine students attended the October Bagel Breakfast? List their names and emails."
+  reference_sql: |
+    SELECT DISTINCT first_name, last_name, email
+    FROM attendance_view
+    WHERE school = 'School of Medicine'
+      AND event_name = 'Bagel Breakfast, October'
+  ordered: false
+  notes: >-
+    Students means every attendee GPSRC serves. All six School of Medicine attendees of the
+    October Bagel Breakfast (and every School of Medicine attendee in the sample) are postdocs;
+    a doctoral/master's-only reading would return no rows, which is not what staff asking
+    this want. Names are the first_name and last_name columns as stored. Answer: 6 people.
+
+- id: q11
+  question: "How many postdocs attended the Postdoc Wellness Lunch?"
+  reference_sql: |
+    SELECT count(*) AS postdocs
+    FROM attendance_view
+    WHERE event_name = 'Postdoc Wellness Lunch'
+      AND affiliation = 'Postdoc'
+  ordered: false
+  notes: >-
+    Only attendees whose affiliation is Postdoc; the lunch also had 5 doctoral and 5 master's
+    students (18 in all). Answer: 8.
+
+- id: q12
+  question: "Which event had the most attendees?"
+  reference_sql: |
+    WITH per_event AS (
+      SELECT event_name, count(*) AS attendees
+      FROM attendance_view
+      GROUP BY event_name, term
+    )
+    SELECT event_name
+    FROM per_event
+    WHERE attendees = (SELECT max(attendees) FROM per_event)
+  ordered: false
+  notes: >-
+    Only the event name is essential (a count column is allowed as an extra). Attendees are the
+    event's records; distinct people give the same winner. Every event tied for the maximum
+    would be listed; there is no tie. Answer: Health Careers Mixer (45).
+
+- id: q13
+  question: "How many unique Master's students attended a Professional Development event?"
+  reference_sql: |
+    SELECT count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE affiliation = 'Master’s Student'
+      AND event_type = 'Professional Development'
+  ordered: false
+  notes: >-
+    The stored affiliation is "Master’s Student" with a typographic apostrophe (U+2019), as
+    CampusGroups spells it. Answer: 15.
+
+- id: q14
+  question: "List everyone who attended 5 or more events, with how many events each attended."
+  reference_sql: |
+    SELECT min(first_name) AS first_name, min(last_name) AS last_name, count(*) AS events
+    FROM attendance_view
+    WHERE person_key IS NOT NULL
+    GROUP BY person_key
+    HAVING count(*) >= 5
+  ordered: false
+  notes: >-
+    One row per linked person (each person has one name in the sample) with their number of
+    events; a person has one record per event. Grouping by person_key matters: cdiaz has 9
+    events because the November Bagel Breakfast row has only the email (grouping by NetID gives
+    8), and the unlinked LinkedIn Info Session row named Elias Lewis is not counted for elewis
+    (6, not 7). Essential columns: first name, last name, events. Answer: 26 people.
+
+- id: q15
+  question: "What percentage of attendees at virtual events were doctoral students? (rounded to 1 decimal)"
+  reference_sql: |
+    SELECT round(
+             100.0 * count(*) FILTER (WHERE affiliation = 'Doctoral Student') / count(*), 1
+           ) AS doctoral_pct
+    FROM attendance_view
+    WHERE modality = 'Virtual'
+  ordered: false
+  notes: >-
+    Attendees of the virtual events are their attendance records (the question does not say
+    unique), including the unlinked LinkedIn Info Session row: 52 of 89. Unique people would
+    give 31 of 53 = 58.5, and linked records only 51 of 88 = 58.0. Answer: 58.4.
+
+- id: q16
+  question: "How many attendees came to hybrid events?"
+  reference_sql: |
+    SELECT count(*) AS attendees
+    FROM attendance_view
+    WHERE modality = 'Hybrid'
+  ordered: false
+  notes: >-
+    Attendance records at hybrid events. The only hybrid event is Building your Brand
+    Workshop, so distinct people give the same answer. Answer: 27.
+
+- id: q17
+  question: "How many unique attendees came from each department in the School of Engineering?"
+  reference_sql: |
+    SELECT department, count(DISTINCT person_key) AS unique_people
+    FROM attendance_view
+    WHERE school = 'School of Engineering'
+    GROUP BY department
+  ordered: false
+  notes: >-
+    Department as recorded on School of Engineering rows; no such row lacks a department.
+    Answer: Biomedical Engineering 8, Computer Science 8.
+
+- id: q18
+  question: "Who attended both Cover Letters for Academic Jobs and Teaching Statements for Academic Jobs?"
+  reference_sql: |
+    SELECT min(first_name) AS first_name, min(last_name) AS last_name
+    FROM attendance_view
+    WHERE event_name IN ('Cover Letters for Academic Jobs',
+                         'Teaching Statements for Academic Jobs')
+      AND person_key IS NOT NULL
+    GROUP BY person_key
+    HAVING count(DISTINCT event_name) = 2
+  ordered: false
+  notes: >-
+    Linked people with a record at both events, listed by first and last name. Answer: 12
+    people.
+
+- id: q19
+  question: "How many people attended exactly one event?"
+  reference_sql: |
+    SELECT count(*) AS people
+    FROM (
+      SELECT person_key
+      FROM attendance_view
+      WHERE person_key IS NOT NULL
+      GROUP BY person_key
+      HAVING count(*) = 1
+    ) AS one_event
+  ordered: false
+  notes: >-
+    Linked people with exactly one event. The unlinked LinkedIn Info Session row is not a
+    person (it belongs to Elias Lewis, who attended six other events). Answer: 11.
+
+- id: q20
+  question: "Give me the emails of School of Social Sciences students who attended any wellness event."
+  reference_sql: |
+    SELECT DISTINCT email
+    FROM attendance_view
+    WHERE school = 'School of Social Sciences'
+      AND event_type = 'Wellness/Mental Health'
+      AND email IS NOT NULL
+  ordered: false
+  notes: >-
+    A wellness event is one of type Wellness/Mental Health (the three Bagel Breakfasts and the
+    Postdoc Wellness Lunch). Students means every attendee; all five are doctoral students, so
+    a students-only reading gives the same answer. Answer: 5 emails.
