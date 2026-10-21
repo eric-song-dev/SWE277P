@@ -3,11 +3,13 @@ import pytest
 from langchain_openai import ChatOpenAI
 from openai import (
     APIConnectionError,
+    APIStatusError,
     APITimeoutError,
     AuthenticationError,
     BadRequestError,
     NotFoundError,
     RateLimitError,
+    UnprocessableEntityError,
 )
 
 from app.config import Settings
@@ -105,6 +107,44 @@ def test_response_format_detection():
     assert is_response_format_unsupported(yes)
     assert not is_response_format_unsupported(_status_exc(BadRequestError, 400))
     assert not is_response_format_unsupported(RuntimeError("response_format"))
+
+
+@pytest.mark.parametrize(
+    ("cls", "status", "message"),
+    [
+        (BadRequestError, 400, "Unsupported parameter: 'response_format'"),
+        (BadRequestError, 400, "Invalid parameter: response format is not supported by this model"),
+        (BadRequestError, 400, "This model does not support JSON mode"),
+        (BadRequestError, 400, "'json_object' is not a valid type for this deployment"),
+        (BadRequestError, 400, "Structured outputs are not supported by this model"),
+        (UnprocessableEntityError, 422, "Extra inputs are not permitted: response_format"),
+        (APIStatusError, 405, "response_format is not allowed on this route"),
+        (APIStatusError, 415, "Unrecognized request argument supplied: response_format"),
+        (APIStatusError, 501, "response_format not implemented"),
+        (NotFoundError, 404, "Unknown field response_format"),
+    ],
+)
+def test_response_format_detection_covers_gateway_wordings(cls, status, message):
+    exc = _status_exc(cls, status)
+    exc.message = message
+    assert is_response_format_unsupported(exc)
+
+
+@pytest.mark.parametrize(
+    ("cls", "status", "message"),
+    [
+        (BadRequestError, 400, "Invalid API key format"),
+        (BadRequestError, 400, "maximum context length exceeded"),
+        (NotFoundError, 404, "The model `gpt-9` does not exist"),
+        (AuthenticationError, 401, "response_format denied for this key"),
+        (RateLimitError, 429, "response_format rate limit"),
+        (APIStatusError, 500, "response_format crashed the server"),
+    ],
+)
+def test_response_format_detection_ignores_unrelated_failures(cls, status, message):
+    exc = _status_exc(cls, status)
+    exc.message = message
+    assert not is_response_format_unsupported(exc)
 
 
 def test_build_chat_model(profile_openai, settings):

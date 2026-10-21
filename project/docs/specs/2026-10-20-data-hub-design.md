@@ -300,6 +300,8 @@ Prompts live in `chat/graph/prompts.py` as versioned constants. `chat_turn` reco
 
 A profile that has not been tested yet tries JSON mode first and falls back to a plain call if the provider rejects `response_format`. Either way, the result is validated with Pydantic.
 
+A provider "rejects `response_format`" when it answers with status 400, 404, 405, 415, 422 or 501 and the message names the feature (`response_format`, `json_object`, `json_schema`, JSON mode, structured output), in any capitalization or spacing. Other statuses (401, 429, 5xx) and unrelated 4xx messages are real failures, not a reason to fall back. Consecutive human messages are not merged; that waits until ZotGPT is verified (known limitation). (Decided in S5.)
+
 ### 7.4 SQL guard (layer 1)
 
 The guard parses with `sqlglot` (dialect `postgres`) and enforces:

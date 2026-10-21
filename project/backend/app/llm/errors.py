@@ -1,3 +1,5 @@
+import re
+
 from openai import (
     APIConnectionError,
     APIStatusError,
@@ -58,5 +60,21 @@ def map_llm_error(exc: Exception) -> HubError:
     )
 
 
+# Statuses OpenAI-compatible gateways use to refuse a request field they do not support.
+_REJECTION_STATUSES = frozenset({400, 404, 405, 415, 422, 501})
+# Wordings that name the JSON-mode / structured-output feature (never a key or model problem).
+_REJECTION_WORDING = re.compile(
+    r"response[_\s-]?format|json[_\s-]?object|json[_\s-]?schema|json mode|structured[_\s-]?output",
+    re.IGNORECASE,
+)
+
+
 def is_response_format_unsupported(exc: Exception) -> bool:
-    return isinstance(exc, BadRequestError) and "response_format" in str(exc.message)
+    """True if the provider refused ``response_format``/JSON mode (spec 7.3): the plain-call
+    fallback then applies. Needs both a rejection-type status and a message about the feature,
+    so auth, rate-limit, server and unrelated 4xx errors are not mistaken for it."""
+    return (
+        isinstance(exc, APIStatusError)
+        and exc.status_code in _REJECTION_STATUSES
+        and bool(_REJECTION_WORDING.search(str(exc.message)))
+    )
