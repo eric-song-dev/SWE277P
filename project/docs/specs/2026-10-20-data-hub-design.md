@@ -119,7 +119,7 @@ All tables live in schema `hub` and are owned by `hub_app`. Migrations use Alemb
 | Table | Purpose | Key columns |
 |---|---|---|
 | `app_user` | Acting user. Seeded with one `local` user. | `id`, `username` unique, `display_name`, `created_at` |
-| `import_file` | One uploaded file, pending or committed | `id`, `file_name`, `file_sha256` unique, `source` (`campusgroups` \| `twelvetwenty`), `status` (`pending` \| `committed`), `content` bytea (original bytes), `row_count`, `skipped_count`, `event_id` null until commit, `uploaded_by` → `app_user`, `uploaded_at`, `committed_at` |
+| `import_file` | One uploaded file, pending or committed | `id`, `file_name`, `file_sha256` unique, `content_sha256` unique (parsed-grid hash), `source` (`campusgroups` \| `twelvetwenty`), `status` (`pending` \| `committed`), `content` bytea (original bytes), `row_count`, `skipped_count`, `event_id` null until commit, `uploaded_by` → `app_user`, `uploaded_at`, `committed_at` |
 | `event` | One event; one per committed file | `id`, `name`, `event_date` (nullable), `term` (`Fall 2026` format), `academic_year` (derived from `term` at insert, e.g. `2026-27`), `modality` (`In Person` \| `Virtual` \| `Hybrid`), `sponsors_hosts`, `event_type`, `on_campus_groups` (derived from source), `attendance_source_note`, `student_worker` (the form's "entered by"), `created_by` → `app_user` |
 | `person` | Identity only | `id`, `created_at` |
 | `person_identifier` | A person's NetIDs and emails | `person_id`, `kind` (`netid` \| `email`), `value` (normalized); unique (`kind`, `value`) |
@@ -150,6 +150,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
 
 1. `POST /api/imports` (multipart, one or more files). For each file:
    - Hash it with SHA-256. If the hash belongs to a committed file, return `duplicate` and save nothing. If it belongs to a pending file, return that pending import.
+   - Read the cell grid and hash it too (`content_sha256`, SHA-256 of the grid as canonical JSON). Apply the same duplicate and pending checks to this hash. This catches a file that was opened and re-saved in Excel without changes, which gets new bytes but the same content. (Decided in S2.)
    - Read the header row and pick the adapter whose required headers are all present. If no adapter matches, reject the file and list the closest adapter's missing columns.
    - Parse and normalize every row, then store the file as `pending` with its original bytes.
    - Return a preview: the source, the row count, the rows skipped (with reasons), the flags found, and prefilled event details.
@@ -158,6 +159,13 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
 4. `DELETE /api/imports/{id}` discards a pending import. Committed imports cannot be deleted in the MVP (backlog).
 
 **Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module.
+
+The required headers are a small identifying set, not every column, because CampusGroups registration-form questions vary from event to event:
+
+- CampusGroups: `First Name`, `Last Name`, `Email`, `Net ID`, `Event Registration UID`
+- 12twenty: `First Name`, `Last Name`, `Email`, `Registration Date`, `Attended?`
+
+Every other column is optional. When one is absent, its value is blank and the usual `missing_*` flag applies. (Decided in S2.)
 
 Files are read as raw cell grids (`csv` module, openpyxl) rather than with pandas header inference, because CampusGroups repeats headers (`Email` appears twice).
 
@@ -171,6 +179,7 @@ Files are read as raw cell grids (`csv` module, openpyxl) rather than with panda
 
 - Only `Attended? = YES` rows are kept. Other rows are skipped and counted.
 - School comes from `College/School` and Department from `Major/Academic Program`. Affiliation comes from `Degree`: Doctoral → Doctoral Student, Masters → Master’s Student (U+2019, as in CampusGroups), Postdoctoral → Postdoc.
+- When `Degree` is blank, affiliation falls back to `Degree Level` (Doctorate → Doctoral Student, Masters → Master’s Student, Postdoctoral Scholar → Postdoc) and the row is flagged `missing_degree`. The compiled sheet does the same for its one such row. (Decided in S2.)
 - NetID is derived only from emails matching `^[a-z0-9]+@uci\.edu$` after normalization. Other addresses get no NetID and a `non_standard_email` flag.
 - Student ID and domestic/international stay blank. `Registration Date` is never used as the event date.
 
@@ -190,9 +199,14 @@ Files are read as raw cell grids (`csv` module, openpyxl) rather than with panda
 4. If nothing matches but the row has a NetID or email, create a person and record its identifiers.
 5. If the row has neither, set `person_id` to NULL, use `match_method = none`, and flag `missing_identity`.
 
-After linking, any new email is added to the person unless another person already owns it, in which case the row is flagged. A second row for the same person in the same event is skipped and flagged `duplicate_in_event`.
+After linking, any new email is added to the person unless another person already owns it, in which case the row is flagged `email_owned_by_other`. A second row for the same person in the same event is skipped and flagged `duplicate_in_event`.
 
-**Flags** (`code`): `missing_identity`, `missing_netid`, `missing_email`, `missing_school`, `missing_department`, `missing_affiliation`, `missing_domestic_international` (CampusGroups only), `non_standard_email`, `netid_email_conflict`, `email_owned_by_other`, `duplicate_in_event`, `not_attended_skipped`.
+Details settled in S2:
+
+- Rule 2's attach case reports `match_method = email`, because the email found the person.
+- In the `netid_email_conflict` case the email stays with its current owner. The row gets only `netid_email_conflict`, not `email_owned_by_other` as well.
+
+**Flags** (`code`): `missing_identity`, `missing_netid`, `missing_email`, `missing_school`, `missing_department`, `missing_affiliation`, `missing_domestic_international` (CampusGroups only), `missing_degree` (12twenty only), `non_standard_email`, `netid_email_conflict`, `email_owned_by_other`, `duplicate_in_event`, `not_attended_skipped`.
 
 ## 7. Chatbot (F6, F7, F13, D1–D3, D7)
 
@@ -352,7 +366,7 @@ Presets prefill `base_url` and the default `share_results_with_llm`:
 ## 9. Export (F9)
 
 - **Chat results:** `GET /api/chat/turns/{id}/export`, as described in 7.6.
-- **Full dataset:** `GET /api/dataset/export?format=xlsx|csv` writes the 19-column GPSRC Data Project layout, with the template's exact headers, including Student ID. It is read through the app role by the `dataset` service. The Notes column is generated from the row's source and flags, in the style of the compiled sheet.
+- **Full dataset:** `GET /api/dataset/export?format=xlsx|csv` writes the 19-column GPSRC Data Project layout, with the template's exact headers, including Student ID. It is read through the app role by the `dataset` service. The Notes column is generated from the row's source and flags, in the style of the compiled sheet: `Source: <platform> export`, then `INCOMPLETE: …` for the missing-field flags and `CHECK: …` for the identity and email flags (e.g. `Source: CampusGroups export; INCOMPLETE: email missing`).
 - **Formula guard:** a value starting with `=`, `+`, `-`, `@`, tab, or CR is written as an explicit string cell in XLSX (`data_type = "s"`). In CSV it gets a leading `'`.
 - **File names:** `hub-<turn id or "dataset">-<YYYYMMDD-HHMM>.<ext>`.
 
@@ -380,7 +394,7 @@ Errors use one JSON shape, `{"error": {"code", "message", "details"}}`.
 
 | Feature | Seam built in P0 | What P1 adds |
 |---|---|---|
-| F11 filter table | `dataset/service.py::query(filters, sort, page)` with an allow-listed column set and bound parameters, already used by the full export | A route and a DataGrid page |
+| F11 filter table | `dataset/service.py::query_dataset(filters, sort, limit, offset)` over `attendance_view`, with an allow-listed column set and bound parameters. The full export uses `gpsrc_layout_rows` instead, because it needs Student ID, which the view leaves out. | A route and a DataGrid page |
 | F12 data quality | `data_quality_flag` table with `resolved_*` columns; flags written at import | A list or resolve UI and an "edit blank field" endpoint |
 | F14 saved queries | `chat_turn` keeps question, SQL, and interpretation | A `saved_query` table referencing a turn, and a one-click run that reuses the export and rerun path |
 | F15 historical import | Adapter registry | A `gpsrc_sheet` adapter (event details come from the rows, so the form is skipped) |
