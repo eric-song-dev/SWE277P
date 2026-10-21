@@ -300,3 +300,24 @@ def test_base_url_with_userinfo_is_422(client, url):
     created = make(client).json()
     res = client.patch(f"/api/llm-profiles/{created['id']}", json={"base_url": url})
     assert res.status_code == 422
+
+
+def test_create_strips_the_key(client, db_session):
+    created = make(client, api_key=f"  {KEY}\n").json()
+    assert created["has_api_key"] is True and created["api_key_hint"] == "sk-…abcd"
+    assert service.get_profile_with_key(db_session, created["id"])[1] == KEY
+
+
+def test_whitespace_only_key_on_create_means_no_key(client):
+    created = make(client, api_key="   \t ").json()
+    assert created["has_api_key"] is False and created["api_key_hint"] is None
+
+
+def test_patch_strips_the_key_and_ignores_whitespace_only(client, db_session):
+    created = make(client).json()
+    client.patch(f"/api/llm-profiles/{created['id']}", json={"api_key": "  "})
+    db_session.expire_all()
+    assert service.get_profile_with_key(db_session, created["id"])[1] == KEY
+    client.patch(f"/api/llm-profiles/{created['id']}", json={"api_key": " sk-new-1234567890wxyz "})
+    db_session.expire_all()
+    assert service.get_profile_with_key(db_session, created["id"])[1] == "sk-new-1234567890wxyz"
