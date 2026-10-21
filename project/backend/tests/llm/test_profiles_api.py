@@ -174,3 +174,10 @@ def test_seed_skipped_without_name_or_key(db_session):
 def test_seed_share_results_parsed(db_session):
     service.seed_profile_from_env(db_session, seed_settings(llm_seed_share_results="true"))
     assert db_session.scalars(select(LlmProfile)).one().share_results_with_llm is True
+
+
+def test_patch_rejects_unknown_or_unavailable_preset(client):
+    created = make(client).json()
+    for preset in ("bogus", "fake"):
+        res = client.patch(f"/api/llm-profiles/{created['id']}", json={"preset": preset})
+        assert res.status_code == 422 and res.json()["error"]["code"] == "validation_error"

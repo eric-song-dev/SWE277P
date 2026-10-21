@@ -97,6 +97,10 @@ def update_profile(
     profile = get_profile(session, profile_id)
     fields = data.model_fields_set
     preset_key = data.preset or profile.preset
+    if preset_key != profile.preset:
+        _check_preset(
+            preset_key, "x", settings
+        )  # unknown or unavailable preset: 422 before indexing
     if "base_url" in fields:
         base_url = _clean_url(data.base_url) or PRESETS[preset_key].base_url or ""
     elif preset_key != profile.preset:
