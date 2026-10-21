@@ -1,7 +1,10 @@
 from decimal import Decimal
 
+import numpy as np
+
 from app.chat.executor import QueryResult
 from benchmark.score import results_match
+from tests.benchmark.pandas_expected import PANDAS
 
 
 def QR(columns: list[str], rows: list[list], *, truncated: bool = False) -> QueryResult:
@@ -134,3 +137,77 @@ def test_empty_results_match():
 def test_truncated_result_never_matches():
     rows = [["a"], ["b"]]
     assert not results_match(QR(["e"], rows), QR(["e"], rows, truncated=True), ordered=False)
+
+
+def test_numpy_numbers():
+    assert results_match(QR(["p"], [[58.4]]), QR(["p"], [[np.float64(58.4)]]), ordered=False)
+    assert results_match(QR(["n"], [[np.int64(6)]]), QR(["n"], [[6]]), ordered=False)
+    assert not results_match(QR(["p"], [[np.float64(58.4)]]), QR(["p"], [[58.5]]), ordered=False)
+
+
+# --- ties in ordered answers -------------------------------------------------------------------
+
+RANKED = [["a", 3], ["b", 2], ["c", 2], ["d", 1]]  # b and c tie at 2
+
+
+def test_ordered_tied_rows_may_swap():
+    swapped = [["a", 3], ["c", 2], ["b", 2], ["d", 1]]
+    assert results_match(
+        QR(["s", "n"], RANKED), QR(["n", "s"], [[n, s] for s, n in swapped]), ordered=True
+    )
+
+
+def test_ordered_untied_rows_may_not_swap():
+    for wrong in (
+        [["b", 2], ["a", 3], ["c", 2], ["d", 1]],  # a (3) after b (2)
+        [["a", 3], ["b", 2], ["d", 1], ["c", 2]],  # d (1) before c (2)
+        [["d", 1], ["c", 2], ["b", 2], ["a", 3]],  # lowest first
+    ):
+        assert not results_match(QR(["s", "n"], RANKED), QR(["s", "n"], wrong), ordered=True)
+
+
+def test_ordered_ties_with_duplicates():
+    expected = QR(["s", "n"], [["x", 2], ["y", 2], ["y", 2], ["z", 1]])
+    assert results_match(
+        expected, QR(["s", "n"], [["y", 2], ["x", 2], ["y", 2], ["z", 1]]), ordered=True
+    )
+    # same tied counts, but the block's rows are not the expected multiset
+    assert not results_match(
+        expected, QR(["s", "n"], [["x", 2], ["x", 2], ["y", 2], ["z", 1]]), ordered=True
+    )
+
+
+def test_ordered_tie_block_does_not_span_a_gap():
+    # the two 2s are not consecutive, so they are separate blocks
+    expected = QR(["s", "n"], [["a", 2], ["b", 1], ["c", 2]])
+    assert not results_match(expected, QR(["s", "n"], [["c", 2], ["b", 1], ["a", 2]]), ordered=True)
+
+
+def test_ordered_ties_within_tolerance():
+    expected = QR(["s", "p"], [["a", 33.3], ["b", 33.3], ["c", 10.5]])
+    actual = QR(["s", "p"], [["b", 33.30000001], ["a", 33.3], ["c", 10.5]])
+    assert results_match(expected, actual, ordered=True)
+
+
+def test_ordered_without_numeric_column_is_strict():
+    expected = QR(["first", "last"], [["Ann", "Lee"], ["Bo", "Lee"], ["Cy", "Ng"]])
+    same = QR(["first", "last"], [["Ann", "Lee"], ["Bo", "Lee"], ["Cy", "Ng"]])
+    swapped = QR(["first", "last"], [["Bo", "Lee"], ["Ann", "Lee"], ["Cy", "Ng"]])
+    assert results_match(expected, same, ordered=True)
+    assert not results_match(expected, swapped, ordered=True)
+
+
+def test_q08_tie_between_ics_and_social_sciences():
+    expected = PANDAS["q08"]()
+    rows = [list(r) for r in expected.rows]
+    names = [school for school, _ in rows]
+    ics = names.index("School of Information and Computer Sciences")
+    social = names.index("School of Social Sciences")
+    assert abs(ics - social) == 1 and rows[ics][1] == rows[social][1] == 25  # the tie is real
+    tie_swapped = [r[:] for r in rows]
+    tie_swapped[ics], tie_swapped[social] = tie_swapped[social], tie_swapped[ics]
+    assert results_match(expected, QR(["school", "records"], tie_swapped), ordered=True)
+    # the top two (Engineering 55, Biological Sciences 38) are not tied
+    wrong = [r[:] for r in rows]
+    wrong[0], wrong[1] = wrong[1], wrong[0]
+    assert not results_match(expected, QR(["school", "records"], wrong), ordered=True)

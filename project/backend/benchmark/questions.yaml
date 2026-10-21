@@ -126,8 +126,9 @@
   notes: >-
     Attendance records (rows), not people, as the question says. The one record with no school
     (Building your Brand Workshop, rwilson) is not a school, so it has no row: 9 schools.
-    School of Information and Computer Sciences and School of Social Sciences tie at 25; the
-    tie is broken by school name (A to Z), so ICS comes first. Answer: Engineering 55,
+    School of Information and Computer Sciences and School of Social Sciences tie at 25. The
+    question does not order tied rows, so the scorer accepts them either way round (rows tied
+    on the count form one block); the reference lists them A to Z. Answer: Engineering 55,
     Biological Sciences 38, Humanities 33, Medicine 32, Physical Sciences 31, Business 29,
     ICS 25, Social Sciences 25, Social Ecology 24.
 
