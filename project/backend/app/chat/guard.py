@@ -74,11 +74,43 @@ _CLASS_TO_NAMES: dict[type[exp.Expression], frozenset[str]] = {
     exp.If: frozenset({"case"}),  # each WHEN branch of a CASE is an exp.If
     exp.Exists: frozenset({"exists"}),  # EXISTS (subquery): a predicate, not a function
 }
-_ALLOWED_CLASSES = {
-    cls for cls, names in _CLASS_TO_NAMES.items() if names & (ALLOWED_FUNCTIONS | {"exists"})
-}
+_FUNCTION_CLASSES = frozenset(_CLASS_TO_NAMES)
 # Functions sqlglot leaves as exp.Anonymous: allowed by name.
 _ALLOWED_ANONYMOUS = frozenset({"make_date"})
+
+# Every non-function node type that may appear in the parsed tree. Anything
+# else (including any exp.Func subclass not in _CLASS_TO_NAMES) is rejected, so
+# nodes this guard has never seen fail closed. Exact classes, not isinstance.
+_ALLOWED_NODE_TYPES: frozenset[type[exp.Expression]] = frozenset(
+    {
+        # query structure
+        exp.Select, exp.Union, exp.Intersect, exp.Except, exp.Subquery, exp.With, exp.CTE,
+        exp.From, exp.Where, exp.Group, exp.Having, exp.Order, exp.Ordered, exp.Limit,
+        exp.Offset, exp.Fetch, exp.LimitOptions, exp.Join, exp.Distinct, exp.Window,
+        exp.WindowSpec, exp.Filter, exp.Table, exp.TableAlias, exp.Alias, exp.Values,
+        exp.Tuple,
+        # names and literals
+        exp.Identifier, exp.Column, exp.Star, exp.Literal, exp.Boolean, exp.Null,
+        exp.Paren, exp.Interval, exp.Var, exp.DataType, exp.DataTypeParam, exp.AtTimeZone,
+        # operators and predicates
+        exp.And, exp.Or, exp.Not, exp.Is, exp.In, exp.Between, exp.Like, exp.ILike,
+        exp.EQ, exp.NEQ, exp.GT, exp.GTE, exp.LT, exp.LTE, exp.NullSafeEQ, exp.NullSafeNEQ,
+        exp.Add, exp.Sub, exp.Mul, exp.Div, exp.Mod, exp.Neg, exp.DPipe,
+    }
+)  # fmt: skip
+_ALLOWED_NODES = _ALLOWED_NODE_TYPES | _FUNCTION_CLASSES
+
+# CAST targets: built-in scalar types and arrays of them. Everything else
+# (user-defined, schema-qualified, reg* / oid types) is rejected.
+_ALLOWED_CAST_TYPES = frozenset(
+    {
+        exp.DType.TEXT, exp.DType.VARCHAR, exp.DType.CHAR, exp.DType.NCHAR,
+        exp.DType.INT, exp.DType.BIGINT, exp.DType.SMALLINT, exp.DType.DECIMAL,
+        exp.DType.DOUBLE, exp.DType.FLOAT, exp.DType.BOOLEAN,
+        exp.DType.DATE, exp.DType.TIMESTAMP, exp.DType.TIMESTAMPTZ, exp.DType.TIME,
+        exp.DType.TIMETZ, exp.DType.INTERVAL, exp.DType.ARRAY,
+    }
+)  # fmt: skip
 
 _QUERY_TYPES = (exp.Select, exp.SetOperation, exp.Subquery)
 
@@ -97,6 +129,8 @@ _FORBIDDEN_NODES: tuple[tuple[tuple[type[exp.Expression], ...], str], ...] = (
         ),
         "only SELECT statements are allowed",
     ),
+    ((exp.Operator,), "custom operators (OPERATOR(...)) are not allowed"),
+    ((exp.Dot,), "qualified function or type names are not allowed"),
     (
         (exp.Parameter, exp.SessionParameter, exp.Placeholder),
         "query parameters and placeholders are not allowed",
@@ -137,23 +171,34 @@ def _norm(ident: exp.Identifier) -> str:
 def _function_name(f: exp.Expression) -> str:
     if isinstance(f, exp.Anonymous):
         return f.name.lower()
-    return (f.sql_name() if hasattr(f, "sql_name") else type(f).__name__).lower()
+    return f.sql_name().lower()
 
 
-def _check_functions(root: exp.Expression) -> None:
-    for f in root.find_all(exp.Func):
-        if isinstance(f, exp.Anonymous):
-            if f.name.lower() not in _ALLOWED_ANONYMOUS:
-                raise GuardError(f"function {f.name.lower()} is not allowed")
-        elif type(f) not in _ALLOWED_CLASSES:
-            raise GuardError(f"function {_function_name(f)} is not allowed")
+def _check_data_type(dt: exp.Expression) -> None:
+    if not isinstance(dt, exp.DataType) or dt.this not in _ALLOWED_CAST_TYPES:
+        raise GuardError("only built-in scalar types (and arrays of them) may be used in a cast")
+    for child in dt.expressions:
+        if isinstance(child, exp.DataType):
+            _check_data_type(child)
 
 
 def _check_nodes(root: exp.Expression) -> None:
+    """Fail closed: every node must be a known function, known operator or known structure."""
     for node in root.walk():
         for types, message in _FORBIDDEN_NODES:
             if isinstance(node, types):
                 raise GuardError(message)
+        if isinstance(node, exp.Anonymous):
+            if node.name.lower() not in _ALLOWED_ANONYMOUS:
+                raise GuardError(f"function {node.name.lower()} is not allowed")
+        elif type(node) not in _ALLOWED_NODES:
+            if isinstance(node, exp.Func):
+                raise GuardError(f"function {_function_name(node)} is not allowed")
+            raise GuardError(f"the SQL construct {type(node).__name__} is not allowed")
+        if isinstance(node, exp.Cast):
+            _check_data_type(node.args.get("to"))
+        elif isinstance(node, exp.DataType):
+            _check_data_type(node)
 
 
 _TABLE_MESSAGE = "only the attendance_view table may be queried (no schema-qualified names)"
@@ -188,19 +233,69 @@ def _check_tables(node: exp.Expression, visible: frozenset[str]) -> None:
 
 
 def _int_limit(limit_node: object) -> int | None:
+    """The literal row count of an outer LIMIT / FETCH FIRST, or None if it is not a plain integer."""
     if isinstance(limit_node, exp.Limit):
         value = limit_node.expression
-        if isinstance(value, exp.Literal) and not value.is_string and value.name.isdigit():
-            return int(value.name)
+    elif isinstance(limit_node, exp.Fetch):
+        options = limit_node.args.get("limit_options")
+        if options is not None and options.args.get("with_ties"):
+            raise GuardError("FETCH FIRST ... WITH TIES is not allowed; use LIMIT")
+        if options is not None and options.args.get("percent"):
+            raise GuardError("FETCH FIRST ... PERCENT is not allowed; use LIMIT")
+        value = limit_node.args.get("count")
+        if value is None:
+            return 1  # FETCH FIRST ROW ONLY
+    else:
+        return None
+    if isinstance(value, exp.Literal) and not value.is_string and value.name.isdigit():
+        return int(value.name)
     return None
 
 
-def guard_sql(sql: str, *, limit: int) -> GuardedSql:
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+_TOKEN_REPR = re.compile(r"<Token token_type: [^,]*, text: ([^,]*),[^>]*>")
+
+
+def _parse_error_reason(e: SqlglotError) -> str:
+    errors = getattr(e, "errors", None)
+    if errors:
+        first = errors[0]
+        description = _TOKEN_REPR.sub(r"'\1'", str(first.get("description", "")))
+        description = _ANSI.sub("", description).strip() or "syntax error"
+        where = (
+            f" (line {first.get('line')}, column {first.get('col')})" if first.get("line") else ""
+        )
+        return f"could not parse the SQL: {description}{where}"
+    return "could not parse the SQL: syntax error"
+
+
+def _outer_query(stmt: exp.Expression) -> exp.Expression:
+    """Return a query whose own LIMIT/OFFSET/ORDER are the outermost ones."""
+    while isinstance(stmt, exp.Subquery):
+        modifiers = {k: stmt.args.get(k) for k in ("limit", "offset", "order")}
+        if stmt.args.get("alias"):
+            break
+        if not any(modifiers.values()):
+            stmt = stmt.this  # plain parentheses: unwrap
+            continue
+        break
+    if not isinstance(stmt, exp.Subquery):
+        return stmt
+    # parenthesised query with its own trailing modifiers: move them to a wrapper
+    modifiers = {k: stmt.args.pop(k, None) for k in ("limit", "offset", "order")}
+    wrapper = exp.select("*").from_(exp.alias_(stmt, "_guarded", table=True))
+    for key, value in modifiers.items():
+        if value is not None:
+            wrapper.set(key, value)
+    return wrapper
+
+
+def _guard(sql: str, limit: int) -> GuardedSql:
     cleaned = strip_sql_wrapping(sql)
     try:
         statements = sqlglot.parse(cleaned, read="postgres")
     except SqlglotError as e:
-        raise GuardError(f"could not parse the SQL: {e}") from None
+        raise GuardError(_parse_error_reason(e)) from None
     statements = [s for s in statements if s is not None]
     if not statements:
         raise GuardError("the SQL is empty")
@@ -211,12 +306,22 @@ def guard_sql(sql: str, *, limit: int) -> GuardedSql:
         raise GuardError("only SELECT statements are allowed")
 
     _check_nodes(stmt)
-    _check_functions(stmt)
     _check_tables(stmt, frozenset())
 
-    if isinstance(stmt, exp.Subquery):
-        stmt = exp.select("*").from_(stmt)
+    stmt = _outer_query(stmt)
     existing = _int_limit(stmt.args.get("limit"))
     final = limit if existing is None else min(existing, limit)
     stmt.set("limit", exp.Limit(expression=exp.Literal.number(final)))
     return GuardedSql(sql=stmt.sql(dialect="postgres"), limit=final)
+
+
+def guard_sql(sql: str, *, limit: int) -> GuardedSql:
+    """Validate ``sql`` and cap its LIMIT. Raises GuardError for anything not accepted."""
+    try:
+        return _guard(sql, limit)
+    except GuardError:
+        raise
+    except RecursionError:
+        raise GuardError("the query is too deeply nested") from None
+    except Exception:  # noqa: BLE001 - fail closed: never let an unexpected error escape
+        raise GuardError("the SQL could not be checked; simplify the query") from None

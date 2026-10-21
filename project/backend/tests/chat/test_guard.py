@@ -1,7 +1,9 @@
 import re
 
 import pytest
+import sqlglot
 
+from app.chat import guard
 from app.chat.guard import ALLOWED_FUNCTIONS, GuardError, guard_sql, strip_sql_wrapping
 
 OK = [
@@ -179,7 +181,7 @@ BAD = {
     "SELECT email FROM attendance_view EXCEPT (SELECT rolname FROM pg_roles)": "attendance_view",
     "SELECT email FROM attendance_view, pg_roles": "attendance_view",
     "SELECT email FROM attendance_view JOIN pg_roles ON true": "attendance_view",
-    "SELECT email FROM attendance_view CROSS JOIN LATERAL (SELECT * FROM pg_roles) r": "attendance_view",
+    "SELECT email FROM attendance_view CROSS JOIN LATERAL (SELECT * FROM pg_roles) r": "Lateral",
     "SELECT * FROM public.attendance_view": "attendance_view",
     "SELECT * FROM hub.attendance_view": "attendance_view",
     "SELECT * FROM mydb.hub.attendance_view": "attendance_view",
@@ -319,3 +321,209 @@ def test_strips_fences_and_semicolon():
 )
 def test_strip_variants(raw, expected):
     assert strip_sql_wrapping(raw) == expected
+
+
+# ---- fix round 1 -----------------------------------------------------------
+
+ORDINARY_OK = [
+    (
+        "SELECT DISTINCT email FROM attendance_view WHERE event_name ILIKE 'Bagel Breakfast%' "
+        "AND email IS NOT NULL ORDER BY email"
+    ),
+    (
+        "SELECT COUNT(DISTINCT person_key) AS n FROM attendance_view "
+        "WHERE school = 'School of Biological Sciences' AND event_name ILIKE 'Bagel Breakfast%'"
+    ),
+    "SELECT email FROM attendance_view WHERE school = 'a' OR school = 'b'",
+    "SELECT email FROM attendance_view WHERE (school = 'a' OR school = 'b') AND NOT netid IS NULL",
+    "SELECT a.email FROM attendance_view a JOIN attendance_view b ON a.netid = b.netid AND a.school = b.school",
+    "SELECT count(*) FILTER (WHERE school = 'a' AND event_type = 'b') FROM attendance_view",
+    "SELECT CASE WHEN school = 'a' AND netid IS NOT NULL OR email LIKE '%x' THEN 1 ELSE 0 END FROM attendance_view",
+    "SELECT school FROM attendance_view GROUP BY school HAVING count(*) > 1 AND count(*) <= 10 OR sum(person_key) <> 3",
+    (
+        "SELECT email FROM attendance_view WHERE person_key IN (1, 2) AND person_key NOT IN (3) "
+        "AND person_key BETWEEN 1 AND 5 AND email NOT ILIKE 'x%' AND school != 'x' AND school IS DISTINCT FROM 'y'"
+    ),
+    (
+        "SELECT email, (person_key + 1) * 2 - 3 / 4 % 5 AS v, -person_key, email || '!' FROM attendance_view "
+        "WHERE person_key >= 1 AND person_key < 9 AND person_key > 0 ORDER BY v DESC NULLS LAST, 1 OFFSET 3"
+    ),
+    "SELECT event_date AT TIME ZONE 'UTC', interval '1 day', DATE '2020-01-01' FROM attendance_view",
+    (
+        "SELECT x::numeric(10,2), x::double precision, x::timestamptz, x::text[], x::varchar(5), x::int, "
+        "x::bigint, x::boolean, x::date, x::interval FROM (SELECT 1 AS x) s"
+    ),
+    "SELECT * FROM (VALUES (1, 'a')) AS v(n, s)",
+    "SELECT DISTINCT ON (school) school, email FROM attendance_view",
+    (
+        "SELECT count(*) OVER (PARTITION BY school ORDER BY event_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) "
+        "FROM attendance_view"
+    ),
+    "SELECT a.email FROM attendance_view a LEFT JOIN attendance_view b USING (netid) CROSS JOIN attendance_view c",
+]
+
+
+@pytest.mark.parametrize("sql", ORDINARY_OK)
+def test_ordinary_queries_pass(sql):
+    guard_sql(sql, limit=1001)
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [*OK, *ORDINARY_OK, *[f"SELECT {e} FROM attendance_view" for e in FUNCTION_CASES.values()]],
+)
+def test_every_node_type_in_ok_queries_is_allowed(sql):
+    tree = sqlglot.parse_one(sql, read="postgres")
+    for node in tree.walk():
+        if isinstance(node, sqlglot.exp.Anonymous):
+            continue
+        assert type(node) in guard._ALLOWED_NODES, type(node).__name__
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT email FROM attendance_view TABLESAMPLE SYSTEM (10)",
+        "SELECT school FROM attendance_view GROUP BY ROLLUP (school)",
+        "SELECT (ARRAY[1])[1]",
+        "SELECT email FROM attendance_view WHERE email = ANY (ARRAY['a'])",
+        "SELECT x FROM attendance_view, UNNEST(ARRAY[1]) AS x",
+    ],
+)
+def test_unknown_node_types_fail_closed(sql):
+    with pytest.raises(GuardError, match="not allowed"):
+        guard_sql(sql, limit=10)
+
+
+def test_unlisted_node_type_is_rejected(monkeypatch):
+    # an otherwise fine query fails once a node type it uses is not on the allow-list
+    monkeypatch.setattr(guard, "_ALLOWED_NODES", guard._ALLOWED_NODES - {sqlglot.exp.Like})
+    with pytest.raises(GuardError, match="Like is not allowed"):
+        guard_sql("SELECT email FROM attendance_view WHERE email LIKE 'a%'", limit=10)
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT NULL::hub.app_user",
+        "SELECT CAST('x' AS pg_catalog.regclass)",
+        "SELECT 'pg_shadow'::regclass::text",
+        "SELECT 10::regrole",
+        "SELECT 'pg_sleep'::regproc",
+        "SELECT regclass 'pg_roles'",
+        "SELECT 'x'::oid",
+        "SELECT 'x'::name",
+        "SELECT 'x'::json",
+        "SELECT 'x'::citext",
+        "SELECT TRY_CAST('1' AS int)",
+        "SELECT 'x' OPERATOR(pg_catalog.~) 'y'",
+        "SELECT 1 OPERATOR(hub.===) 1",
+        "SELECT hub.make_date(2025, 1, 1)",
+        "SELECT pg_catalog.make_date(2025, 1, 1)",
+        "SELECT pg_catalog.lower('x')",
+    ],
+)
+def test_qualified_names_and_catalog_lookups_rejected(sql):
+    with pytest.raises(GuardError):
+        guard_sql(sql, limit=10)
+
+
+# LIMIT / FETCH / parenthesised queries
+
+LIMIT_CASES = [
+    (
+        "SELECT email FROM attendance_view FETCH FIRST 5 ROWS ONLY",
+        "SELECT email FROM attendance_view LIMIT 5",
+        5,
+    ),
+    (
+        "SELECT email FROM attendance_view FETCH FIRST 50000 ROWS ONLY",
+        "SELECT email FROM attendance_view LIMIT 1001",
+        1001,
+    ),
+    (
+        "SELECT email FROM attendance_view FETCH FIRST ROW ONLY",
+        "SELECT email FROM attendance_view LIMIT 1",
+        1,
+    ),
+    ("(SELECT email FROM attendance_view) LIMIT 5", None, 5),
+    ("(SELECT email FROM attendance_view) LIMIT 50000", None, 1001),
+    ("(SELECT email FROM attendance_view) FETCH FIRST 3 ROWS ONLY", None, 3),
+    ("(SELECT email FROM attendance_view) ORDER BY email LIMIT 7 OFFSET 2", None, 7),
+    ("((SELECT email FROM attendance_view))", "SELECT email FROM attendance_view LIMIT 1001", 1001),
+    ("(SELECT email FROM attendance_view LIMIT 3)", "SELECT email FROM attendance_view LIMIT 3", 3),
+]
+
+
+@pytest.mark.parametrize(("sql", "expected", "n"), LIMIT_CASES)
+def test_fetch_and_parenthesised_limits(sql, expected, n):
+    out = guard_sql(sql, limit=1001)
+    assert out.limit == n
+    assert out.sql.count("LIMIT") == 1
+    assert "FETCH" not in out.sql
+    assert out.sql.endswith(f"LIMIT {n}") or "OFFSET" in out.sql
+    if expected is not None:
+        assert out.sql == expected
+    # the rendered SQL must itself be valid and pass the guard unchanged
+    assert guard_sql(out.sql, limit=1001).sql == out.sql
+
+
+def test_wrapped_query_keeps_order_and_offset():
+    out = guard_sql(
+        "(SELECT email FROM attendance_view) ORDER BY email LIMIT 7 OFFSET 2", limit=1001
+    ).sql
+    assert "ORDER BY email" in out
+    assert "LIMIT 7" in out
+    assert "OFFSET 2" in out
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT email FROM attendance_view FETCH FIRST 5 ROWS WITH TIES",
+        "SELECT email FROM attendance_view FETCH FIRST 5 PERCENT ROWS ONLY",
+    ],
+)
+def test_fetch_with_ties_and_percent_rejected(sql):
+    with pytest.raises(GuardError, match="FETCH"):
+        guard_sql(sql, limit=10)
+
+
+# robustness
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT " + "(" * 60 + "1" + ")" * 60,
+        "SELECT * FROM " + "(SELECT * FROM " * 250 + "attendance_view" + ")" * 250,
+        "SELECT " + "+".join(["1"] * 3000),
+    ],
+)
+def test_deep_nesting_is_a_guard_error(sql):
+    with pytest.raises(GuardError):
+        guard_sql(sql, limit=10)
+
+
+def test_unexpected_exception_becomes_guard_error(monkeypatch):
+    def boom(*a, **k):
+        raise ValueError("secret internal detail")
+
+    monkeypatch.setattr(guard, "_check_tables", boom)
+    with pytest.raises(GuardError) as e:
+        guard_sql("SELECT email FROM attendance_view", limit=10)
+    assert "secret" not in e.value.reason
+
+
+@pytest.mark.parametrize(
+    "sql", ["SELECT FROM WHERE (", "SELECT 1 +", "SELECT a b c d FROM attendance_view"]
+)
+def test_parse_error_reason_is_clean(sql):
+    with pytest.raises(GuardError) as e:
+        guard_sql(sql, limit=10)
+    reason = e.value.reason
+    assert reason.startswith("could not parse the SQL")
+    assert "\x1b" not in reason
+    assert "<Token" not in reason
+    assert "token_type" not in reason
+    assert "line 1" in reason
