@@ -152,4 +152,22 @@ describe("DatasetPage", () => {
     renderPage();
     expect(await screen.findByText("History unavailable.")).toBeInTheDocument();
   });
+  it("shows a long File name on one line with an ellipsis and the full text in the title", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    const name = await screen.findByTitle("career-fair.csv");
+    const style = getComputedStyle(name);
+    expect(style.textOverflow).toBe("ellipsis");
+    expect(style.whiteSpace).toBe("nowrap");
+    expect(style.overflow).toBe("hidden");
+  });
+
+  it("sorts on a click of the narrow Rows header", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    const header = screen.getByRole("columnheader", { name: "Rows" });
+    await userEvent.click(within(header).getByText("Rows"));
+    expect(header).toHaveAttribute("aria-sort", "ascending");
+  });
 });

@@ -19,34 +19,47 @@ const STATUSES: Record<string, string> = { committed: "Committed", pending: "Pen
 
 // Long values truncate with an ellipsis; the title keeps the full text available.
 const titled = ({ formattedValue }: { formattedValue?: unknown }) => (
-  <span title={String(formattedValue ?? "")}>{String(formattedValue ?? "")}</span>
+  <Box
+    component="span"
+    title={String(formattedValue ?? "")}
+    sx={{ display: "block", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+  >
+    {String(formattedValue ?? "")}
+  </Box>
 );
 
 const columns: GridColDef<ImportFileOut>[] = [
-  { field: "file_name", headerName: "File", flex: 1.5, minWidth: 120, renderCell: titled },
+  { field: "file_name", headerName: "File", flex: 2, minWidth: 120, renderCell: titled },
   {
     field: "event",
     headerName: "Event",
-    flex: 1.5,
+    flex: 2,
     minWidth: 120,
     valueGetter: (_, row) => row.event?.name ?? "",
     renderCell: titled,
   },
-  { field: "term", headerName: "Term", width: 100, valueGetter: (_, row) => row.event?.term ?? "" },
+  { field: "term", headerName: "Term", width: 90, valueGetter: (_, row) => row.event?.term ?? "" },
   {
     field: "source",
     headerName: "Platform",
     width: 120,
     valueGetter: (_, row) => PLATFORMS[row.source] ?? row.source,
   },
-  { field: "row_count", headerName: "Rows", type: "number", width: 70 },
-  { field: "flag_count", headerName: "Flags", type: "number", width: 70 },
-  { field: "uploaded_by", headerName: "Uploaded by", flex: 1, minWidth: 120, valueGetter: (_, row) => row.uploaded_by.display_name, renderCell: titled },
+  { field: "row_count", headerName: "Rows", type: "number", width: 70, disableColumnMenu: true },
+  { field: "flag_count", headerName: "Flags", type: "number", width: 70, disableColumnMenu: true },
+  {
+    field: "uploaded_by",
+    headerName: "Uploaded by",
+    flex: 1,
+    minWidth: 100,
+    valueGetter: (_, row) => row.uploaded_by.display_name,
+    renderCell: titled,
+  },
   {
     field: "uploaded_at",
     headerName: "Uploaded at",
     type: "dateTime",
-    width: 175,
+    width: 170,
     // A Date, so the column sorts by time; only the display is localized.
     valueGetter: (_, row) => new Date(row.uploaded_at),
     valueFormatter: (value: Date) => value.toLocaleString(),
