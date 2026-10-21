@@ -29,6 +29,11 @@ const switchSx = {
     "&.Mui-checked + .MuiSwitch-track": { bgcolor: tokens.primary, opacity: 1 },
     "&.Mui-disabled + .MuiSwitch-track": { opacity: 0.5 },
   },
+  // Keyboard focus only: a ring on the track, since the question box's own ring also shows while typing.
+  "& .MuiSwitch-switchBase.Mui-focusVisible + .MuiSwitch-track": {
+    outline: `2px solid ${tokens.primary}`,
+    outlineOffset: "2px",
+  },
   "& .MuiSwitch-thumb": {
     width: 16,
     height: 16,

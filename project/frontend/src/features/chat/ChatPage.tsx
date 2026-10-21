@@ -100,6 +100,7 @@ export default function ChatPage() {
   }
 
   let main;
+  let band = null;
   if (notFound) {
     main = (
       <Alert severity="warning">
@@ -142,30 +143,31 @@ export default function ChatPage() {
             onResend={(question) => void ask(question)}
           />
         </Box>
-        {profile && (
-          <Box
-            sx={{
-              position: "sticky",
-              bottom: 0,
-              mx: "-40px",
-              px: "40px",
-              pt: 2,
-              pb: "12px",
-              bgcolor: "#FFFFFF",
-              borderTop: `1px solid ${tokens.border}`,
-            }}
-          >
-            <Box sx={{ maxWidth: 880, mx: "auto" }}>
-              <Composer
-                disabled={streaming}
-                onSend={ask}
-                toolbar={<ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />}
-              />
-            </Box>
-          </Box>
-        )}
       </>
     );
+    if (profile) {
+      band = (
+        <Box
+          sx={{
+            position: "sticky",
+            bottom: 0,
+            px: "40px",
+            pt: 2,
+            pb: "12px",
+            bgcolor: "#FFFFFF",
+            borderTop: `1px solid ${tokens.border}`,
+          }}
+        >
+          <Box sx={{ maxWidth: 880, mx: "auto" }}>
+            <Composer
+              disabled={streaming}
+              onSend={ask}
+              toolbar={<ShareResultsSwitch checked={shareResults} allowed={allowed} onChange={setChoice} />}
+            />
+          </Box>
+        </Box>
+      );
+    }
   }
 
   return (
@@ -180,32 +182,32 @@ export default function ChatPage() {
       />
       <Box sx={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 88px)" }}>
         <ConversationList />
-        <Stack
-          component="section"
-          aria-label="Conversation"
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            flex: 1,
-            minWidth: 0,
-            maxWidth: 880 + 80,
-            mx: "auto",
-            boxSizing: "border-box",
-            px: "40px",
-            pt: "28px",
-          }}
-        >
-          {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
-          {profiles.data?.length === 0 && (
-            <Alert severity="info">
-              Add an AI model in Settings to start.{" "}
-              <Link component={RouterLink} to="/settings">
-                Go to Settings
-              </Link>
-            </Alert>
-          )}
-          {main}
+        <Stack component="section" aria-label="Conversation" sx={{ flex: 1, minWidth: 0 }}>
+          <Stack
+            sx={{
+              flex: 1,
+              width: "100%",
+              maxWidth: 880 + 80,
+              mx: "auto",
+              boxSizing: "border-box",
+              gap: 2,
+              px: "40px",
+              pt: "28px",
+              pb: "32px",
+            }}
+          >
+            {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
+            {profiles.data?.length === 0 && (
+              <Alert severity="info">
+                Add an AI model in Settings to start.{" "}
+                <Link component={RouterLink} to="/settings">
+                  Go to Settings
+                </Link>
+              </Alert>
+            )}
+            {main}
+          </Stack>
+          {band}
         </Stack>
       </Box>
     </>
