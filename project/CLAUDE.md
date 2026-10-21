@@ -53,15 +53,16 @@ The full design is in `docs/specs/2026-10-20-data-hub-design.md`. It is the sour
 - Chatbot: a custom LangGraph `StateGraph` (not LangChain's prebuilt SQL agent), sqlglot for the SQL guard.
 - LLM: OpenAI-compatible providers only, through `langchain-openai` `ChatOpenAI` with a `base_url`. Presets: ZotGPT Gateway, OpenAI, DeepSeek, Custom. Staff manage LLM profiles (base URL, model, API key) in the web UI and pick one per question. API keys are stored encrypted in PostgreSQL (Fernet, master key `HUB_SECRET_KEY` in `.env`) and never returned to the browser.
 
-Planned layout (update this once the scaffold exists):
+Layout:
 
 ```
 project/
-  CLAUDE.md  PROGRESS.md  docker-compose.yml  .env.example
+  CLAUDE.md  PROGRESS.md  docker-compose.yml  docker-compose.dev.yml  .env.example
+  db/init/             Postgres init scripts (app and read-only roles)
   docs/specs/          design specs
   docs/plans/          implementation plans
-  backend/             FastAPI app: imports, dataset, chat (LangGraph), llm, export
-  frontend/            React UI: upload, chat, settings, dataset
+  backend/             FastAPI app (app/), Alembic (alembic/), sample_data/, tests/, Dockerfile
+  frontend/            React + Vite app (src/api client, src/app shell), nginx.conf, Dockerfile
 ```
 
 ## Non-negotiables
@@ -136,7 +137,33 @@ The midterm report and presentation are due Oct 26, 11:59 PM. Screenshots are en
 
 ## Commands
 
-Not set up yet. When you add the scaffold, record here how to start the app, run backend and frontend tests, lint, and run the benchmark.
+Run from `project/` unless noted. Copy `.env.example` to `.env` and fill it in first.
+
+```
+# Whole app (nginx + api + db) at http://127.0.0.1:8080
+docker compose up --build -d
+docker compose down                      # keeps the hub-pgdata volume
+
+# Dev database only (published on 127.0.0.1:5432)
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+
+# Backend (from project/backend)
+uv run uvicorn app.main:app --reload     # dev server on :8000
+uv run alembic upgrade head
+uv run pytest                            # all tests (needs the dev db)
+uv run pytest -m acceptance              # import acceptance tests
+uv run ruff check .
+uv run ruff format --check .
+uv run python -m app.samples             # load the synthetic sample files
+
+# Frontend (from project/frontend)
+npm install
+npm run dev                              # :5173, proxies /api to :8000
+npm test -- --run                        # Vitest
+npm run build                            # type-check + production build
+```
+
+The chatbot benchmark command will be added in S3.
 
 ## Conventions
 
