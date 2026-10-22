@@ -123,9 +123,17 @@ describe("DatasetPage", () => {
     renderPage();
     await screen.findByText("career-fair.csv");
     const cell = document.querySelector<HTMLElement>('[role="gridcell"][data-field="uploaded_at"]')!;
-    expect(cell.textContent).toMatch(/10:30\sAM$/);
-    expect(cell.textContent).not.toMatch(/10:30:/);
-    expect(within(cell).getByTitle(/10:30:00\sAM$/)).toBeInTheDocument(); // the full time, with seconds
+    // Compared with the locale's own format, so the test passes on any machine.
+    const short = at.toLocaleString(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    expect(cell.textContent).toBe(short);
+    expect(cell.textContent).not.toBe(at.toLocaleString()); // the full format has seconds
+    expect(within(cell).getByTitle(at.toLocaleString())).toBeInTheDocument(); // the full time, with seconds
   });
 
   it("has a level 1 Dataset heading and download icons on both downloads", async () => {
