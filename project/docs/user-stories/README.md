@@ -11,6 +11,7 @@ the running app. The walk records what passes and what does not, and the failure
 | [dataset.md](dataset.md) | Dataset | DS-01 … DS-05 |
 | [settings.md](settings.md) | Settings | ST-01 … ST-10 |
 | `walkthrough-<date>.md` | the recorded walks (see "Recording a walk") | |
+| [walkthrough-2026-10-22.md](walkthrough-2026-10-22.md) | the sponsor's requests from the 2026-10-21 meeting, walked on main and a throwaway stack | SP-01 … SP-14 |
 | `screenshots/` | screenshots the walk records refer to | |
 
 ## Story format
