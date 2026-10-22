@@ -15,7 +15,7 @@ describe("PageHeader", () => {
     expect(document.querySelector("header")).toBeTruthy();
   });
 
-  it("is a slim white bar with a bottom line, a 20px title and compact buttons", () => {
+  it("is a slim white bar with a bottom line, a 26px title and compact buttons", () => {
     render(
       <ThemeProvider theme={theme}>
         <PageHeader title="Dataset" actions={<Button variant="contained">Download</Button>} />
@@ -25,7 +25,7 @@ describe("PageHeader", () => {
     expect(bar.minHeight).toBe("59px");
     expect(bar.backgroundColor).toBe("rgb(255, 255, 255)");
     expect(bar.borderBottomWidth).toBe("1px");
-    expect(getComputedStyle(screen.getByRole("heading", { level: 1 })).fontSize).toBe("20px");
+    expect(getComputedStyle(screen.getByRole("heading", { level: 1 })).fontSize).toBe("26px");
     expect(getComputedStyle(screen.getByRole("button", { name: "Download" })).minHeight).toBe("34px");
   });
 });

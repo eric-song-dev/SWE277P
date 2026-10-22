@@ -43,7 +43,7 @@ export const theme = createTheme({
     // fontSize 16 scales every variant by 16/14, so pin the body sizes.
     body1: { fontSize: "1rem" },
     body2: { fontSize: "0.9375rem" },
-    h1: { fontSize: "1.25rem", fontWeight: 700, lineHeight: 1.3, color: tokens.navy },
+    h1: { fontSize: "1.625rem", fontWeight: 700, lineHeight: 1.3, color: tokens.navy },
     button: { fontWeight: 600, textTransform: "none" },
   },
   shape: { borderRadius: 8 },
