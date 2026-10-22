@@ -48,7 +48,7 @@ for (const q of QUESTIONS) {
     test.setTimeout(LIMIT_MS + 60_000);
     await page.goto("/chat");
     await page.getByRole("button", { name: "New chat" }).click();
-    await page.getByLabel("AI model").click();
+    await page.getByLabel("Answering with").click();
     await page.getByRole("option", { name: PROFILE!, exact: true }).click();
 
     await page.getByRole("textbox").fill(q.text);

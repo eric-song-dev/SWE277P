@@ -52,6 +52,9 @@ export const theme = createTheme({
       styleOverrides: {
         "p, li, h1, h2, h3, span, a": { textWrap: "pretty" },
         ":focus-visible": focusRing,
+        // The shell fills the window and its panes scroll on their own, so the page never
+        // rubber-bands and drags the nav or the question box with it.
+        "html, body": { overscrollBehavior: "none" },
       },
     },
     MuiButtonBase: {

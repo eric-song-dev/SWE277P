@@ -11,14 +11,16 @@ const SCREENSHOTS = path.resolve(import.meta.dirname, "../../docs/screenshots");
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
+// The shell fills the window and its panes scroll on their own: the main area and, on Chat, the
+// conversation pane.
+const PANES = `Array.from(document.querySelectorAll('main, section[aria-label="Conversation"]'))`;
+
 async function shoot(page: Page, name: string, minHeight = 900) {
-  // A window-sized capture of the whole page: grow the window to the page height so nothing scrolls,
-  // because a full-page capture draws the sticky nav and composer at the scroll position.
-  await page.evaluate("window.scrollTo(0, 0)");
-  const height = await page.evaluate<number>("document.documentElement.scrollHeight");
-  await page.setViewportSize({ width: 1440, height: Math.max(minHeight, height) });
+  // A window-sized capture of the whole page: grow the window until no pane scrolls.
+  const extra = await page.evaluate<number>(`Math.max(0, ...${PANES}.map((el) => el.scrollHeight - el.clientHeight))`);
+  await page.setViewportSize({ width: 1440, height: Math.max(minHeight, 900 + extra) });
   await page.evaluate("new Promise((resolve) => requestAnimationFrame(() => resolve(null)))");
-  const fits = await page.evaluate<boolean>("document.documentElement.scrollHeight <= window.innerHeight");
+  const fits = await page.evaluate<boolean>(`${PANES}.every((el) => el.scrollHeight <= el.clientHeight)`);
   expect(fits).toBe(true);
   await page.screenshot({ path: path.join(SCREENSHOTS, name), fullPage: false, animations: "disabled" });
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -31,7 +33,7 @@ async function ask(page: Page, question: string, reply: string, conversations: n
   await page.keyboard.press("Enter");
   await expect(page.getByText(reply)).toBeVisible();
   await expect(page.getByRole("status")).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Conversations" }).getByRole("link")).toHaveCount(conversations);
+  await expect(page.getByRole("navigation", { name: "Recent questions" }).getByRole("link")).toHaveCount(conversations);
 }
 
 test("midterm screenshots", async ({ page }) => {

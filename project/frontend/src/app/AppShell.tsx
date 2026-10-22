@@ -6,13 +6,15 @@ import ChatIcon from "@mui/icons-material/Chat";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import AddIcon from "@mui/icons-material/Add";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 import { apiGet } from "../api/client";
 import type { MeOut } from "../api/types";
+import ConversationList from "../features/chat/ConversationList";
 import { tokens } from "./theme";
 
 const NAV = [
@@ -26,28 +28,29 @@ const whiteRing = { outline: "2px solid #FFFFFF", outlineOffset: "2px" };
 // The links span the nav's full width and the nav clips overflow, so their ring sits inside the link.
 const whiteRingInset = { outline: "2px solid #FFFFFF", outlineOffset: "-2px" };
 
+const NAV_WIDTH = 280;
+const RAIL_WIDTH = 72;
+
 export default function AppShell() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeOut>("/api/me"), retry: false });
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const toggleLabel = collapsed ? "Expand navigation" : "Collapse navigation";
 
+  // The shell fills the window: the side panel and the main area each scroll on their own, so the
+  // nav (and the chat's question box) never move with the page.
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <Box
-        component="nav"
-        aria-label="Main navigation"
         sx={{
-          flex: `0 0 ${collapsed ? 72 : 248}px`,
-          width: collapsed ? 72 : 248,
-          position: "sticky",
-          top: 0,
-          height: "100vh",
+          flex: `0 0 ${collapsed ? RAIL_WIDTH : NAV_WIDTH}px`,
+          width: collapsed ? RAIL_WIDTH : NAV_WIDTH,
+          height: "100%",
           boxSizing: "border-box",
           bgcolor: tokens.navy,
           color: "#FFFFFF",
           display: "flex",
           flexDirection: "column",
-          pb: "20px",
           overflow: "hidden",
           transition: "flex-basis 150ms ease, width 150ms ease",
           "& button.MuiButtonBase-root:focus-visible, & button.MuiButtonBase-root.Mui-focusVisible": whiteRing,
@@ -56,6 +59,7 @@ export default function AppShell() {
       >
         <Box
           sx={{
+            flexShrink: 0,
             height: 88,
             boxSizing: "border-box",
             p: collapsed ? "16px 0" : "16px 12px 16px 24px",
@@ -97,7 +101,11 @@ export default function AppShell() {
             )}
           </ButtonBase>
         </Box>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: "2px", pt: 2 }}>
+        <Box
+          component="nav"
+          aria-label="Main navigation"
+          sx={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: "2px", pt: 2 }}
+        >
           {NAV.map((item) => (
             <ButtonBase
               key={item.to}
@@ -131,13 +139,45 @@ export default function AppShell() {
             </ButtonBase>
           ))}
         </Box>
+        {collapsed ? (
+          <Box sx={{ flex: 1, display: "flex", justifyContent: "center", pt: "20px" }}>
+            <ButtonBase
+              aria-label="New chat"
+              title="New chat"
+              onClick={() => void navigate("/chat")}
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: "8px",
+                color: "#FFFFFF",
+                transition: "background-color 120ms ease",
+                "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </ButtonBase>
+          </Box>
+        ) : (
+          <ConversationList />
+        )}
         {!collapsed && (
-          <Typography sx={{ mt: "auto", pt: "20px", px: "24px", fontSize: 14, color: tokens.navMuted }}>
+          <Typography
+            sx={{
+              flexShrink: 0,
+              p: "14px 24px 18px",
+              borderTop: "1px solid rgba(255,255,255,0.14)",
+              fontSize: 14,
+              color: tokens.navMuted,
+            }}
+          >
             {me.isError ? "Not connected" : me.data ? `Signed in as ${me.data.display_name}` : ""}
           </Typography>
         )}
       </Box>
-      <Box component="main" sx={{ flex: 1, minWidth: 0, bgcolor: tokens.page }}>
+      <Box
+        component="main"
+        sx={{ flex: 1, minWidth: 0, height: "100%", overflowY: "auto", overscrollBehavior: "contain", bgcolor: tokens.page }}
+      >
         <Suspense fallback={<CircularProgress size={24} aria-label="Loading page" sx={{ m: 4 }} />}>
           <Outlet />
         </Suspense>

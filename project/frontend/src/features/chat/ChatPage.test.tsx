@@ -13,6 +13,7 @@ import type {
   SseEvent,
   TurnOut,
 } from "../../api/types";
+import AppShell from "../../app/AppShell";
 import ChatPage from "./ChatPage";
 import Thread from "./Thread";
 
@@ -87,6 +88,7 @@ function detail(id: number, turns: TurnOut[] = []): ConversationDetail {
 }
 
 function routeGet(path: string): unknown {
+  if (path === "/api/me") return { id: 1, username: "staff", display_name: "GPSRC Staff", auth_mode: "none" };
   if (path === "/api/llm-profiles") return profiles;
   if (path === "/api/conversations") return conversations;
   if (path === "/api/chat/turns/4/rerun") return RESULT;
@@ -125,10 +127,17 @@ function bodies() {
 function renderPage(path: string) {
   // retryDelay 0: useConversation retries other errors itself, and the tests should not wait.
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } });
+  // Inside the shell: the conversation list and "New chat" live in its side nav.
   const router = createMemoryRouter(
     [
-      { path: "/chat/:conversationId?", element: <ChatPage /> },
-      { path: "/settings", element: <p>Settings page</p> },
+      {
+        path: "/",
+        element: <AppShell />,
+        children: [
+          { path: "chat/:conversationId?", element: <ChatPage /> },
+          { path: "settings", element: <p>Settings page</p> },
+        ],
+      },
     ],
     { initialEntries: [path] },
   );
@@ -485,7 +494,7 @@ describe("ChatPage", () => {
     expect(screen.getByText("Connection lost. Retry.")).toBeInTheDocument();
     expect(screen.getByRole("textbox")).toBeEnabled();
     // After the failure: another model, and the results kept on this computer.
-    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    await user.click(screen.getByRole("combobox", { name: "Answering with" }));
     await user.click(await screen.findByRole("option", { name: "Campus model" }));
     await user.click(screen.getByLabelText(SHARE));
     const second = pendingStream();
@@ -551,7 +560,7 @@ describe("ChatPage", () => {
   it("switching to a profile that disallows sharing turns the switch off with the Off text", async () => {
     const { user } = renderPage("/chat/1");
     expect(await screen.findByLabelText(SHARE)).toBeChecked();
-    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    await user.click(screen.getByRole("combobox", { name: "Answering with" }));
     await user.click(await screen.findByRole("option", { name: "Private model" }));
     const toggle = screen.getByLabelText(SHARE);
     expect(toggle).toBeDisabled();
@@ -568,7 +577,7 @@ describe("ChatPage", () => {
     await user.click(await screen.findByLabelText(SHARE));
     expect(screen.getByLabelText(SHARE)).not.toBeChecked();
 
-    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    await user.click(screen.getByRole("combobox", { name: "Answering with" }));
     await user.click(await screen.findByRole("option", { name: "Campus model" }));
     expect(screen.getByLabelText(SHARE)).toBeChecked();
 
@@ -586,8 +595,8 @@ describe("ChatPage", () => {
     localStorage.setItem("hub.chat.profileId", "2");
     const s = pendingStream();
     const { user } = renderPage("/chat/1");
-    expect(await screen.findByRole("combobox", { name: "AI model" })).toHaveTextContent("Campus model");
-    await user.click(screen.getByRole("combobox", { name: "AI model" }));
+    expect(await screen.findByRole("combobox", { name: "Answering with" })).toHaveTextContent("Campus model");
+    await user.click(screen.getByRole("combobox", { name: "Answering with" }));
     await user.click(await screen.findByRole("option", { name: "Lab model" }));
     expect(localStorage.getItem("hub.chat.profileId")).toBe("1");
     await ask(user, "How many came?");
@@ -599,7 +608,7 @@ describe("ChatPage", () => {
   it("falls back to the default profile when the remembered one is gone or storage fails", async () => {
     localStorage.setItem("hub.chat.profileId", "99");
     renderPage("/chat/1");
-    expect(await screen.findByRole("combobox", { name: "AI model" })).toHaveTextContent("Lab model");
+    expect(await screen.findByRole("combobox", { name: "Answering with" })).toHaveTextContent("Lab model");
   });
 
   it("uses the default profile when localStorage throws", async () => {
@@ -607,7 +616,7 @@ describe("ChatPage", () => {
       throw new Error("blocked");
     });
     renderPage("/chat/1");
-    expect(await screen.findByRole("combobox", { name: "AI model" })).toHaveTextContent("Lab model");
+    expect(await screen.findByRole("combobox", { name: "Answering with" })).toHaveTextContent("Lab model");
     getItem.mockRestore();
   });
 
@@ -646,7 +655,7 @@ describe("ChatPage", () => {
 
   it("lists conversations by title; New chat goes to /chat", async () => {
     const { router, user } = renderPage("/chat/1");
-    const list = await screen.findByRole("navigation", { name: "Conversations" });
+    const list = await screen.findByRole("navigation", { name: "Recent questions" });
     expect(await within(list).findByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute("href", "/chat/1");
     expect(within(list).getByRole("link", { name: "New conversation" })).toHaveAttribute("href", "/chat/2");
     expect(within(list).getByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute(
@@ -663,21 +672,26 @@ describe("ChatPage", () => {
     expect(await screen.findByText("Ask a question about your data to start.")).toBeInTheDocument();
   });
 
-  it("shows a visible AI model label and exactly one combobox with that name", async () => {
+  it("shows a visible Answering with label and exactly one combobox with that name", async () => {
     renderPage("/chat");
-    expect(await screen.findAllByText("AI model")).not.toHaveLength(0);
-    expect(screen.getAllByRole("combobox", { name: "AI model" })).toHaveLength(1);
+    expect(await screen.findAllByText("Answering with")).not.toHaveLength(0);
+    expect(screen.getAllByRole("combobox", { name: "Answering with" })).toHaveLength(1);
   });
 
-  it("marks the open conversation and has no Conversations heading", async () => {
+  it("keeps a Chat heading for screen readers", async () => {
+    renderPage("/chat");
+    expect(await screen.findByRole("heading", { level: 1, name: "Chat" })).toBeInTheDocument();
+  });
+
+  it("marks the open conversation under Recent questions", async () => {
     renderPage("/chat/1");
-    const list = await screen.findByRole("navigation", { name: "Conversations" });
+    const list = await screen.findByRole("navigation", { name: "Recent questions" });
+    expect(within(list).getByRole("heading", { name: "Recent questions" })).toBeInTheDocument();
     expect(await within(list).findByRole("link", { name: "Bagel Breakfast attendance" })).toHaveAttribute(
       "aria-current",
       "page",
     );
     expect(within(list).getByRole("link", { name: "New conversation" })).not.toHaveAttribute("aria-current");
-    expect(screen.queryByRole("heading", { name: "Conversations" })).toBeNull();
   });
 
   it("says when the conversation no longer exists", async () => {

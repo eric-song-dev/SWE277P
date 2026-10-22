@@ -89,7 +89,7 @@ describe("room for the sent turn", () => {
     const { rerender } = render(wrap(lost({ question: "Q2", afterSeq: 1 }), turns));
     expect(sentTurns()).toHaveLength(1);
     expect((sentTurns()[0] as HTMLElement).textContent).toContain("Q2");
-    expect(getComputedStyle(sentTurns()[0]).minHeight).toContain("--composer-height");
+    expect(getComputedStyle(sentTurns()[0]).minHeight).toContain("--thread-height");
     rerender(wrap(null, turns));
     expect(sentTurns()).toHaveLength(0);
   });

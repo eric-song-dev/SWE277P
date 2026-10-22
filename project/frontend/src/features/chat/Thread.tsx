@@ -67,10 +67,10 @@ export default function Thread({ turns, live, resultsByTurnId, busy, onRetryLive
   );
 }
 
-// Tall enough that the sent question can scroll to its 16px scroll margin at the top of the window
-// (the page header scrolls away) with the sticky composer band under the turn: viewport - 16 -
-// the thread's 32px bottom padding - the band. ChatPage measures the band into --composer-height.
-const ROOM_FOR_SENT_TURN = "calc(100dvh - 48px - var(--composer-height, 0px))";
+// Tall enough that the sent question can scroll to its 16px scroll margin at the top of the
+// conversation pane: the pane's height - 16 - the thread's 32px bottom padding. ChatPage measures
+// the pane into --thread-height.
+const ROOM_FOR_SENT_TURN = "calc(var(--thread-height, 100dvh) - 48px)";
 
 // A turn that ended in error without a `done` never learns its id, but the backend saved it
 // (client_disconnected): the first saved turn after the cached ones, with the same question.

@@ -53,7 +53,7 @@ test("a long unbroken question does not widen the page", async ({ page }) => {
   expect(fits).toBe(true);
 });
 
-// W-33: after a send in a long conversation the new question scrolls near the top, with room for its answer.
+// W-33: after a send in a long conversation the new question scrolls near the top of the pane, with room for its answer.
 test("a send in a long conversation scrolls the question to the top", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/chat");
@@ -71,10 +71,12 @@ test("a send in a long conversation scrolls the question to the top", async ({ p
   await box.fill("done?"); // Send enables again once the last answer has finished
   await expect(page.getByRole("button", { name: "Send" })).toBeEnabled({ timeout: 30_000 });
   await box.fill("");
-  const overflows = await page.evaluate("document.documentElement.scrollHeight > window.innerHeight * 1.5");
+  // Only the conversation pane scrolls; the page itself never does.
+  const overflows = await thread.evaluate((el) => el.scrollHeight > el.clientHeight * 1.5);
   expect(overflows).toBe(true);
+  expect(await page.evaluate("document.documentElement.scrollHeight <= window.innerHeight")).toBe(true);
 
-  const mainTop = 0; // the viewport top: the page header has scrolled away
+  const mainTop = (await thread.boundingBox())!.y; // the pane's top, under the fixed model row
   const lastQuestion = bubbles.last();
   // Wait for the smooth scroll to settle: the bubble's y is read twice and counts only when it did not move.
   await expect
@@ -86,12 +88,19 @@ test("a send in a long conversation scrolls the question to the top", async ({ p
     })
     .toBeLessThan(140);
   const qTop = (await lastQuestion.boundingBox())!.y;
-  expect(qTop).toBeGreaterThan(0);
+  expect(qTop).toBeGreaterThan(mainTop);
 
   const lastCard = page.locator("[data-sent-turn] > :nth-child(2)");
   const cardTop = (await lastCard.boundingBox())!.y;
   const bandTop = (await box.boundingBox())!.y;
   expect(cardTop).toBeLessThan(bandTop);
+
+  // The question box and the model row stay put while the pane scrolls back to the top.
+  const modelTop = (await page.getByLabel("Answering with").boundingBox())!.y;
+  await thread.evaluate((el) => el.scrollTo({ top: 0 }));
+  await expect.poll(() => thread.evaluate((el) => el.scrollTop)).toBe(0);
+  expect((await box.boundingBox())!.y).toBe(bandTop);
+  expect((await page.getByLabel("Answering with").boundingBox())!.y).toBe(modelTop);
 });
 
 // W-35/W-36: the Dataset grid fits at 1440x900 and the Rows and Flags titles stay whole next to their sort arrow.

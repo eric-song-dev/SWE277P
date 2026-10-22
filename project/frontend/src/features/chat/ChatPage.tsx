@@ -10,8 +10,6 @@ import { ApiError } from "../../api/client";
 import type { LlmProfileOut } from "../../api/types";
 import { useProfiles } from "../settings/useProfiles";
 import Composer from "./Composer";
-import ConversationList from "./ConversationList";
-import PageHeader from "../../app/PageHeader";
 import { tokens } from "../../app/theme";
 import ProfileSelect from "./ProfileSelect";
 import ShareResultsSwitch from "./ShareResultsSwitch";
@@ -106,14 +104,13 @@ export default function ChatPage() {
     rememberProfileId(id);
   }
 
-  // The sticky composer band's height, for the sent turn's minimum height in Thread.
-  const bodyRef = useRef<HTMLDivElement>(null);
+  // The scrolling conversation pane's height, for the sent turn's minimum height in Thread.
   const observer = useRef<ResizeObserver | null>(null);
-  const bandRef = useCallback((el: HTMLDivElement | null) => {
+  const paneRef = useCallback((el: HTMLDivElement | null) => {
     observer.current?.disconnect();
     observer.current = null;
     if (!el || typeof ResizeObserver === "undefined") return;
-    const publish = () => bodyRef.current?.style.setProperty("--composer-height", `${el.offsetHeight}px`);
+    const publish = () => el.style.setProperty("--thread-height", `${el.clientHeight}px`);
     publish();
     observer.current = new ResizeObserver(publish);
     observer.current.observe(el);
@@ -169,13 +166,11 @@ export default function ChatPage() {
     if (profile) {
       band = (
         <Box
-          ref={bandRef}
           sx={{
-            position: "sticky",
-            bottom: 0,
+            flexShrink: 0,
             px: "40px",
             pt: 2,
-            pb: "12px",
+            pb: "20px",
             bgcolor: "#FFFFFF",
             borderTop: `1px solid ${tokens.border}`,
           }}
@@ -193,46 +188,63 @@ export default function ChatPage() {
     }
   }
 
+  // The page fills the shell's main area: a slim model row and the question box stay put, and only
+  // the conversation pane between them scrolls.
   return (
-    <>
-      <PageHeader
-        title="Chat"
-        actions={
-          profile && profiles.data ? (
-            <ProfileSelect profiles={profiles.data} value={profile.id} onChange={chooseProfile} />
-          ) : undefined
-        }
-      />
-      <Box ref={bodyRef} sx={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 88px)" }}>
-        <ConversationList />
-        <Stack component="section" aria-label="Conversation" sx={{ flex: 1, minWidth: 0 }}>
-          <Stack
-            sx={{
-              flex: 1,
-              width: "100%",
-              maxWidth: 880 + 80,
-              mx: "auto",
-              boxSizing: "border-box",
-              gap: 2,
-              px: "40px",
-              pt: "28px",
-              pb: "32px",
-            }}
-          >
-            {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
-            {profiles.data?.length === 0 && (
-              <Alert severity="info">
-                Add an AI model in Settings to start.{" "}
-                <Link component={RouterLink} to="/settings">
-                  Go to Settings
-                </Link>
-              </Alert>
-            )}
-            {main}
-          </Stack>
-          {band}
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <Box
+        component="header"
+        sx={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", px: "32px", py: "12px" }}
+      >
+        {/* The page keeps its heading for screen readers; the nav already shows where you are. */}
+        <Typography variant="h1" sx={VISUALLY_HIDDEN}>
+          Chat
+        </Typography>
+        {profile && profiles.data && (
+          <ProfileSelect profiles={profiles.data} value={profile.id} onChange={chooseProfile} />
+        )}
+      </Box>
+      <Box
+        component="section"
+        aria-label="Conversation"
+        ref={paneRef}
+        sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain" }}
+      >
+        <Stack
+          sx={{
+            width: "100%",
+            maxWidth: 880 + 80,
+            mx: "auto",
+            boxSizing: "border-box",
+            gap: 2,
+            px: "40px",
+            pt: "8px",
+            pb: "32px",
+          }}
+        >
+          {profiles.isError && <Alert severity="error">Could not load your AI models.</Alert>}
+          {profiles.data?.length === 0 && (
+            <Alert severity="info">
+              Add an AI model in Settings to start.{" "}
+              <Link component={RouterLink} to="/settings">
+                Go to Settings
+              </Link>
+            </Alert>
+          )}
+          {main}
         </Stack>
       </Box>
-    </>
+      {band}
+    </Box>
   );
 }
+
+const VISUALLY_HIDDEN = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  m: 0,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+} as const;

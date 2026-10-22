@@ -8,7 +8,10 @@ vi.mock("../api/client", async (importOriginal) => ({
 }));
 
 beforeEach(() => {
-  vi.mocked(apiGet).mockResolvedValue({ id: 1, username: "ada", display_name: "Ada", auth_mode: "none" });
+  // The shell asks for the user and, for its side nav, the conversation list.
+  vi.mocked(apiGet).mockImplementation(async (path: string) =>
+    path === "/api/conversations" ? [] : { id: 1, username: "ada", display_name: "Ada", auth_mode: "none" },
+  );
 });
 afterEach(() => cleanupRoute());
 
