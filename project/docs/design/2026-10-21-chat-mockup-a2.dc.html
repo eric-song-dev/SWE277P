@@ -30,8 +30,8 @@ p,li,a,h1,h2,span{text-wrap:pretty}
     </div>
 
     <div style="flex: 0 0 auto; display: flex; flex-direction: column; gap: 2px; padding-top: 16px">
-      <a href="#" aria-current="page" aria-label="Chat" title="Chat" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{activePad}}; border-left: 3px solid #FECC07; background: rgba(255,255,255,0.10); color: #FFFFFF; text-decoration: none; font-weight: 600">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg><span style="display: {{labelDisplay}}">Chat</span></a>
+      <a href="#" aria-label="New chat" title="New chat" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"></path></svg><span style="display: {{labelDisplay}}">New chat</span></a>
       <a href="#" aria-label="Upload" title="Upload" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 16V4m0 0l-5 5m5-5l5 5M5 20h14"></path></svg><span style="display: {{labelDisplay}}">Upload</span></a>
       <a href="#" aria-label="Dataset" title="Dataset" style="display: flex; align-items: center; justify-content: {{linkJustify}}; gap: 12px; padding: {{linkPad}}; color: #DCE5F1; text-decoration: none">
@@ -42,10 +42,7 @@ p,li,a,h1,h2,span{text-wrap:pretty}
 
     <sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}">
       <section aria-labelledby="recent-heading" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-top: 28px; padding: 0 16px">
-        <div style="flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 8px 12px">
-          <h2 id="recent-heading" style="margin: 0; font-size: 15px; font-weight: 600; color: #C9D6E8; white-space: nowrap">Recent questions</h2>
-          <button type="button" onMouseEnter="{{newChatOn}}" onMouseLeave="{{newChatOff}}" onFocus="{{newChatOn}}" onBlur="{{newChatOff}}" style="flex: 0 0 auto; font: inherit; font-size: 15px; font-weight: 600; white-space: nowrap; min-height: 32px; padding: 4px 8px; border: none; border-radius: 6px; background: {{newChatBg}}; color: #FFFFFF; cursor: pointer; transition: background-color 120ms ease">New chat</button>
-        </div>
+        <h2 id="recent-heading" style="flex: 0 0 auto; margin: 0; padding: 0 0 8px 12px; font-size: 15px; font-weight: 600; color: #C9D6E8; white-space: nowrap">Recent questions</h2>
         <div style="flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 2px; padding-bottom: 12px">
           <sc-for list="{{conversations}}" as="item" hint-placeholder-count="10">
             <a href="#" aria-current="{{item.current}}" title="{{item.title}}" onClick="{{item.pick}}" style="flex: 0 0 auto; display: block; padding: 8px 12px; border-radius: 8px; background: {{item.bg}}; color: {{item.color}}; font-weight: {{item.weight}}; font-size: 15px; line-height: 1.4; text-decoration: none"><span style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{item.title}}</span></a>
@@ -55,11 +52,7 @@ p,li,a,h1,h2,span{text-wrap:pretty}
     </sc-if>
 
     <sc-if value="{{collapsed}}" hint-placeholder-val="{{ false }}">
-      <div style="flex: 1 1 auto; display: flex; justify-content: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.14); margin-top: 20px">
-        <button type="button" aria-label="New chat" title="New chat" onMouseEnter="{{newChatOn}}" onMouseLeave="{{newChatOff}}" onFocus="{{newChatOn}}" onBlur="{{newChatOff}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: none; border-radius: 8px; background: {{newChatBg}}; color: #FFFFFF; cursor: pointer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
-        </button>
-      </div>
+      <div style="flex: 1 1 auto"></div>
     </sc-if>
 
     <div style="flex: 0 0 auto; display: {{labelDisplay}}; padding: 14px 24px 18px; border-top: 1px solid rgba(255,255,255,0.14); font-size: 14px; color: #C9D6E8">Signed in as GPSRC Staff</div>
