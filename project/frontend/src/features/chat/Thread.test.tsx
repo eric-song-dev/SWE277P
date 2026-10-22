@@ -75,3 +75,27 @@ describe("Thread, a dropped stream", () => {
     expect(screen.getByText(INTERRUPTED)).toBeInTheDocument();
   });
 });
+
+describe("room for the sent turn", () => {
+  const sentTurns = () => document.querySelectorAll("[data-sent-turn]");
+  const wrap = (live: LiveTurn | null, turns: TurnOut[]) => (
+    <QueryClientProvider client={new QueryClient()}>
+      <Thread turns={turns} live={live} resultsByTurnId={{}} busy={false} onRetryLive={() => {}} onResend={() => {}} />
+    </QueryClientProvider>
+  );
+
+  it("gives only the live turn a minimum height, and drops it when live clears", () => {
+    const turns = [saved(1, "Q1")];
+    const { rerender } = render(wrap(lost({ question: "Q2", afterSeq: 1 }), turns));
+    expect(sentTurns()).toHaveLength(1);
+    expect((sentTurns()[0] as HTMLElement).textContent).toContain("Q2");
+    expect(getComputedStyle(sentTurns()[0]).minHeight).toContain("--composer-height");
+    rerender(wrap(null, turns));
+    expect(sentTurns()).toHaveLength(0);
+  });
+
+  it("adds no height to a conversation opened without a send", () => {
+    render(wrap(null, [saved(1, "Q1"), saved(2, "Q2")]));
+    expect(sentTurns()).toHaveLength(0);
+  });
+});

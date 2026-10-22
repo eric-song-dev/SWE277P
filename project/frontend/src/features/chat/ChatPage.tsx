@@ -4,7 +4,7 @@ import Button from "@mui/material/Button";
 import Link from "@mui/material/Link";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router";
 import { ApiError } from "../../api/client";
 import type { LlmProfileOut } from "../../api/types";
@@ -106,6 +106,19 @@ export default function ChatPage() {
     rememberProfileId(id);
   }
 
+  // The sticky composer band's height, for the sent turn's minimum height in Thread.
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const observer = useRef<ResizeObserver | null>(null);
+  const bandRef = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect();
+    observer.current = null;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const publish = () => bodyRef.current?.style.setProperty("--composer-height", `${el.offsetHeight}px`);
+    publish();
+    observer.current = new ResizeObserver(publish);
+    observer.current.observe(el);
+  }, []);
+
   let main;
   let band = null;
   if (notFound) {
@@ -156,6 +169,7 @@ export default function ChatPage() {
     if (profile) {
       band = (
         <Box
+          ref={bandRef}
           sx={{
             position: "sticky",
             bottom: 0,
@@ -189,7 +203,7 @@ export default function ChatPage() {
           ) : undefined
         }
       />
-      <Box sx={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 88px)" }}>
+      <Box ref={bodyRef} sx={{ display: "flex", alignItems: "stretch", minHeight: "calc(100vh - 88px)" }}>
         <ConversationList />
         <Stack component="section" aria-label="Conversation" sx={{ flex: 1, minWidth: 0 }}>
           <Stack
