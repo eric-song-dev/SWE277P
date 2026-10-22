@@ -30,12 +30,12 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
   - A borderless icon button to the right of "GPSRC Data Hub" has the tooltip and accessible name "Collapse navigation" and `aria-expanded="true"`.
-  - Clicking it shrinks the nav to a 72 px rail of icons only. The brand text and the "Signed in as …" line are hidden, and the button now reads "Expand navigation" with `aria-expanded="false"`.
+  - Clicking it shrinks the nav to a 72 px rail of icons only. The brand text, "Recent questions" and the "Signed in as …" line are hidden, a "+" icon button named "New chat" sits under the page icons, and the button now reads "Expand navigation" with `aria-expanded="false"`.
   - In the rail, hovering an icon shows its page name ("Chat", "Upload", "Dataset", "Settings") as a tooltip. Each icon link keeps its accessible name, and the current page keeps its gold bar and `aria-current="page"`.
   - The page content moves left and gets the extra width. Nothing overlaps, and no horizontal scrollbar appears.
   - The nav stays collapsed while moving between pages.
   - After a full reload the nav is expanded again (the state is kept in memory only).
-  - "Expand navigation" restores the 248 px nav with all text.
+  - "Expand navigation" restores the 280 px nav with all text and "Recent questions".
 - **Walk:**
   1. Open `/chat`. Hover the button next to the brand and read the tooltip. Check `aria-expanded` in DevTools.
   2. Click it. Check the rail, the hidden texts, the new label and `aria-expanded`.
@@ -49,10 +49,10 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Story:** As a keyboard user, I want every control to be reachable with Tab and to show clearly where I am, so that I can do everything without a mouse.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - From a fresh page load, Tab reaches "Collapse navigation" first, then Chat, Upload, Dataset and Settings, then the page's own controls in reading order.
+  - From a fresh page load, Tab reaches "Collapse navigation" first, then Chat, Upload, Dataset and Settings, then "New chat" and the conversation links under "Recent questions", then the page's own controls in reading order.
   - Every focused element in the nav shows a 2 px white focus ring. Every focused element outside the nav shows a 2 px `#255799` ring with a 2 px offset. No control is focused without a visible ring.
   - Enter on a nav link opens its page. Enter or Space on "Collapse navigation" collapses and expands the nav.
-  - On Chat, the order is: "AI model" select, "New chat", the conversation links, the controls inside the answer cards (if any), then Question, then "Let AI see the results", then Send. The question box shows the ring while typing, and the switch and Send each show their own ring.
+  - On Chat, after the nav, the order is: the "Answering with" select, the controls inside the answer cards (if any), then Question, then "Let AI see the results", then Send. The question box shows the ring while typing, and the switch and Send each show their own ring.
   - On Chat, Space toggles the switch, Enter in the question box sends, and Enter or Space on "Show the SQL query" opens and closes the SQL. "Copy", "Download Excel (.xlsx)" and "Download CSV (.csv)" are reachable and work with Enter.
   - On Upload, the drop zone is focusable, and Enter or Space opens the file chooser. Every field of the event form, "Commit" and "Discard" are reachable in order.
   - On Settings, "Add AI model" opens a dialog that keeps focus inside it. Escape closes it and focus returns to the button that opened it.
@@ -121,7 +121,7 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
   - At 1280×720 and at 1024×768, with the nav expanded and collapsed, no page scrolls sideways: `document.documentElement.scrollWidth - innerWidth` is `0` on `/chat`, `/upload`, `/dataset` and `/settings`.
-  - Chat: the question box, the "Let AI see the results" switch with its helper text, Send and "AI can make mistakes. Double-check important answers." stay visible at the bottom without scrolling. The header's "AI model" select stays inside the header, wrapping under the title if needed.
+  - Chat: the question box, the "Let AI see the results" switch with its helper text, and Send stay visible at the bottom, and the "Answering with" row at the top, while only the conversation scrolls.
   - Chat: an answer card's buttons ("Download Excel (.xlsx)", "Download CSV (.csv)") wrap instead of running off the card, and a result table wider than the card scrolls inside its own frame.
   - Chat: a 300-character question with no spaces wraps inside its blue bubble.
   - Upload: the drop zone, the cards and every form field fit the width.

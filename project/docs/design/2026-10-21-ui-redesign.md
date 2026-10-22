@@ -2,7 +2,8 @@
 
 - **Date:** 2026-10-21. Approved by the user after S4 and built in **S6**.
 - **Mockup:** https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs. The first artboard, "A. Campus blue and gold", is the approved design. Press Play on it to try the nav collapse, the hover states and the share switch.
-- **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` in this folder. It renders only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
+- **Revision (2026-10-21, after S6):** the artboard "A2. Conversations in the nav" on the same canvas is approved and supersedes A for the shell and the Chat page: recent questions in a 280 px side nav, a slim "Answering with" row instead of the Chat page header, a caution line on every summary, no line under the question box, and a shell that fills the window so the nav and the question box never move. The sections below describe A2 where it differs from A.
+- **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` (A) and `2026-10-21-chat-mockup-a2.dc.html` (A2) in this folder. They render only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
 - **Scope:** visual design and copy only. Every behavior, API call and test-relevant role stays as built in S4 (spec §4.3 "Details settled in S4").
 
 ## Why this direction
@@ -72,7 +73,7 @@ Contrast is checked:
   | wordmark | 19 px / 700, one line |
   | answer summary | 18 px |
   | table | 15 px |
-  | conversation list | 15 px |
+  | recent questions | 15 px |
   | helper | 13–14 px |
 
   Text uses `text-wrap: pretty` (no orphan words). Table numbers are right-aligned and use `tabular-nums`.
@@ -83,40 +84,44 @@ Contrast is checked:
 ## Shell (`AppShell`)
 
 - **Top bar:** none. The left nav carries the brand.
-- **Side nav:** 248 px wide, navy background.
+- **Window:** the shell fills the window (`100dvh`) and the page itself never scrolls or rubber-bands (`overscroll-behavior: none` on `html` and `body`). The side nav runs the full height; the main area scrolls on its own (on Chat, only the conversation pane does).
+- **Side nav:** 280 px wide, navy background.
   - **Brand block:** 88 px tall, the same height as the page header. It holds "GPSRC Data Hub" (19 px / 700, never wraps) and below it "Graduate & Postdoctoral Scholar Resource Center" (13 px, navMuted).
   - **Collapse button:** to the right of the wordmark. It is a 40×40 icon button with **no border**: icon navMuted at rest; on hover or focus, a `rgba(255,255,255,0.12)` background and a white icon. Its `aria-label` and title are "Collapse navigation" or "Expand navigation", with `aria-expanded` set.
   - **Collapsed state:** a 72 px rail with icons only. Each link keeps an `aria-label` and a hover title. The state is kept in memory only, not in localStorage (localStorage holds only the last selected profile id).
   - **Nav links:** Chat, Upload, Dataset and Settings, each icon plus label.
     - Active: a 3 px gold left border, a `rgba(255,255,255,0.10)` background, white 600 text.
     - Inactive: navText.
-  - **Bottom:** "Signed in as {display_name}", or "Not connected" when `/api/me` fails.
-- **Page header:** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right.
+  - **Recent questions:** below the nav links (28 px gap), on every page.
+    - **Header row:** "Recent questions" (15 px / 600, navMuted) on the left and a "New chat" text button (15 px / 600, white, no icon; hover `rgba(255,255,255,0.12)`) on the right, both on one line. "New chat" opens the `/chat` draft.
+    - **Items:** one link per conversation, most recently updated first: 15 px, line height 1.4, padding 8/12, radius 8, navText; at most two lines, then "…", with the full title as the hover title. Hover `rgba(255,255,255,0.08)`. The open conversation has a `rgba(255,255,255,0.14)` background with white 600 text and `aria-current="page"`; the gold bar stays for the current page only.
+    - The list fills the nav's free height and scrolls inside it, with a thin `rgba(255,255,255,0.3)` scrollbar. It is a `nav` landmark named by its heading. Empty: "No conversations yet."; failed: "Could not load your conversations." (14 px, navMuted).
+    - **Collapsed rail:** the list is hidden; a 44×44 "+" icon button ("New chat" as its `aria-label` and title) sits below the links.
+  - **Bottom:** "Signed in as {display_name}", or "Not connected" when `/api/me` fails, above a `rgba(255,255,255,0.14)` divider.
+- **Page header (Upload, Dataset, Settings, Page not found):** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right. Chat has no page header (below).
 
 ## Chat page
 
-- **Header actions:** an "AI model" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 200 px wide, control border.
-- **Conversation column:** 256 px wide, white, with a right border.
-  - **New chat:** a full-width button, 44 px tall, outlined UCI Blue, radius 8, with a "+" icon. On hover or focus it fills UCI Blue with white text (120 ms). There is **no** "Conversations" heading.
-  - **Items:** radius 8, padding 10/12. The selected item has the `selected` background and navy 600 text.
+- **Layout:** the page fills the main area as three rows: the model row and the question box stay put, and only the conversation pane between them scrolls (`overscroll-behavior: contain`). The conversations are in the side nav (Shell above); there is no conversation column.
+- **Model row:** no white header bar and no visible title. A slim row (padding 12/32, page background, no border) holds, on the right, an "Answering with" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 160 px wide, 6 px vertical padding, control border. An `h1` "Chat" stays for screen readers only.
 - **Thread:**
-  - centered, at most 880 px wide, padding 28/40;
+  - centered, at most 880 px wide, padding 8/40/32;
   - a question and its answer sit 12 px apart, and two question–answer pairs sit 32 px apart;
   - **user question:** a right-aligned UCI Blue bubble with white text, at most 75% wide;
   - **clarifying question:** a left-aligned white bubble with a border.
 - **Answer card:** white, 1 px border, radius 12, padding 24, sections 20 px apart, in this order:
-  1. "AI-generated summary. Check it against the table." (13 px, muted; only when `source == "llm"`), then the summary at 18 px;
+  1. a caution line (13 px, muted) above every summary: "AI-generated summary. Check it against the table." when the AI wrote it (`source == "llm"`), else "The AI wrote the query, so check the SQL."; then the summary at 18 px;
   2. the result table, inside a bordered container with radius 10: header row tableHead with navy 600 text, rows divided by divider lines;
   3. "How I read your question" (16 px / 700 navy) with bullet points;
   4. a full-width "Show the SQL query" bar (44 px, subtle background, chevron), collapsed by default, with Copy inside;
   5. a footer with a top divider: "{n} rows" on the left; on the right "Download Excel (.xlsx)" (filled UCI Blue) and "Download CSV (.csv)" (outlined), both with a download icon.
 
   Failed turns keep the alert, Retry and the SQL bar (S4 rule: always show the SQL).
-- **Composer:** a white band with a top border, padding 16/40/12, centered at 880 px.
+- **Composer:** a white band with a top border at the bottom of the page, padding 16/40/20, centered at 880 px.
   - **Question box:** 1 px control border, radius 12, padding 12/12/10/16. Inside it:
     - a borderless 2-row textarea with the placeholder **"Ask a question about your data"**;
     - a toolbar row. On the left is the switch (40×22; track UCI Blue when on and `#555759` when off; white 16 px knob; `role="switch"`), next to a column with the label **"Let AI see the results"** (600) and the helper text (14 px, muted), which changes with the state. On the right is "Send" (40 px, filled UCI Blue).
-  - **Below the box:** centered, 13 px, muted: **"AI can make mistakes. Double-check important answers."**
+  - **Below the box:** nothing. The caution lives on each answer card.
 - **Copy:**
 
   | Place | Text |

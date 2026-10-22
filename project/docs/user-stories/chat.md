@@ -25,8 +25,8 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Story:** As the director, I want to type a question in plain English and get the number with an explanation, so that I don't need SQL or a spreadsheet to answer it.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - `/chat` shows "Ask a question about your data to start." above an empty thread. The header shows "AI model" with "Demo" selected.
-  - The question box shows the placeholder "Ask a question about your data". Inside the box are the "Let AI see the results" switch (on) with "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI." and a "Send" button. Below the box is "AI can make mistakes. Double-check important answers.".
+  - `/chat` shows "Ask a question about your data to start." above an empty thread. The "Answering with" select at the top right shows "Demo".
+  - The question box shows the placeholder "Ask a question about your data". Inside the box are the "Let AI see the results" switch (on) with "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI." and a "Send" button. Nothing is below the box.
   - "Send" is disabled while the box is empty.
   - Pressing Enter sends the question:
     - the box empties;
@@ -39,12 +39,12 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
     - "How I read your question" with "Count the distinct people who attended the October Bagel Breakfast.";
     - a closed "Show the SQL query" bar;
     - a footer with "1 row" on the left, and "Download Excel (.xlsx)" (filled) and "Download CSV (.csv)" (outlined) on the right, each with a download icon.
-  - The address changes to `/chat/<number>`. The conversation list gains one item at the top, titled with the question and highlighted.
+  - The address changes to `/chat/<number>`. "Recent questions" in the side nav gains one item at the top, titled with the question and highlighted.
   - The whole answer arrives within 5 seconds.
 - **Walk:**
   1. Open `/chat` (or click "New chat"). Check the start text, the header, the box, the switch text and the line below the box. Check that Send is disabled.
   2. Type "How many unique people attended Bagel Breakfast, October?" and press Enter. Watch the box, the bubble and the step line.
-  3. When the answer arrives, check each part of the card in order, and the address and the conversation list.
+  3. When the answer arrives, check each part of the card in order, and the address and "Recent questions".
   4. Take a screenshot of the answer.
 
 ### CH-02 Follow-up
@@ -54,7 +54,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Acceptance criteria:**
   - The follow-up appears below the first answer in the same conversation, and the address does not change.
   - Its card shows `international_people` 8, and "How I read your question" lists "Of the October Bagel Breakfast attendees, count the international people." and "Those means the attendees of the previous question.".
-  - The conversation list still has one item for this conversation, and it is still highlighted.
+  - "Recent questions" still has one item for this conversation, and it is still highlighted.
   - The first answer is unchanged above it.
 - **Walk:**
   1. Continue from CH-01 (or ask its question in a new chat first).
@@ -154,7 +154,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Acceptance criteria:**
   - The switch starts on for "Demo", with "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI.".
   - Turned off, it reads "Off: the AI sees only your question. You get the results without an AI summary.".
-  - A question asked with the switch off gets a summary without the "AI-generated summary. Check it against the table." line: "unique_people: 38" for the CH-01 question.
+  - A question asked with the switch off gets a summary built on this computer, under the line "The AI wrote the query, so check the SQL." instead of "AI-generated summary. Check it against the table.": "unique_people: 38" for the CH-01 question.
   - The switch stays off when the first question turns `/chat` into `/chat/<id>`, and stays off for the follow-up. "Of those, how many are international?" gets "international_people: 8".
   - "New chat" resets the switch to on.
   - Opening another conversation from the list resets it to on.
@@ -166,7 +166,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   3. Ask "How many unique people attended Bagel Breakfast, October?". Check the address changed, the switch is still off, and the summary is "unique_people: 38" with no AI label.
   4. Ask "Of those, how many are international?". Check the switch and the summary.
   5. Click "New chat" and check the switch. Turn it off, then click the CH-01 conversation in the list and check the switch.
-  6. Turn it off again, choose "Demo B" in "AI model" and check the switch. Click the label text and check it toggles.
+  6. Turn it off again, choose "Demo B" in "Answering with" and check the switch. Click the label text and check it toggles.
 
 ### CH-09 A profile that may not receive results
 - **Who:** a GPSRC staff member using a model the office has not approved for personal data
@@ -176,7 +176,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   - With "Demo No Share" selected, the switch is off and greyed out, and the helper reads "Off: the AI sees only your question. You get the results without an AI summary.". This holds even right after "Demo" had the switch on.
   - Hovering the switch or its label shows "This AI model isn't allowed to receive results. Change it in Settings.".
   - Clicking the switch or the label does not turn it on.
-  - A question asked with "Demo No Share" gets a summary without the "AI-generated summary. Check it against the table." line: "unique_people: 38".
+  - A question asked with "Demo No Share" gets a summary built on this computer, under the line "The AI wrote the query, so check the SQL.": "unique_people: 38".
   - Choosing "Demo" again turns the switch back on and enables it.
 - **Walk:**
   1. Create "Demo No Share" (README). On `/chat` with "Demo" selected, check the switch is on.
@@ -190,7 +190,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Story:** As a staff member, I want the Hub to remember the AI model I picked, so that I don't have to choose it again every time I open Chat.
 - **Stack:** replay (Demo), with the helper profile "Demo B" (README)
 - **Acceptance criteria:**
-  - "AI model" lists every saved model by name; "Demo" (the default) is selected on a first visit.
+  - "Answering with" lists every saved model by name; "Demo" (the default) is selected on a first visit.
   - Choosing "Demo B" sends the next question with "Demo B". The answer arrives as usual.
   - After a reload, and in a new tab, "Demo B" is still selected.
   - After "Demo B" is deleted in Settings, Chat selects the default ("Demo") with no error.
@@ -282,7 +282,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   1. Open `/chat` and click "New chat" while the api runs, so the page has loaded the models.
   2. Run `docker compose -p hub-replay stop api`.
   3. Ask "How many unique people attended Bagel Breakfast, October?". Read the card.
-  4. Run `docker compose -p hub-replay start api` and wait for `/api/health`. Click "Retry". Check the answer and the conversation list.
+  4. Run `docker compose -p hub-replay start api` and wait for `/api/health`. Click "Retry". Check the answer and "Recent questions".
   5. Stop the api again and ask "Of those, how many are international?" in the same conversation. Start the api, then click "Retry".
 
 ### CH-16 Long, multi-line and too-long questions, Enter vs Shift+Enter, sending while an answer streams
@@ -314,7 +314,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Stack:** replay (Demo), before any profile exists
 - **Acceptance criteria:**
   - `/chat` shows "Add an AI model in Settings to start." with a "Go to Settings" link.
-  - There is no question box and no "AI model" select. The conversation column shows "New chat" and "No conversations yet.".
+  - There is no question box and no "Answering with" select. "Recent questions" in the side nav shows "New chat" and "No conversations yet.".
   - "Go to Settings" opens `/settings`, which shows "No AI models yet. Add one to start asking questions." and "Add AI model".
   - After a model is added (ST-01), Chat shows the question box with that model selected, without a reload.
 - **Walk:**
@@ -341,17 +341,17 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Story:** As the director, I want a long conversation list and a long thread to stay easy to move through, so that I can find an old answer and keep working in a long conversation.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - With 20 or more conversations, the list shows them all, most recently used first. Each title is one line, cut with "…" when long.
+  - With 20 or more conversations, "Recent questions" in the side nav shows them all, most recently used first. Each title takes at most two lines, cut with "…" when longer.
   - Hovering a cut-off title shows the full title (expected; spec silent).
-  - The list scrolls inside its own column while the page header stays in place.
-  - "New chat" stays visible at the top of the list while the list scrolls (expected; spec silent).
-  - In a thread of 12 or more questions, the page scrolls while the question box stays pinned at the bottom.
+  - The list scrolls inside the nav while the page links above it and "Signed in as …" below it stay in place.
+  - "Recent questions" and "New chat" stay visible above the list while it scrolls (expected; spec silent).
+  - In a thread of 12 or more questions, only the conversation pane scrolls; the "Answering with" row and the question box stay in place, and the page itself never scrolls or bounces.
   - After a question is sent in a long thread, the new question and its answer are scrolled into view without manual scrolling (expected; spec silent).
   - Reopening the long conversation shows all its questions in order.
 - **Walk:**
   1. Create 20 conversations with the README's loop ("Make many conversations").
-  2. Reload `/chat`. Check the order, the titles and the hover. Scroll the list and watch "New chat" and the page header.
-  3. In one conversation, ask 12 questions, cycling through the Demo questions (the "Show the SQL query" bars stay closed). Watch where the view is after each send.
+  2. Reload `/chat`. Check the order, the titles and the hover. Scroll the list hard and watch "New chat", the page links and "Signed in as …".
+  3. In one conversation, ask 12 questions, cycling through the Demo questions (the "Show the SQL query" bars stay closed). Watch where the view is after each send, and scroll the thread hard both ways while watching the question box and the "Answering with" row.
   4. Open another conversation, then reopen the long one, and check its order.
 
 ### CH-20 Answer quality on five sponsor-style questions with a follow-up and "last term", sharing on and off
@@ -359,7 +359,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Story:** As the director, I want correct answers to the questions I actually ask, with the reading stated, so that I can use the numbers in reports.
 - **Stack:** main (DeepSeek). Not walked on replay: the Demo model only knows its scripted questions.
 - **Acceptance criteria:**
-  - "How many unique people attended at least one event in Fall 2026?", asked with the switch off: 79. The summary has no "AI-generated summary" line.
+  - "How many unique people attended at least one event in Fall 2026?", asked with the switch off: 79. The summary is built on this computer, under "The AI wrote the query, so check the SQL."
   - Its follow-up "Break that down by school, highest first.": School of Engineering 16 first; Biological Sciences, Social Sciences, Social Ecology, Humanities, Physical Sciences, Medicine and Paul Merage School of Business 8 each; School of Information and Computer Sciences 7. The one attendee with a blank school is left out (as the stated assumption says) or shown as a blank row with 1.
   - "Which event had the fewest attendees?": Postdoc Wellness Lunch, 18.
   - "List the names and emails of the postdocs who attended the Postdoc Wellness Lunch.", asked with the switch on: 8 rows of names and emails. The summary starts with "AI-generated summary. Check it against the table.", and every number in it matches the table.
@@ -380,7 +380,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Stack:** replay (Demo) and main (DeepSeek), with a temporary profile "Bad key" (preset DeepSeek, key `sk-invalid`), deleted at the end
 - **Acceptance criteria:**
   - Asking with "Bad key" ends with the alert "The AI provider rejected the API key. Check this profile in Settings." and a "Retry" button. No SQL bar or table is shown (no SQL was written).
-  - Choosing a working model in "AI model" and clicking "Retry" sends the same question with that model, and its answer appears as the newest turn.
+  - Choosing a working model in "Answering with" and clicking "Retry" sends the same question with that model, and its answer appears as the newest turn.
   - After a reload, the saved failed turn still says the key was rejected and points to Settings (expected; spec silent).
   - "Test" on the "Bad key" card in Settings shows "The AI provider rejected the API key. Check this profile in Settings.".
   - The key is never shown: the card shows only "…" (a key under 12 characters shows no part of itself).

@@ -25,7 +25,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
     - the lines "Demo (scripted)", "scripted", "No key saved" and "Not tested yet";
     - the buttons "Test", "Edit" and "Delete", with no "Make default".
   - After the save, the page header shows "Add AI model".
-  - Chat then shows "AI model" with "Demo" and the question box.
+  - Chat then shows "Answering with" with "Demo" and the question box.
 - **Walk:**
   1. On a fresh replay stack with no profile (skip the README's `curl`), open Settings. Read the page.
   2. Click "Add AI model". Read the dialog and check Save.
@@ -118,7 +118,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
   - A browser that picked a model in Chat before keeps its pick (CH-10).
 - **Walk:**
   1. Create "Demo B" if needed. In Settings, click "Make default" on "Demo B". Read both cards.
-  2. Open `/chat` in a private window and read "AI model".
+  2. Open `/chat` in a private window and read "Answering with".
   3. Click "Make default" on "Demo" to restore it.
 
 ### ST-07 Delete a model, the default, and the last one
@@ -127,7 +127,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
   - "Delete" opens "Delete AI model" with 'Delete "<name>"? Its saved API key is removed too.' and "Cancel" and "Delete". "Cancel" keeps the model.
-  - Deleting a non-default model removes its card, and Chat's "AI model" no longer lists it.
+  - Deleting a non-default model removes its card, and Chat's "Answering with" no longer lists it.
   - Deleting the default makes the oldest remaining model the default ("Default" tag).
   - Deleting the last model brings back "No AI models yet. Add one to start asking questions.", and Chat shows "Add an AI model in Settings to start.".
   - Conversations answered by a deleted model still open and show their answers.

@@ -4,7 +4,7 @@ For GPSRC staff. This guide shows how to add an event's attendee list to the Hub
 
 Screens are described by their button and field names. Names in quotes are what you see on screen.
 
-The Hub has four pages, listed in the navigation on the left: **Chat**, **Upload**, **Dataset** and **Settings**. Click the arrows at the top of the navigation (**Collapse navigation** / **Expand navigation**) to shrink it to icons and give the page more room. Hover over an icon to see the page name. At the bottom it says who you are signed in as, or "Not connected" when the Hub cannot be reached. If you open an address that does not exist, the page says "Page not found".
+The Hub has four pages, listed in the navigation on the left: **Chat**, **Upload**, **Dataset** and **Settings**. Click the arrows at the top of the navigation (**Collapse navigation** / **Expand navigation**) to shrink it to icons and give the page more room. Hover over an icon to see the page name. Below the pages, **Recent questions** lists your conversations on every page, newest first; click one to open it, or click **New chat** to start a new one (when the navigation is shrunk, use the **+** icon). Long titles are cut after two lines; hover to read the whole title. The navigation and the Chat question box stay in place while the rest of the page scrolls. At the bottom it says who you are signed in as, or "Not connected" when the Hub cannot be reached. If you open an address that does not exist, the page says "Page not found".
 
 ## The idea in one minute
 
@@ -95,15 +95,15 @@ The data dictionary lists the underlying flag codes: [data-dictionary.md](data-d
 ## 2. Ask questions
 
 1. Open **Chat**. The page opens on a new conversation.
-2. Pick the **AI model** in the drop-down. The default is chosen for you. If the list is empty, add a model in **Settings** first (see the [setup guide](setup-guide.md#6-add-an-ai-model)).
+2. Pick the AI model in the **Answering with** drop-down at the top right. The default is chosen for you. If the list is empty, add a model in **Settings** first (see the [setup guide](setup-guide.md#6-add-an-ai-model)).
 3. Type your question in the box ("Ask a question about your data") and click **Send**. Press Enter to send, or Shift+Enter for a new line. A question can be up to 2,000 characters.
-4. Watch the progress line: "Writing SQL", "Checking the query", "Running the query", and "Analyzing results" when sharing is on. The page scrolls your question to the top and leaves room for the answer.
+4. Watch the progress line: "Writing SQL", "Checking the query", "Running the query", and "Analyzing results" when sharing is on. The conversation scrolls your question to the top and leaves room for the answer; the question box stays at the bottom.
 
 ![A question, its answer, the SQL and the download buttons](screenshots/03-chat-answer.png)
 
 While an answer is being written you can already type your next question. **Send** waits until the answer is done.
 
-To start a different topic, click **New chat**. Your old conversations stay in the list on the left.
+To start a different topic, click **New chat** in the navigation. Your old conversations stay under **Recent questions**.
 
 ### Asking good questions
 
@@ -129,7 +129,7 @@ What the chat can and cannot answer: it knows who attended which event, their na
 
 Each question gets one answer card. From top to bottom:
 
-- **The summary.** When sharing is on (see section 4), the AI writes a short summary with a note "AI-generated summary. Check it against the table." When sharing is off, the Hub writes a plain one, such as "42 rows" or "No matching records."
+- **The summary.** When sharing is on (see section 4), the AI writes a short summary with a note "AI-generated summary. Check it against the table." When sharing is off, the Hub writes a plain one, such as "42 rows" or "No matching records.", with the note "The AI wrote the query, so check the SQL."
 - **The result table.** This is the answer. The table is the authority: if the summary and the table disagree, trust the table. It shows up to 1,000 rows. When the result is cut off, the footer says "More than 1,000 rows". Download the file to get them all.
 - **How I read your question.** One or more plain sentences saying how the AI understood you, and what it assumed (for example, "Students" means everyone GPSRC serves, postdocs included, or "This term" means Fall 2026). Read this first when an answer looks strange. If an assumption is wrong, say so in a follow-up.
 - **Show the SQL query.** Click it to see the database instruction that was run. The Hub always shows it so you can check the work, or hand it to someone technical. **Copy** copies it and briefly shows "Copied".
@@ -137,9 +137,9 @@ Each question gets one answer card. From top to bottom:
 
 Reopening an old conversation shows the question and the SQL, but not the rows. Click **Show results** to run the saved query again on today's data. The table is marked "Re-run on current data".
 
-If something goes wrong, the card shows a short message and a **Retry** button. Retry uses the AI model and sharing choice you have selected now, so you can switch the model and try again. The SQL is still shown so you can see what was attempted.
+If something goes wrong, the card shows a short message and a **Retry** button. Retry uses the AI model ("Answering with") and sharing choice you have selected now, so you can switch the model and try again. The SQL is still shown so you can see what was attempted.
 
-**The AI can make mistakes.** The line "AI can make mistakes. Double-check important answers." under the question box says the same. Check important numbers against the table, and check the "How I read your question" lines. The team tested 20 realistic questions and the AI answered all of them correctly on the main model, but results on your own wording can differ (see [known limitations](known-limitations.md#chat-answers-can-be-wrong)).
+**The AI can make mistakes.** The note above each summary says so. Check important numbers against the table, and check the "How I read your question" lines. The team tested 20 realistic questions and the AI answered all of them correctly on the main model, but results on your own wording can differ (see [known limitations](known-limitations.md#chat-answers-can-be-wrong)).
 
 ## 3. Download results
 
