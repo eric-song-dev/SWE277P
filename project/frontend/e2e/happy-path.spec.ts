@@ -107,3 +107,52 @@ test("the Dataset grid fits and keeps the Rows and Flags titles whole", async ({
     expect(whole, `${name} title is cut`).toBe(true);
   }
 });
+
+// W-37: a grid scrolled sideways still shows a focus ring where Tab lands (its scroll area).
+test("Tab into a scrolled answer grid shows an inset focus ring", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/upload");
+  await page.setInputFiles("input[type=file]", BAGEL_OCTOBER);
+  // The happy path test may already have imported this file (one stack for all tests); a repeat shows no form.
+  if (await page.getByLabel("Format").waitFor({ timeout: 3000 }).then(() => true, () => false)) {
+    await page.getByLabel("Format").click();
+    await page.getByRole("option", { name: "In Person" }).click();
+    await page.getByLabel("Event type").fill("Wellness/Mental Health");
+    await page.getByRole("button", { name: "Commit" }).click();
+    await expect(page.getByText(/rows imported/)).toBeVisible();
+  }
+  await page.goto("/chat");
+  await page.getByRole("textbox").fill("Demo all columns");
+  await page.keyboard.press("Enter");
+  const grid = page.getByRole("grid");
+  await expect(grid).toBeVisible();
+  await expect(grid.getByRole("gridcell").first()).toBeVisible();
+  await page.evaluate(`(() => {
+    const s = document.querySelector('[role="grid"] .MuiDataGrid-virtualScroller');
+    s.scrollLeft = s.scrollWidth;
+  })()`);
+  await page.waitForTimeout(300);
+  // Focus the last tabbable element before the grid, then Tab into it.
+  await page.evaluate(`(() => {
+    const g = document.querySelector('[role="grid"]');
+    const all = Array.from(document.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea, [tabindex="0"]'));
+    const before = all.filter((e) => (e.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) && !g.contains(e));
+    before[before.length - 1].focus();
+  })()`);
+  const inGrid = "document.querySelector('[role=\"grid\"]').contains(document.activeElement)";
+  for (let i = 0; i < 5; i++) {
+    await page.keyboard.press("Tab");
+    if (await page.evaluate(inGrid)) break;
+  }
+  expect(await page.evaluate(inGrid)).toBe(true);
+  const ring = await page.evaluate<{ cls: string; style: string; width: string; offset: string }>(`(() => {
+    const s = getComputedStyle(document.activeElement);
+    return { cls: document.activeElement.className, style: s.outlineStyle, width: s.outlineWidth, offset: s.outlineOffset };
+  })()`);
+  expect(ring.cls).toContain("MuiDataGrid-virtualScroller"); // Tab lands on the scroll area
+  expect({ style: ring.style, width: ring.width, offset: ring.offset }).toEqual({
+    style: "solid",
+    width: "2px",
+    offset: "-2px",
+  });
+});

@@ -115,6 +115,11 @@ export const gridSx: SxProps<Theme> = {
     outline: `2px solid ${tokens.primary}`,
     outlineOffset: "-2px",
   },
+  // The scroll area takes Tab focus when the grid is scrolled sideways; its outer ring would be clipped by the grid.
+  "& .MuiDataGrid-virtualScroller:focus-visible": {
+    outline: `2px solid ${tokens.primary}`,
+    outlineOffset: "-2px",
+  },
   "& .MuiDataGrid-row, & .MuiDataGrid-cell": {
     borderColor: tokens.divider,
   },
