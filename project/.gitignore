@@ -10,3 +10,6 @@ frontend/playwright-report/
 
 # Benchmark run reports (the committed S3 report stays tracked)
 backend/benchmark/reports/*.md
+
+# macOS
+.DS_Store
