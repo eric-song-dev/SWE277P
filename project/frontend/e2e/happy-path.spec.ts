@@ -1,21 +1,29 @@
 import path from "node:path";
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 const BAGEL_OCTOBER = path.resolve(
   import.meta.dirname,
   "../../backend/sample_data/exports/Bagel Breakfast - October.csv",
 );
 
-// The questions come from backend/app/llm/fake_script.json (the "Demo" profile).
-test("upload, ask, export", async ({ page }) => {
+// Puts the Bagel October file in the Hub if it is not there yet, so a test does not depend on another one.
+async function ensureBagelImported(page: Page) {
   await page.goto("/upload");
   await page.setInputFiles("input[type=file]", BAGEL_OCTOBER);
-  await expect(page.getByText("CampusGroups")).toBeVisible();
-  await page.getByLabel("Format").click();
-  await page.getByRole("option", { name: "In Person" }).click();
-  await page.getByLabel("Event type").fill("Wellness/Mental Health");
-  await page.getByRole("button", { name: "Commit" }).click();
-  await expect(page.getByText(/38 rows imported/)).toBeVisible();
+  const form = page.getByLabel("Format");
+  await form.or(page.getByText(/Already imported/)).waitFor();
+  if (await form.isVisible()) {
+    await form.click();
+    await page.getByRole("option", { name: "In Person" }).click();
+    await page.getByLabel("Event type").fill("Wellness/Mental Health");
+    await page.getByRole("button", { name: "Commit" }).click();
+    await expect(page.getByText(/38 rows imported/)).toBeVisible();
+  }
+}
+
+// The questions come from backend/app/llm/fake_script.json (the "Demo" profile).
+test("upload, ask, export", async ({ page }) => {
+  await ensureBagelImported(page);
 
   await page.goto("/chat");
   await page.getByRole("button", { name: "New chat" }).click();
@@ -63,14 +71,21 @@ test("a send in a long conversation scrolls the question to the top", async ({ p
   await box.fill("done?"); // Send enables again once the last answer has finished
   await expect(page.getByRole("button", { name: "Send" })).toBeEnabled({ timeout: 30_000 });
   await box.fill("");
-  await page.waitForTimeout(1500); // the smooth scroll settles
   const overflows = await page.evaluate("document.documentElement.scrollHeight > window.innerHeight * 1.5");
   expect(overflows).toBe(true);
 
   const mainTop = 0; // the viewport top: the page header has scrolled away
   const lastQuestion = bubbles.last();
+  // Wait for the smooth scroll to settle: the bubble's y is read twice and counts only when it did not move.
+  await expect
+    .poll(async () => {
+      const first = (await lastQuestion.boundingBox())!.y;
+      await page.waitForTimeout(100);
+      const second = (await lastQuestion.boundingBox())!.y;
+      return first === second ? second - mainTop : Number.NaN;
+    })
+    .toBeLessThan(140);
   const qTop = (await lastQuestion.boundingBox())!.y;
-  expect(qTop - mainTop).toBeLessThan(140);
   expect(qTop).toBeGreaterThan(0);
 
   const lastCard = page.locator("[data-sent-turn] > :nth-child(2)");
@@ -82,9 +97,10 @@ test("a send in a long conversation scrolls the question to the top", async ({ p
 // W-35/W-36: the Dataset grid fits at 1440x900 and the Rows and Flags titles stay whole next to their sort arrow.
 test("the Dataset grid fits and keeps the Rows and Flags titles whole", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
+  await ensureBagelImported(page);
   await page.goto("/dataset");
   const grid = page.getByRole("grid");
-  await expect(grid.getByRole("gridcell").first()).toBeVisible(); // the happy path's import is listed
+  await expect(grid.getByRole("gridcell").first()).toBeVisible(); // the import is listed
 
   const noSideScroll = await page
     .locator(".MuiDataGrid-virtualScroller")
@@ -111,16 +127,7 @@ test("the Dataset grid fits and keeps the Rows and Flags titles whole", async ({
 // W-37: a grid scrolled sideways still shows a focus ring where Tab lands (its scroll area).
 test("Tab into a scrolled answer grid shows an inset focus ring", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/upload");
-  await page.setInputFiles("input[type=file]", BAGEL_OCTOBER);
-  // The happy path test may already have imported this file (one stack for all tests); a repeat shows no form.
-  if (await page.getByLabel("Format").waitFor({ timeout: 3000 }).then(() => true, () => false)) {
-    await page.getByLabel("Format").click();
-    await page.getByRole("option", { name: "In Person" }).click();
-    await page.getByLabel("Event type").fill("Wellness/Mental Health");
-    await page.getByRole("button", { name: "Commit" }).click();
-    await expect(page.getByText(/rows imported/)).toBeVisible();
-  }
+  await ensureBagelImported(page);
   await page.goto("/chat");
   await page.getByRole("textbox").fill("Demo all columns");
   await page.keyboard.press("Enter");
@@ -131,7 +138,17 @@ test("Tab into a scrolled answer grid shows an inset focus ring", async ({ page 
     const s = document.querySelector('[role="grid"] .MuiDataGrid-virtualScroller');
     s.scrollLeft = s.scrollWidth;
   })()`);
-  await page.waitForTimeout(300);
+  await expect
+    .poll(() =>
+      page.evaluate(`(() => {
+        const s = document.querySelector('[role="grid"] .MuiDataGrid-virtualScroller');
+        const atEnd = s.scrollLeft > 0 && s.scrollLeft >= s.scrollWidth - s.clientWidth - 1;
+        // The grid has dropped its tabbable header from the DOM, so Tab lands on the scroll area.
+        const noTabbableHeader = !document.querySelector('[role="grid"] [role="columnheader"][tabindex="0"]');
+        return atEnd && noTabbableHeader;
+      })()`),
+    )
+    .toBe(true);
   // Focus the last tabbable element before the grid, then Tab into it.
   await page.evaluate(`(() => {
     const g = document.querySelector('[role="grid"]');
