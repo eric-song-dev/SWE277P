@@ -15,7 +15,14 @@ from app.events.models import Event
 from app.imports.models import ImportFile
 from app.imports.reader import content_fingerprint, read_grid
 from app.imports.schemas import EventDetailsIn
-from app.imports.service import commit_import, discard_import, list_imports, preview_upload
+from app.config import get_settings
+from app.imports.service import (
+    commit_import,
+    discard_import,
+    format_size_limit,
+    list_imports,
+    preview_upload,
+)
 from app.quality.models import DataQualityFlag
 from tests.imports.helpers import (
     CG_HEADER,
@@ -352,3 +359,25 @@ def test_header_only_file_is_rejected_and_not_stored(db_session, user, tmp_xlsx,
         assert p.error.code == "no_data_rows"
         assert p.error.message == "This file has a header row but no attendee rows."
     assert count(db_session, ImportFile) == 0
+
+
+@pytest.mark.parametrize(
+    ("limit", "text"),
+    [
+        (20_000, "20 KB"),
+        (10_485_760, "10 MB"),
+        (1_572_864, "1.5 MB"),
+        (1_048_576, "1 MB"),
+        (500, "0 KB"),
+    ],
+)
+def test_format_size_limit(limit, text):
+    assert format_size_limit(limit) == text
+
+
+def test_oversize_message_states_the_limit_in_kb(db_session, user, monkeypatch):
+    settings = get_settings().model_copy(update={"max_upload_bytes": 20_000})
+    monkeypatch.setattr("app.imports.service.get_settings", lambda: settings)
+    p = preview_upload(db_session, "big.csv", b"a" * 21_804, user)
+    assert p.status == "rejected"
+    assert p.error.message == "File exceeds the 20 KB limit."

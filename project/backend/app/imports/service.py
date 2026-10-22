@@ -95,10 +95,17 @@ def preview_upload(
         )
 
 
+def format_size_limit(limit: int) -> str:
+    """A byte limit in KB (nearest whole) below 1 MiB, else MB with up to one decimal."""
+    if limit < 1_048_576:
+        return f"{round(limit / 1024)} KB"
+    return f"{round(limit / 1_048_576, 1):g} MB"
+
+
 def _preview(session: Session, file_name: str, content: bytes, user: CurrentUser) -> ImportPreview:
     limit = get_settings().max_upload_bytes
     if len(content) > limit:
-        raise HubError("file_too_large", f"File exceeds the {limit // 1_048_576} MB limit.", 413)
+        raise HubError("file_too_large", f"File exceeds the {format_size_limit(limit)} limit.", 413)
     if not content:
         raise HubError("empty_file", "The file is empty.", 422)
 
