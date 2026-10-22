@@ -21,6 +21,7 @@ const imports: ImportFileOut[] = [
     source: "campusgroups",
     status: "committed",
     row_count: 38,
+    imported_rows: 37,
     skipped_count: 0,
     event: { id: 4, name: "Career Fair", term: "Fall 2026" },
     flag_count: 3,
@@ -34,6 +35,7 @@ const imports: ImportFileOut[] = [
     source: "twelvetwenty",
     status: "pending",
     row_count: 12,
+    imported_rows: null,
     skipped_count: 1,
     event: null,
     flag_count: 0,
@@ -66,6 +68,15 @@ describe("DatasetPage", () => {
     expect(screen.getByText("12twenty")).toBeInTheDocument();
     expect(screen.getAllByText("Ada Lovelace")).toHaveLength(2);
     expect(apiGet).toHaveBeenCalledWith("/api/imports");
+  });
+
+  it("shows the rows a committed file added, and the file's rows while it is pending", async () => {
+    vi.mocked(apiGet).mockResolvedValueOnce(imports);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    expect(screen.getByRole("gridcell", { name: "37" })).toBeInTheDocument();
+    expect(screen.queryByRole("gridcell", { name: "38" })).not.toBeInTheDocument();
+    expect(screen.getByRole("gridcell", { name: "12" })).toBeInTheDocument();
   });
 
   it("shows the status in words", async () => {

@@ -94,6 +94,7 @@ function importRow(id: number, status: "pending" | "committed"): ImportFileOut {
     source: "campusgroups",
     status,
     row_count: 38,
+    imported_rows: status === "committed" ? 38 : null,
     skipped_count: 0,
     event: null,
     flag_count: 0,

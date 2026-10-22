@@ -91,6 +91,7 @@ export interface ImportFileOut {
   source: string;
   status: string;
   row_count: number | null;
+  imported_rows: number | null;
   skipped_count: number | null;
   event: ImportEventRef | null;
   flag_count: number;

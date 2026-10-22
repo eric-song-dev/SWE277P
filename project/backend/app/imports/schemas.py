@@ -104,6 +104,7 @@ class ImportFileOut(BaseModel):
     status: str
     row_count: int | None
     skipped_count: int | None
+    imported_rows: int | None = None  # attendance rows a committed file added; None while pending
     event: ImportEventRef | None
     flag_count: int
     uploaded_by: ImportUserRef

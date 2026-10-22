@@ -9,13 +9,13 @@ from openpyxl import load_workbook
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.dataset.models import Attendance, Person
 from app.errors import HubError
 from app.events.models import Event
 from app.imports.models import ImportFile
 from app.imports.reader import content_fingerprint, read_grid
 from app.imports.schemas import EventDetailsIn
-from app.config import get_settings
 from app.imports.service import (
     commit_import,
     discard_import,
@@ -381,3 +381,12 @@ def test_oversize_message_states_the_limit_in_kb(db_session, user, monkeypatch):
     p = preview_upload(db_session, "big.csv", b"a" * 21_804, user)
     assert p.status == "rejected"
     assert p.error.message == "File exceeds the 20 KB limit."
+
+
+def test_list_reports_rows_each_committed_file_added(db_session, user):
+    content = csv_with_rows(header=CG_HEADER, rows=[ROW_AAHMED, ROW_AAHMED])
+    s = commit_after_preview(db_session, "dup.csv", content, user)
+    pending = preview_upload(db_session, NOV, sample_bytes(NOV), user)
+    by_id = {f.id: f for f in list_imports(db_session)}
+    assert (by_id[s.import_id].row_count, by_id[s.import_id].imported_rows) == (2, 1)
+    assert (by_id[pending.id].row_count, by_id[pending.id].imported_rows) == (31, None)

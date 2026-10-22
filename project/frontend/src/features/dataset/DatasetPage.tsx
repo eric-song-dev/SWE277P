@@ -45,7 +45,14 @@ const columns: GridColDef<ImportFileOut>[] = [
     width: 120,
     valueGetter: (_, row) => PLATFORMS[row.source] ?? row.source,
   },
-  { field: "row_count", headerName: "Rows", type: "number", width: 70, disableColumnMenu: true },
+  {
+    field: "row_count",
+    headerName: "Rows",
+    type: "number",
+    width: 70,
+    disableColumnMenu: true,
+    valueGetter: (_, row) => row.imported_rows ?? row.row_count,
+  },
   { field: "flag_count", headerName: "Flags", type: "number", width: 70, disableColumnMenu: true },
   {
     field: "uploaded_by",

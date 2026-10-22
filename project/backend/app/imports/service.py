@@ -2,7 +2,7 @@ import hashlib
 from collections import Counter
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select, text
+from sqlalchemy import case, func, select, text
 from sqlalchemy.orm import Session
 
 from app.auth.models import AppUser
@@ -292,6 +292,11 @@ def _import_out_query():
         .group_by(DataQualityFlag.import_file_id)
         .subquery()
     )
+    imported_rows = (
+        select(Attendance.import_file_id, func.count().label("n"))
+        .group_by(Attendance.import_file_id)
+        .subquery()
+    )
     return (
         select(
             ImportFile.id,
@@ -308,10 +313,15 @@ def _import_out_query():
             AppUser.id.label("user_id"),
             AppUser.display_name.label("user_name"),
             func.coalesce(flag_counts.c.n, 0).label("flag_count"),
+            case(
+                (ImportFile.status == "committed", func.coalesce(imported_rows.c.n, 0)),
+                else_=None,
+            ).label("imported_rows"),
         )
         .join(AppUser, AppUser.id == ImportFile.uploaded_by)
         .outerjoin(Event, Event.id == ImportFile.event_id)
         .outerjoin(flag_counts, flag_counts.c.import_file_id == ImportFile.id)
+        .outerjoin(imported_rows, imported_rows.c.import_file_id == ImportFile.id)
     )
 
 
@@ -323,6 +333,7 @@ def _to_out(r) -> ImportFileOut:
         status=r.status,
         row_count=r.row_count,
         skipped_count=r.skipped_count,
+        imported_rows=r.imported_rows,
         event=(
             ImportEventRef(id=r.event_id, name=r.event_name, term=r.event_term)
             if r.event_id is not None

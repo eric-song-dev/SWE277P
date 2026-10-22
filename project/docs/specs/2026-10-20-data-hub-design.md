@@ -181,6 +181,7 @@ A migration test checks that `chatbot_ro` can read the view and nothing else.
 2. Staff confirm the event details in the form.
 3. `POST /api/imports/{id}/commit`. In **one transaction**: create the event, re-parse the stored bytes, link identities, insert the attendance rows and flags, and mark the file `committed`. Return a summary: linked by NetID, linked by email, new people, unlinked, flagged, skipped.
    - `GET /api/imports/{id}/preview` returns the same preview `POST /api/imports` returns for a pending file, rebuilt from the stored bytes, so the Upload page can show a pending import again after the staff member left the page or reloaded. An unknown id is 404 `import_not_found`; a committed import is 409 `import_not_pending`. (Decided in S5.)
+   - `GET /api/imports` reports `imported_rows`, the attendance rows a committed file added. (Decided in S6.)
 4. `DELETE /api/imports/{id}` discards a pending import. Committed imports cannot be deleted in the MVP (backlog).
 
 **Adapters** are registered in `imports/adapters/__init__.py`. Each adapter declares its `source`, its required headers, `parse(rows) -> list[NormalizedRow]`, and `prefill(file_name, rows) -> EventDraft`. Adding the F15 historical-sheet adapter means adding one module plus one migration: the migration widens `ck_import_file_source` to accept the new `source` and adds it to the `platform` CASE in `attendance_view`. Without it, every upload of that format would fail the CHECK and return 500. (Decided in S5.)
