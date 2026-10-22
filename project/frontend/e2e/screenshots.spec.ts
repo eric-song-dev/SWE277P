@@ -44,6 +44,12 @@ test("midterm screenshots", async ({ page }) => {
     await shoot(page, "02-commit-summary.png");
   });
 
+  await test.step("dataset after the commit", async () => {
+    await page.goto("/dataset");
+    await expect(page.getByRole("grid")).toContainText("Bagel Breakfast");
+    await shoot(page, "06-dataset.png");
+  });
+
   await test.step("chat answer with the SQL", async () => {
     await page.goto("/chat");
     await page.getByRole("button", { name: "New chat" }).click();
@@ -76,5 +82,14 @@ test("midterm screenshots", async ({ page }) => {
     await expect(page.getByRole("article")).toHaveCount(1);
     await expect(page.getByRole("article", { name: "Demo" })).toContainText("Demo (scripted)");
     await shoot(page, "05-settings.png");
+  });
+
+  await test.step("collapsed navigation", async () => {
+    await page.goto("/chat");
+    await page.getByRole("button", { name: "Collapse navigation" }).click();
+    await expect(page.getByRole("button", { name: "Expand navigation" })).toBeVisible();
+    await shoot(page, "07-nav-collapsed.png");
+    // Leave the nav open for whatever runs next.
+    await page.getByRole("button", { name: "Expand navigation" }).click();
   });
 });

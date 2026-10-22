@@ -4,7 +4,7 @@ A small web app for UCI's Graduate & Postdoctoral Scholar Resource Center (GPSRC
 
 It runs on one staff computer, with Docker. No data goes to the internet except what you choose to send to the AI model (see the [user guide](docs/user-guide.md#4-who-sees-the-data-the-two-switches)). SWE 277P capstone, Fall 2026. Sponsor: Kayleigh Anderson-Natale, PhD.
 
-Screenshots arrive with the S6 redesign, which restyles every page. Until then the docs describe screens by their labels.
+![A question, its answer, the SQL and the download buttons](docs/screenshots/03-chat-answer.png)
 
 ## Quick start
 

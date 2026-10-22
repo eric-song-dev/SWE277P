@@ -55,7 +55,6 @@ All staff share one built-in user, so everyone sees the same conversations.
 
 ## Other
 
-- **No screenshots yet.** The UI is restyled in S6, so the docs describe screens by labels.
 - **Tested in Chromium (Playwright).** One export in Safari has not been tried yet.
 - If the Hub server itself stops while it is answering a question, that question is not saved. The page shows "Connection lost. Retry."; retry it once the Hub is running again.
 - **Pages are plain HTTP on localhost.** There is no HTTPS, because nothing leaves the computer.
