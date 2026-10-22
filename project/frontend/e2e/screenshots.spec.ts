@@ -1,7 +1,7 @@
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
-// Full-page PNGs for the midterm report, from synthetic sample data and the "Demo" profile.
+// Window-sized PNGs of the whole page, for the midterm report, from synthetic sample data and the "Demo" profile.
 
 const BAGEL_OCTOBER = path.resolve(
   import.meta.dirname,
@@ -11,8 +11,17 @@ const SCREENSHOTS = path.resolve(import.meta.dirname, "../../docs/screenshots");
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-async function shoot(page: Page, name: string) {
-  await page.screenshot({ path: path.join(SCREENSHOTS, name), fullPage: true, animations: "disabled" });
+async function shoot(page: Page, name: string, minHeight = 900) {
+  // A window-sized capture of the whole page: grow the window to the page height so nothing scrolls,
+  // because a full-page capture draws the sticky nav and composer at the scroll position.
+  await page.evaluate("window.scrollTo(0, 0)");
+  const height = await page.evaluate<number>("document.documentElement.scrollHeight");
+  await page.setViewportSize({ width: 1440, height: Math.max(minHeight, height) });
+  await page.evaluate("new Promise((resolve) => requestAnimationFrame(() => resolve(null)))");
+  const fits = await page.evaluate<boolean>("document.documentElement.scrollHeight <= window.innerHeight");
+  expect(fits).toBe(true);
+  await page.screenshot({ path: path.join(SCREENSHOTS, name), fullPage: false, animations: "disabled" });
+  await page.setViewportSize({ width: 1440, height: 900 });
 }
 
 // Asks a question from backend/app/llm/fake_script.json and waits for the scripted reply, the end
@@ -60,9 +69,14 @@ test("midterm screenshots", async ({ page }) => {
       1,
     );
     await expect(page.getByRole("grid")).toContainText("38");
+    // Reopen the conversation so there is no live turn (it has a min-height and leaves the page scrolled).
+    await page.reload();
+    await page.getByRole("button", { name: "Show results" }).click();
+    await expect(page.getByRole("grid")).toContainText("38");
     await page.getByRole("button", { name: "Show the SQL query" }).click();
     await expect(page.getByText(/SELECT COUNT\(DISTINCT person_key\)/)).toBeVisible();
-    await shoot(page, "03-chat-answer.png");
+    // The thread scrolls inside the chat page, so the window itself must be tall enough for the whole card.
+    await shoot(page, "03-chat-answer.png", 1100);
   });
 
   await test.step("clarifying question", async () => {
@@ -73,6 +87,8 @@ test("midterm screenshots", async ({ page }) => {
       "Do you mean the 2026-27 academic year or calendar year 2026?",
       2,
     );
+    await page.reload();
+    await expect(page.getByText("Do you mean the 2026-27 academic year or calendar year 2026?")).toBeVisible();
     await shoot(page, "04-clarification.png");
   });
 
