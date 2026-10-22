@@ -73,6 +73,31 @@ describe("EventDetailsForm", () => {
     expect(screen.getByRole("button", { name: "Commit" })).toBeEnabled();
   });
 
+  it("names the missing required fields next to Commit", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    expect(screen.getByText("To commit, fill in: Event type.")).toBeInTheDocument();
+    const name = screen.getByLabelText(/Event name/);
+    await user.clear(name);
+    await user.type(name, "   ");
+    expect(screen.getByText("To commit, fill in: Event name, Event type.")).toBeInTheDocument();
+    await user.clear(name);
+    await user.type(name, "Resume Workshop");
+    await user.type(screen.getByLabelText(/Event type/), "Fellowships");
+    expect(screen.queryByText(/To commit, fill in/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Commit" })).toBeEnabled();
+  });
+
+  it("lists an invalid term as missing too", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    const term = screen.getByLabelText(/Term/);
+    await user.clear(term);
+    await user.type(term, "fall 26");
+    expect(screen.getByText("To commit, fill in: Term, Event type.")).toBeInTheDocument();
+    expect(screen.getByText(/Use a season and year/)).toBeInTheDocument();
+  });
+
   it("commits EventDetailsIn once even on a double click, then reports the summary", async () => {
     const user = userEvent.setup();
     const { onCommitted } = renderForm();

@@ -197,6 +197,45 @@ describe("UploadPage", () => {
     expect(apiUpload).not.toHaveBeenCalled();
   });
 
+  it("dismisses a Duplicate card and keeps it gone after leaving and coming back", async () => {
+    vi.mocked(apiUpload).mockResolvedValueOnce({ files: [duplicate, rejected] });
+    const { router, user } = renderUpload();
+    await user.upload(document.querySelector("input[type=file]") as HTMLInputElement, [csv("dup.csv"), csv("bad.csv")]);
+    const card = (await screen.findByText("dup.csv")).closest("[data-testid=preview-card]") as HTMLElement;
+    await user.click(within(card).getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("dup.csv")).not.toBeInTheDocument();
+    expect(screen.getByText("bad.csv")).toBeInTheDocument();
+    await act(() => router.navigate("/chat"));
+    await user.click(screen.getByRole("link", { name: "Back to upload" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "Upload" })).toBeInTheDocument();
+    expect(screen.queryByText("dup.csv")).not.toBeInTheDocument();
+    expect(screen.getByText("bad.csv")).toBeInTheDocument();
+    const bad = screen.getByText("bad.csv").closest("[data-testid=preview-card]") as HTMLElement;
+    await user.click(within(bad).getByRole("button", { name: "Dismiss" }));
+    expect(screen.queryByText("bad.csv")).not.toBeInTheDocument();
+  });
+
+  it("names the import a Duplicate card matches", async () => {
+    vi.mocked(apiGet).mockResolvedValue([{ ...importRow(1, "committed"), file_name: "Bagel Breakfast - October.csv" }]);
+    vi.mocked(apiUpload).mockResolvedValueOnce({ files: [{ ...duplicate, duplicate_of: 1 }] });
+    await drop([csv("dup.csv")]);
+    expect(await screen.findByText("Already imported as Bagel Breakfast - October.csv.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Dataset/ })).toHaveAttribute("href", "/dataset");
+  });
+
+  it("does not upload an .xls file and shows the rejection", async () => {
+    await drop([new File(["a"], "x.xls", { type: "application/vnd.ms-excel" })]);
+    expect(await screen.findByText(/Unsupported file type, not uploaded: x\.xls/)).toBeInTheDocument();
+    expect(apiUpload).not.toHaveBeenCalled();
+  });
+
+  it("uploads a .csv whose browser type is application/vnd.ms-excel", async () => {
+    vi.mocked(apiUpload).mockResolvedValueOnce({ files: [pending(5, "Mixer")] });
+    await drop([new File(["a"], "a.csv", { type: "application/vnd.ms-excel" })]);
+    expect(await screen.findByText("Mixer.csv")).toBeInTheDocument();
+    expect(apiUpload).toHaveBeenCalled();
+  });
+
   it("commits one card, shows the summary, and keeps other cards' edits", async () => {
     vi.mocked(apiUpload).mockResolvedValueOnce({ files: [pending(5, "Mixer"), pending(6, "Panel")] });
     const user = await drop([csv("a.csv"), csv("b.csv")]);

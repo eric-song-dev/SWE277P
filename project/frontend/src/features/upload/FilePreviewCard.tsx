@@ -11,7 +11,7 @@ import { tokens } from "../../app/theme";
 import type { CommitSummary, ImportPreview } from "../../api/types";
 import CommitSummaryView from "./CommitSummaryView";
 import EventDetailsForm from "./EventDetailsForm";
-import { useDiscardImport } from "./useImports";
+import { useDiscardImport, useImportHistory } from "./useImports";
 
 // Every flag code in spec section 6, worded like the dataset's attendance source notes.
 const FLAG_LABELS: Record<string, string> = {
@@ -56,6 +56,19 @@ export default function FilePreviewCard({ preview, summary, onCommitted, onRemov
   const discard = useDiscardImport();
   const chip = STATUS_CHIPS[preview.status];
   const missing = missingColumns(preview);
+  const history = useImportHistory();
+  const matched =
+    preview.duplicate_of === null ? undefined : history.data?.find((row) => row.id === preview.duplicate_of);
+  const dismiss = (
+    <Button
+      variant="outlined"
+      color="inherit"
+      onClick={onRemove}
+      sx={{ alignSelf: "flex-start", borderColor: tokens.control }}
+    >
+      Dismiss
+    </Button>
+  );
 
   function handleDiscard() {
     if (preview.id === null) return;
@@ -75,10 +88,11 @@ export default function FilePreviewCard({ preview, summary, onCommitted, onRemov
 
           {preview.status === "duplicate" && (
             <Stack spacing={0.5}>
-              <Typography>Already imported</Typography>
+              <Typography>{matched ? `Already imported as ${matched.file_name}.` : "Already imported"}</Typography>
               <Link component={RouterLink} to="/dataset">
                 View it on the Dataset page
               </Link>
+              {dismiss}
             </Stack>
           )}
 
@@ -86,6 +100,7 @@ export default function FilePreviewCard({ preview, summary, onCommitted, onRemov
             <Stack spacing={0.5}>
               <Typography color="error">{preview.error.message}</Typography>
               {missing.length > 0 && <Typography>Missing columns: {missing.join(", ")}</Typography>}
+              {dismiss}
             </Stack>
           )}
 

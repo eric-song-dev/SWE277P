@@ -4,6 +4,7 @@ import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
 import { useId, useRef } from "react";
 import type { SyntheticEvent } from "react";
 import type { CommitSummary, EventDetailsIn, EventDraftOut } from "../../api/types";
@@ -51,8 +52,14 @@ export default function EventDetailsForm({ importId, draft, onCommitted }: Props
   const setStudentWorker = (studentWorker: string) => edit({ studentWorker });
 
   const termValid = TERM_PATTERN.test(term.trim());
-  const valid =
-    name.trim() !== "" && termValid && MODALITIES.some((m) => m === modality) && eventType.trim() !== "";
+  // Required fields still lacking a usable value, in form order.
+  const missingFields = [
+    name.trim() === "" && "Event name",
+    !termValid && "Term",
+    !MODALITIES.some((m) => m === modality) && "Format",
+    eventType.trim() === "" && "Event type",
+  ].filter((label) => label !== false);
+  const valid = missingFields.length === 0;
 
   function submit(event: SyntheticEvent) {
     event.preventDefault();
@@ -130,9 +137,16 @@ export default function EventDetailsForm({ importId, draft, onCommitted }: Props
         onChange={(e) => setStudentWorker(e.target.value)}
       />
       {commit.isError && <Alert severity="error">{commit.error.message}</Alert>}
-      <Button type="submit" variant="contained" disabled={!valid || commit.isPending} sx={{ alignSelf: "flex-start" }}>
-        Commit
-      </Button>
+      <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
+        <Button type="submit" variant="contained" disabled={!valid || commit.isPending}>
+          Commit
+        </Button>
+        {!valid && (
+          <Typography variant="body2" color="text.secondary">
+            To commit, fill in: {missingFields.join(", ")}.
+          </Typography>
+        )}
+      </Stack>
     </Stack>
   );
 }

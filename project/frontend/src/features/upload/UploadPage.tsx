@@ -15,7 +15,6 @@ import { useImportHistory, usePendingPreviews, usePreviewUpload } from "./useImp
 
 const ACCEPT = {
   "text/csv": [".csv"],
-  "application/vnd.ms-excel": [".csv"],
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
   "application/vnd.ms-excel.sheet.macroEnabled.12": [".xlsm"],
 };
