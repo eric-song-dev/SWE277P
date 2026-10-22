@@ -122,6 +122,7 @@ Details settled in S4:
 - Retry, on a live or a saved failed turn, resends the question with the profile and "Let AI see the results" switch selected now (D2), not the ones the failed attempt used.
 - Every failed turn still shows its SQL. Saved error codes are shown in plain language.
 - A chat export whose `X-Hub-Truncated` header is `true` shows "This file stops at {cap} rows."
+- The question box stays typeable while an answer streams, and only sending waits. A sent question scrolls to the top of the window with room for its answer; opening a conversation does not scroll. Duplicate and Rejected upload cards have a Dismiss button. An unknown address shows a "Page not found" page inside the shell. (S6 walkthrough fixes.)
 - When the server is down, errors read "Could not reach the server." (`network_error`) or "The Hub server isn't responding…" (`server_unavailable`, any non-JSON 5xx), and the chat treats both as a lost connection. A render error or a page chunk that fails to load shows a plain error page with Reload.
 - localStorage holds only the last selected profile id (`hub.chat.profileId`).
 - The Playwright e2e runs on its own Compose project (`hub-e2e`, port 8081) with only the scripted "Demo" profile; it blanks every `LLM_SEED_*` and refuses to run if any other profile exists, so no real key is ever used.
