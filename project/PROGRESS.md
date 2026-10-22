@@ -4,145 +4,112 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 ## Current status
 
-- **Session:** S6 (2026-10-21) is **in progress, paused in Task 15** (the user stopped for the day).
-  - Plan: `docs/plans/2026-10-21-s6-ui-user-stories.md`, run subagent-driven.
-  - **Tasks 1–11** are done (`0005498`..`131d609`), each with a passing task review:
-    - the redesign on every page (Tasks 1–6);
-    - the three S5 carry-overs (Tasks 7–9);
-    - four new Demo questions (Task 10);
-    - 63 user stories plus `scripts/story_files.py` (Task 11).
-  - **Tasks 12–14, the walkthrough,** are done (`bc4509a`, `0b6202a`, `755c77f`). The record is `docs/user-stories/walkthrough-2026-10-21.md`:
-    - 67 rows: 42 Pass, 25 Fail;
-    - 32 findings, W-1…W-32, all still "Open" in the record.
-  - **Task 15, the fixes,** is part done. Each fix group was reviewed:
-    - G1 shell and nginx (`122f674`..`a8e60d5`): page-not-found page, nginx connect and DNS timeouts, nav hover;
-    - G2a chat thread and composer (`5df4a8d`..`3358045`): scroll to a new question, type while answering, Send at the right, conversation list scrolling, titles;
-    - G2b answer card (`75c8c4d`): "Copied", "More than N rows", repair attempt number, saved AI errors;
-    - G3 dataset and grids (`ea70450`..`a13984a`): ellipsis, narrow-column sort, grid focus ring.
-  - **Resume at Task 15 G4.** The rest of Task 15 is G4 (Upload), G5 (import backend and the Dataset Rows column), G6 (Settings), G7 (story defects and known limitations), then the re-walk of the touched stories and the record update. Tasks 16 and 17 follow.
-  - The fix briefs and the controller's ledger, with every ruling and the deferred minors for the final review, are in `SWE277P/.superpowers/sdd/2026-10-21-s6-ui-user-stories/`. That folder is git-ignored and exists only on this machine.
-- **Phase:** the MVP meets its acceptance criteria; S6 is UI and UX work on top. Vitest has 201 tests. `bash scripts/acceptance.sh` has not been re-run since S5; Task 17 does it.
-- **Next:** finish Task 15 (G4–G7 and the re-walk), then Tasks 16 and 17.
+- **Sessions:** S1–S6 are complete. S6 (2026-10-21) finished the planned build.
+- **Phase:** the MVP meets its acceptance criteria. Every row of `bash scripts/acceptance.sh` passes except A7 (login, deferred). The UI has the approved redesign, every user story has a recorded walkthrough result, and every problem the walk found is fixed or left with a reason.
+- **Next:** no session is planned. The work left is the sponsor demo and the open issues below.
 
-## Done in S5
+## Done in S6
 
-- **Plan:** revised against the S3/S4 code at the start of the session. The revision table is at the top of `docs/plans/2026-10-20-s5-benchmark-handoff.md`.
-- **Benchmark** (`docs/benchmark-results.md`):
-  - **Holdout:** 10 questions (`benchmark/holdout.yaml`, h01–h10), each cross-checked with pandas. Run them with `--set holdout`. They were committed before any tuning.
-  - **Prompt:** version `2026-10-29.4`. It states the "students" reading and that blank schools or departments are not a group as assumptions, and reads "last term", "most recent term" and "this term".
-  - **A3:** DeepSeek (`deepseek-flash`) scored 20/20 on every run, including two consecutive runs on the final prompt, and the holdout scored 10/10 three times.
-  - **A4:** DeepSeek Pro (`deepseek-v4-pro`) scored 19/20 and 10/10 on the holdout. Its one miss is q15, which reads records as people.
-  - **A10:** about 4–6 s from question to Excel on DeepSeek with a cold-started api, and 5–16 s on DeepSeek Pro. Run it with `npm run e2e:timing`.
-- **Backend hardening:**
-  - simultaneous uploads of one file are serialized;
-  - CHECK constraints (migration `0005`);
-  - a turn whose profile is deleted mid-run is still recorded;
-  - the pool reset releases advisory locks;
-  - guard repair messages for COLLATE, `^` and qualified functions;
-  - conversations and turns are per-user, returning 404 (IDOR);
-  - wider detection of a rejected `response_format`;
-  - logs record the exception type only, including under uvicorn;
-  - settings errors never echo values;
-  - tighter A6 and SQLSTATE tests.
-- **Frontend hardening:**
-  - pending imports come back as cards on `/upload` through the new `GET /api/imports/{id}/preview`, and typed edits survive in-app navigation;
-  - a question sent between `done` and the end of the body is kept;
-  - "Show results" has a pending state;
-  - one first-run hint when there are no profiles;
-  - batch dedupe;
-  - a body-read drop maps to `network_error`;
-  - `AuthGate` sits inside the error page;
-  - the e2e setup no longer masks errors.
-- **Docker and nginx:**
-  - nginx resolves `api` on each request;
-  - `index.html` is no-cache and assets are immutable;
-  - the api runs as non-root, with a HEALTHCHECK;
-  - nginx waits for a healthy api.
-- **Review Focus replay (S2–S4):** 14 items passed by hand and 1 is covered by its tests. No bugs.
-- **Docs:** `README.md`, `docs/setup-guide.md` (followed verbatim on a fresh clone, including backup, restore and upgrade), `docs/user-guide.md`, `docs/data-dictionary.md`, `docs/known-limitations.md`, `docs/handoff.md`. None of them has screenshots; those arrive with S6.
+- **Plan:** `docs/plans/2026-10-21-s6-ui-user-stories.md`. It ran subagent-driven: 17 tasks, each reviewed, then a final whole-branch review and one fix wave. That is 60 commits from `c3bc35e` to `e897787`.
+- **Redesign (Tasks 1–6):** "Campus blue and gold" is on every page:
+  - theme tokens (`src/app/theme.ts`) and Source Sans 3 (self-hosted, `@fontsource/source-sans-3` 5.3.0);
+  - a navy side nav that collapses to a 72 px rail, and `PageHeader`;
+  - the share switch inside the question box, with the On/Off helper texts;
+  - restyled answer cards ("Show the SQL query", "Download Excel (.xlsx)", "Download CSV (.csv)");
+  - Upload, Dataset and Settings restyled.
+- **S5 carry-overs (Tasks 7–9):**
+  - a pending import that no longer loads shows its file name and Discard;
+  - the preview counts "Duplicate in this event" and "Email/NetID unavailable";
+  - a dropped stream no longer shows two cards.
+- **Demo questions (Task 10):** "Demo slow question", "Demo refused query", "Demo repaired query" and "Demo all columns" in the scripted model.
+- **User stories (Task 11):** 63 stories in `docs/user-stories/` (shell, chat, upload, dataset, settings), each with who, the story, acceptance criteria and walk steps. `scripts/story_files.py` makes the edge-case upload files.
+- **Walkthrough (Tasks 12–15):** `docs/user-stories/walkthrough-2026-10-21.md`, with screenshots.
+  - The first walk gave 67 rows, 32 findings. Fix groups G1–G10 fixed them, and a re-walk confirmed it and found W-33…W-37, which were fixed too.
+  - **Final:** 67 rows: 65 Pass, 2 Fail. Both Fails are left on purpose.
+  - **Findings:** 37 in all. 34 are fixed and 3 are left:
+    - W-3: text fields show focus with their field border.
+    - W-10: a question is lost if the Hub server itself stops mid-answer.
+    - W-32: "How I read your question" can name a column.
+
+    W-10 and W-32 are in `docs/known-limitations.md`.
+  - **Main fixes:**
+    - a "Page not found" page;
+    - nginx fails fast (5 s) when the api is down, instead of 60 s;
+    - the question box stays typeable while answering;
+    - a sent question scrolls to the top with room for its answer;
+    - "Copied" and "More than N rows";
+    - saved AI errors keep their message;
+    - the Dataset list shows one line with "…", and narrow columns sort on click;
+    - grid focus rings;
+    - Upload: Dismiss, "Already imported as …", `.xls` refused in the browser, "To commit, fill in: …", the size limit in KB/MB;
+    - commit summary links count only existing people;
+    - `imported_rows` on `GET /api/imports`;
+    - Settings: a credentials-in-URL message, and the model list after a Test.
+- **Docs (Task 16):**
+  - seven screenshots in `docs/screenshots/` (01–07), as window-sized captures;
+  - one screenshot in the README;
+  - the user guide updated for the new labels and the fixes, with screenshots;
+  - spec §4.3 notes the walkthrough fixes.
 
 ## State of the code
 
-- **How to run:** see `CLAUDE.md` "Commands". It now covers `npm run e2e:timing`, loading samples into the running stack, and `scripts/acceptance.sh`.
+- **How to run:** see `CLAUDE.md` "Commands".
 - **Dev database (`hub`):**
   - at migration `0005`, with the 10 sample imports (293 rows, 79 NetIDs);
   - profiles: id 1 "DeepSeek" (`deepseek-flash`, default, sharing on) and id 2 "DeepSeek Pro" (`deepseek-v4-pro`, sharing off, the same stored key);
-  - a few chat turns from the timing and replay runs.
-- **Main stack:** it was left running (`project-api-1`, `project-nginx-1` on 127.0.0.1:8080) at the final code. It was started with the dev override so the db keeps port 5432: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d`.
-- **Tests at the last S5 commit** (one run of `scripts/acceptance.sh`, exit 0, 2:37):
+  - chat turns from the walks and the timing runs.
+- **Main stack:** it was left running at the final code (`e897787`) on 127.0.0.1:8080. It was started with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d`.
+- **Tests at the end of S6** (`bash scripts/acceptance.sh`, exit 0):
   - ruff check and format: clean;
-  - pytest: 889 passed, 65 of them acceptance;
-  - Vitest: 147 passed (14 files);
-  - lint and build: clean;
-  - Playwright happy path: 1 passed;
-  - timing spec (run separately, real profile): 3 passed.
+  - pytest: 917 passed, 65 of them acceptance;
+  - Vitest: 218 passed (21 files), also under a `zh_CN` locale;
+  - oxlint and build: clean;
+  - Playwright e2e: 5 passed;
+  - `npm run e2e:screenshots`: passed;
+  - timing spec (`HUB_E2E_PROFILE="DeepSeek" npm run e2e:timing`, main stack): 3 passed, 3.9–5.9 s from question to Excel.
+- **Benchmark (S5, unchanged):** DeepSeek 20/20 and holdout 10/10; DeepSeek Pro 19/20. See `docs/benchmark-results.md`.
 - **Patterns to keep:**
-  - The upload cards live in `UploadProvider`, above the routes, in memory only.
-  - Unhandled errors go through `_UnhandledErrorMiddleware` (`app/errors.py`), never a re-raise.
-  - The S4 patterns still apply: client mocks keep the real `ApiError`, and MUI 9 `Stack` layout props go in `sx`.
+  - Upload cards live in `UploadProvider`, above the routes, in memory only.
+  - The chat's live turn belongs to one conversation (`useChatStream` owner `{id, created, reached}`). The sent turn gets a min-height from the measured composer band (`--composer-height`).
+  - Grid styles are shared in `gridSx`. Header, cell and scroll-area focus rings are inset (offset −2 px).
+  - Unhandled errors go through `_UnhandledErrorMiddleware`. Client mocks keep the real `ApiError`. MUI 9 `Stack` layout props go in `sx`.
+  - Screenshots use `shoot()` in `e2e/screenshots.spec.ts`. It sizes the window to the page, because a full-page capture draws the sticky nav and the sticky question box wrong.
 
-## Next session: S6 (UI and user experience)
+## Before the sponsor demo (week 7)
 
-- **Start:** open a new conversation in `SWE277P/` and say: "Read project/CLAUDE.md, then follow Rule #2 and start S6."
-- **Read:** `CLAUDE.md`, this file, the spec, and `docs/design/2026-10-21-ui-redesign.md`. There is no S6 plan yet; S6 writes it. Don't read the S2–S5 plans.
-- **Scope (the user's request, 2026-10-21):**
-  1. **Build the approved redesign on every page.** It is "Campus blue and gold":
-     - the official UCI palette and Source Sans 3, self-hosted;
-     - a navy side nav that can collapse;
-     - the share switch inside the question box, plus the new copy.
-
-     The design doc has every value and lists what must change with it: the spec §8.2 text, Vitest copy assertions, and the screenshots. Its mockup is https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs, with the source in `docs/design/`.
-  2. **Write every user story** to `docs/user-stories/`: who, the story, acceptance criteria, and the steps to walk it. Cover every page and the empty, error and edge states, not only happy paths. Examples: a duplicate upload, a rejected file, a clarifying question, a dropped stream, no profiles, sharing off.
-  3. **Walk through every story in the running app.**
-     - Use a disposable stack with the "Demo" profile for anything that imports or needs an empty database. The Task 9 recipe: `docker compose -p hub-replay` on port 8083, `HUB_ENABLE_FAKE_LLM=true`, blank `LLM_SEED_*`, and `down -v` afterwards.
-     - Use the main stack and "DeepSeek" where answer quality matters. Never commit an import into the dev DB: A1 and the benchmark depend on its 293 rows.
-     - Record each result in `docs/user-stories/walkthrough-<date>.md`, with screenshots where useful.
-     - Fix the problems found, and list anything left with a reason.
-- **Carry into S6:**
-  - **Pending imports:** a pending import whose stored file no longer parses (only possible after an adapter change) shows "Could not load a pending import", which has no file name and no Discard. Give it both.
-  - **Duplicate person in one file:** it is flagged `duplicate_in_event` only at commit, so the preview count includes the second row. Write a story for it, and decide whether the preview should say so.
-  - **Doc refresh after the redesign:**
-    - add screenshots to the README and user guide;
-    - update the user guide's export labels (".xlsx" and ".csv" under "Export"), which S6 renames;
-    - regenerate `docs/screenshots/`.
-  - **Dropped stream:** after a drop and a refetch, both the saved `client_disconnected` turn and the live "Connection lost" card can show (spec §4.3).
-- **Exit:** see the S6 row in spec §15.
-- **Before the sponsor demo (week 7):** rebuild the main stack, click through with a real profile, and try one export in Safari.
+1. Rebuild the main stack and click through every page with a real profile.
+2. Try one export in Safari. Testing so far is Chromium only.
+3. Walk the README story walk order on a replay stack if the UI changed since 2026-10-21.
 
 ## Open issues and blockers
 
-- **D1 is provisional.** The LLM sees query results, which must be confirmed with the sponsor. Sharing can be switched off per profile.
-- **ZotGPT is unknown.** Its base URL, JSON-mode support and model names must be verified by 10/28. Rejection detection is already wider. If the gateway needs alternating roles, merge consecutive human messages.
-- **Only one provider is benchmarked.** Both profiles are DeepSeek models. Benchmark ZotGPT or another provider once a key exists.
-- **Missing sponsor files.** The sponsor's two separate dummy export files have not arrived. When they do, add them as fixtures, and check "last term" on data with more than one term.
-- **Sponsor questions:**
-  - Should waitlisted CampusGroups registrants count as attendees?
-  - Is the Notes wording acceptable?
-  - Do "students" include postdocs?
-- **Known limitations** are in `docs/known-limitations.md`, including that the `db` container log can hold values from a failing statement. Fixing that needs a superuser per-role log setting (backlog).
-- **Backlog from the S5 reviews** (all minor):
-  - the term order is defined in three places (`context.py`, `prompts.py`);
-  - `acceptance.sh` A7 text formatting;
-  - test cosmetics: migration test gaps, the concurrent FOR KEY SHARE path, and no test for discarding a restored card;
-  - the upload store re-renders on every keystroke;
-  - the timing spec fails slowly on an unknown profile name.
+- **D1 is provisional.** The LLM sees query results, and the sponsor must confirm this. Sharing can be switched off per profile.
+- **ZotGPT is unknown.** Its base URL, JSON-mode support and model names must be verified by 10/28.
+- **Only one provider is benchmarked.** Both profiles are DeepSeek models.
+- **Missing sponsor files.** The two separate dummy exports have not arrived. When they do, add them as fixtures and check "last term" on data with more than one term.
+- **Sponsor questions:** Should waitlisted CampusGroups registrants count as attendees? Is the Notes wording acceptable? Do "students" include postdocs?
+- **Known limitations:** `docs/known-limitations.md`.
+- **Backlog (minor):**
+  - The term order is defined in three places.
+  - The upload store re-renders on every keystroke.
+  - The timing spec fails slowly on an unknown profile name.
+  - Committed upload cards have no Dismiss; they clear on reload.
+  - The first send in a new chat scrolls the page header away.
+  - Grid ring values repeat in `gridSx`.
+  - The size text rounds odd limits oddly ("1024 KB" just under 1 MiB).
 
 ## Decisions
 
-- **Spec decisions:** D1–D10 (spec Section 2). S2–S5 decisions are in the spec sections marked with their session ("Decided in S5" for this one).
-- **Execution method:** S2–S6 are subagent-driven. The controller rules on plan conflicts and records the rulings.
-- **UI redesign (2026-10-21):**
-  - The user approved direction A, "Campus blue and gold", with the toolbar-inside-the-box question layout and their own switch copy.
-  - It is recorded in `docs/design/` and spec §4.3, §8.2 and §15.
-- **S5 rulings:**
-  - Work on `main` (Rule #1).
-  - A4 uses "DeepSeek Pro", made by copying the stored key server-side (the user's choice).
-  - A10 has its own Playwright config against the main stack.
-  - IDOR covers conversations and turns only; imports, the dataset and profiles stay shared.
-  - Benchmark reports are gitignored, and `docs/benchmark-results.md` is the record.
-  - `PROMPT_VERSION` bumps its suffix.
-  - No UI screenshots until S6.
-  - A new import adapter needs one module plus one migration (the source CHECK and the view's `platform` CASE).
+- **Spec decisions:** D1–D10 (spec Section 2). Later decisions are in the spec sections marked with their session ("Decided in S6", "S6 walkthrough fixes").
+- **Execution method:** S2–S6 were subagent-driven. The controller ruled on plan conflicts and findings, and recorded each ruling.
+- **S6 decisions:**
+  - Nav links use a white inset focus ring, because the navy background hides the blue one. Text fields and selects keep MUI's 2 px field border (W-3).
+  - The preview counts in-file duplicates and rows with no NetID or email. The commit stays authoritative.
+  - Dropped stream: a live error turn takes the place of the first saved turn after the `seq` it started from, and the client refetches after a lost connection.
+  - The Demo questions are scripted entries with optional `delay_seconds`.
+  - A blank Student ID in a source export stays blank, and no flag is added (W-18).
+  - W-10 and W-32 are left and documented. Removing column names from readings needs a prompt change and a benchmark re-run.
+  - Screenshots are window-sized captures of a reopened conversation.
 
 ## Session log
 
@@ -151,6 +118,5 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - S3 (2026-10-20/21): built the backend chatbot (Task 0 plus 11 tasks, each reviewed), then a final review and one fix wave. A5/A6/A8 pass, and the first real benchmark scored 20/20 on DeepSeek.
 - S4 (2026-10-21): built the whole staff UI (Task 0 plus 7 tasks, each reviewed), then a final review and one fix wave. Vitest has 132 tests, the Playwright happy path passes, and the midterm screenshots are in `docs/screenshots/`.
 - S4 follow-up (2026-10-21): verified the DeepSeek seed model, designed and approved the UI redesign, and added S6.
-- S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. The final review's fix wave closed a traceback leak under uvicorn. `acceptance.sh` is green.
-- S6 part 1 (2026-10-21): wrote the S6 plan, then ran Tasks 1–11, each reviewed: the redesign, the three S5 carry-overs, the Demo questions and 63 user stories. Vitest has 185 tests and pytest 906. Paused before the walkthrough (Task 12).
-- S6 part 2 (2026-10-21): walked all 63 stories (replay with the Demo model, plus main with DeepSeek), which gave 67 rows and 32 findings. Then fixed groups G1–G3 of Task 15, each reviewed. Vitest has 201 tests. Paused before G4.
+- S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. `acceptance.sh` is green.
+- S6 (2026-10-21): built the redesign, fixed the S5 carry-overs, wrote 63 user stories and walked them (67 rows, 37 findings), fixed 34 findings and left 3 with reasons, re-walked, regenerated the screenshots and guides, then a final review and one fix wave. `acceptance.sh` is green: pytest 917, Vitest 218, e2e 5, timing 3.

@@ -15,7 +15,7 @@ Every time you finish a change, commit it before ending your turn. Never leave u
 
 ## Rule #2: work in sessions, keep state in PROGRESS.md
 
-The MVP is built over six separate Claude Code conversations, S1–S6 (S6, the UI redesign and user-story walkthrough, was added on 2026-10-21). Spec Section 15 lists what each one covers. S1–S5 are complete; S6 is next. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
+The MVP is built over six separate Claude Code conversations, S1–S6 (S6, the UI redesign and user-story walkthrough, was added on 2026-10-21). Spec Section 15 lists what each one covers. S1–S6 are complete; any later session takes its scope from `PROGRESS.md`. Each session starts as a new conversation on purpose: one long conversation fills the context window and makes the AI worse. So anything that must carry over goes into files, not the chat.
 
 At the start of a session:
 
