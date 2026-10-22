@@ -21,7 +21,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
   - "Save" is disabled until the required fields are filled.
   - Choosing "Demo (scripted)" hides Base URL and API key and turns the switch on.
   - Saving Name "Demo", Model "scripted" closes the dialog and shows a "Demo" card with:
-    - the tags "Default" and "Can receive results";
+    - the tags "Default" and "AI can see results" (hovering it explains: "This AI may read query results, such as names and emails, to summarize them. …");
     - the lines "Demo (scripted)", "scripted", "No key saved" and "Not tested yet";
     - the buttons "Test", "Edit" and "Delete", with no "Make default".
   - After the save, the page header shows "Add AI model".
@@ -50,7 +50,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
     | Demo (scripted) | field hidden (no API key field either) | on |
   - Switching from OpenAI to Custom clears the OpenAI address. A URL typed by hand stays when switching to ZotGPT Gateway or Custom.
   - For a new non-Demo model, Save stays disabled until Name, Model, API key and (when required) Base URL are filled.
-  - Saving DeepSeek with Name "DeepSeek Test", Model `deepseek-chat` and key `sk-test-1234` gives a card with "DeepSeek", "deepseek-chat" and "sk-…1234", without "Can receive results".
+  - Saving DeepSeek with Name "DeepSeek Test", Model `deepseek-chat` and key `sk-test-1234` gives a card with "DeepSeek", "deepseek-chat", "sk-…1234" and the tag "AI never sees results".
   - On main, Provider does not offer "Demo (scripted)".
 - **Walk:**
   1. In Settings, click "Add AI model". Choose each provider in turn and read Base URL, its "*" and the switch.
@@ -143,7 +143,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
 - **Story:** As the director, I want to stop a model from ever receiving results, without any code change, so that the office follows the sponsor's decision at once.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - Editing "Demo" and turning off "Allow sending query results to this AI" removes the "Can receive results" tag from its card after Save.
+  - Editing "Demo" and turning off "Allow sending query results to this AI" changes its card's tag from "AI can see results" to "AI never sees results" after Save.
   - Chat then shows the "Let AI see the results" switch off and greyed out for "Demo", with "This AI model isn't allowed to receive results. Change it in Settings." on hover, and answers carry no "AI-generated summary. Check it against the table." line.
   - Turning the setting back on restores the tag, and Chat's switch is enabled and on again.
 - **Walk:**

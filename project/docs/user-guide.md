@@ -180,7 +180,7 @@ Whether the AI may see results at all is **still to be confirmed with the sponso
 
 ## 5. Settings: AI models
 
-Open **Settings** to see your AI models. Each card shows the name, the provider, the model, the last four characters of the saved key, and tags: **Default**, **Can receive results**.
+Open **Settings** to see your AI models. Each card shows the name, the provider, the model, the last four characters of the saved key, and tags: **Default**, and either **AI can see results** or **AI never sees results**. That second tag is the model's result-sharing setting (section 4); hover over it for a one-line explanation.
 
 - **Add AI model** opens the form. See the [setup guide](setup-guide.md#6-add-an-ai-model) for the fields.
 - **Test** checks the connection and shows **Connected** or an error. After a passing test, the **Model** field in the form lists the models the provider offers.

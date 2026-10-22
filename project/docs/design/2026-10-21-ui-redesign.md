@@ -135,6 +135,10 @@ Contrast is checked:
 
 These pages use the same shell, header, card (radius 12, border), button, input and table styles. Their structure stays as built in S4. S6's user-story walkthrough decides any further changes to them.
 
+- **Settings model cards (after S6):** besides "Default", each card shows the model's result-sharing setting (D2) as an outlined tag, in both states: "AI can see results" (ink) or "AI never sees results" (muted). The tag is focusable; on hover or focus a tooltip explains it:
+  - on: "This AI may read query results, such as names and emails, to summarize them. You can turn it off for a question with "Let AI see the results" in Chat."
+  - off: "This AI only writes the SQL. Query results stay on this computer."
+
 ## What S6 must update along with the code
 
 - **Spec:**

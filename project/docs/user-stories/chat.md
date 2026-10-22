@@ -367,7 +367,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   - Every answer's "How I read your question" states its reading and assumptions (for example that "students" includes postdocs, or which term is meant).
   - Each answer arrives within 60 seconds.
 - **Walk:**
-  1. On main (`http://127.0.0.1:8080`), select "DeepSeek". If its Settings card has no "Can receive results" tag, edit it, turn on "Allow sending query results to this AI" for this story, and turn it off again at the end (the data is synthetic).
+  1. On main (`http://127.0.0.1:8080`), select "DeepSeek". If its Settings card shows "AI never sees results", edit it, turn on "Allow sending query results to this AI" for this story, and turn it off again at the end (the data is synthetic).
   2. In a new chat, switch off "Let AI see the results" and ask the first question, then the follow-up. Record the reading, the SQL, the summary and the table.
   3. Ask the third question.
   4. Switch on "Let AI see the results" and ask the fourth question. Compare the summary with the table.

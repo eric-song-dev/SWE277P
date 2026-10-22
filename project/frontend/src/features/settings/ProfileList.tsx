@@ -10,6 +10,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useState } from "react";
 import type { LlmProfileOut } from "../../api/types";
@@ -23,6 +24,34 @@ import {
 } from "./useProfiles";
 
 const outlinedSx = { borderColor: tokens.control };
+
+// The tag shows the model's result-sharing ceiling (D2) both ways, in the chat switch's words.
+const SHARING = {
+  on: {
+    label: "AI can see results",
+    help: 'This AI may read query results, such as names and emails, to summarize them. You can turn it off for a question with "Let AI see the results" in Chat.',
+  },
+  off: {
+    label: "AI never sees results",
+    help: "This AI only writes the SQL. Query results stay on this computer.",
+  },
+};
+
+function SharingTag({ allowed }: { allowed: boolean }) {
+  const { label, help } = allowed ? SHARING.on : SHARING.off;
+  return (
+    <Tooltip title={help} describeChild>
+      {/* Focusable, so the explanation is reachable from the keyboard too. */}
+      <Chip
+        size="small"
+        variant="outlined"
+        label={label}
+        tabIndex={0}
+        sx={{ borderColor: tokens.control, color: allowed ? tokens.ink : tokens.muted }}
+      />
+    </Tooltip>
+  );
+}
 
 interface Props {
   profiles: LlmProfileOut[];
@@ -104,7 +133,7 @@ function ProfileCard({
           {profile.is_default && (
             <Chip size="small" label="Default" sx={{ bgcolor: tokens.primary, color: "#FFFFFF", fontWeight: 600 }} />
           )}
-          {profile.share_results_with_llm && <Chip size="small" variant="outlined" label="Can receive results" sx={{ borderColor: tokens.control }} />}
+          <SharingTag allowed={profile.share_results_with_llm} />
         </Stack>
         <Typography variant="body2">{presetLabel}</Typography>
         <Typography variant="body2">{profile.model}</Typography>

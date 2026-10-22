@@ -73,12 +73,32 @@ describe("ProfileList", () => {
     expect(within(first).getByText(/sk-…abcd/)).toBeInTheDocument();
     expect(within(first).getByText("Default")).toBeInTheDocument();
     expect(within(first).getByText("Not tested yet")).toBeInTheDocument();
-    expect(within(first).queryByText("Can receive results")).not.toBeInTheDocument();
+    expect(within(first).getByText("AI never sees results")).toBeInTheDocument();
+    expect(within(first).queryByText("AI can see results")).not.toBeInTheDocument();
     const other = card("Campus ZotGPT");
-    expect(within(other).getByText("Can receive results")).toBeInTheDocument();
+    expect(within(other).getByText("AI can see results")).toBeInTheDocument();
+    expect(within(other).queryByText("AI never sees results")).not.toBeInTheDocument();
     expect(within(other).getByText("No key saved")).toBeInTheDocument();
     expect(within(other).getByText(/Last test failed/)).toBeInTheDocument();
     expect(within(other).queryByText("Default")).not.toBeInTheDocument();
+  });
+
+  it("explains the result-sharing tag on hover and on keyboard focus", async () => {
+    const user = userEvent.setup();
+    renderList();
+    await user.hover(await within(card("Campus ZotGPT")).findByText("AI can see results"));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      'This AI may read query results, such as names and emails, to summarize them. You can turn it off for a question with "Let AI see the results" in Chat.',
+    );
+    await user.unhover(within(card("Campus ZotGPT")).getByText("AI can see results"));
+    // The tag is focusable, so the explanation is reachable without a mouse: it is the first Tab stop.
+    await user.tab();
+    expect(document.activeElement).toBe(
+      within(card("Lab OpenAI")).getByText("AI never sees results").closest("[tabindex='0']"),
+    );
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(
+      "This AI only writes the SQL. Query results stay on this computer.",
+    );
   });
 
   it("shows 'Connected' after a successful test", async () => {
