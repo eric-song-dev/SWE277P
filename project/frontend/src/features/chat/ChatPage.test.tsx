@@ -230,7 +230,7 @@ describe("ChatPage", () => {
     await s.finish();
     expect(screen.getByText("First draft question")).toBeInTheDocument();
     scrollIntoView.mockClear();
-    await user.click(screen.getByRole("button", { name: "New chat" }));
+    await user.click(screen.getByRole("link", { name: "New chat" }));
     expect(router.state.location.pathname).toBe("/chat");
     expect(await screen.findByText("Ask a question about your data to start.")).toBeInTheDocument();
     expect(screen.queryByText("First draft question")).not.toBeInTheDocument();
@@ -662,7 +662,7 @@ describe("ChatPage", () => {
       "title",
       "Bagel Breakfast attendance",
     );
-    await user.click(screen.getByRole("button", { name: "New chat" }));
+    await user.click(screen.getByRole("link", { name: "New chat" }));
     expect(router.state.location.pathname).toBe("/chat");
     expect(apiSend).not.toHaveBeenCalled();
   });

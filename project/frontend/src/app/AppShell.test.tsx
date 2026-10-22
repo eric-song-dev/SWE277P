@@ -83,12 +83,30 @@ describe("AppShell", () => {
     expect(await screen.findByText("No conversations yet.")).toBeTruthy();
   });
 
-  it("New chat goes to the /chat draft", async () => {
+  it("New chat is the first page link and goes to the /chat draft", async () => {
     mockApi({ me: ME, conversations: CONVERSATIONS });
     const user = userEvent.setup();
     const router = renderShell("/settings");
-    await user.click(await screen.findByRole("button", { name: "New chat" }));
+    const main = screen.getByRole("navigation", { name: "Main navigation" });
+    const links = within(main).getAllByRole("link");
+    expect(links.map((l) => l.getAttribute("aria-label"))).toEqual(["New chat", "Upload", "Dataset", "Settings"]);
+    await user.click(links[0]);
     expect(router.state.location.pathname).toBe("/chat");
+    expect(links[0].getAttribute("aria-current")).toBe("page");
+    // The list has no button of its own.
+    const list = await screen.findByRole("navigation", { name: "Recent questions" });
+    expect(within(list).queryByRole("button")).toBeNull();
+  });
+
+  it("marks an open conversation in the list, not New chat", async () => {
+    mockApi({ me: ME, conversations: CONVERSATIONS });
+    renderShell("/chat/1");
+    const list = await screen.findByRole("navigation", { name: "Recent questions" });
+    const open = await within(list).findByRole("link", {
+      name: "How many unique people attended Bagel Breakfast, October?",
+    });
+    expect(open.getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "New chat" }).getAttribute("aria-current")).toBeNull();
   });
 
   it("collapses to an icon rail and expands again", async () => {
@@ -104,13 +122,11 @@ describe("AppShell", () => {
     expect(screen.queryByText("GPSRC Data Hub")).toBeNull();
     expect(screen.queryByText("Signed in as Ada Lovelace")).toBeNull();
     expect(screen.queryByRole("navigation", { name: "Recent questions" })).toBeNull();
-    for (const name of ["Chat", "Upload", "Dataset", "Settings"]) {
+    for (const name of ["New chat", "Upload", "Dataset", "Settings"]) {
       expect(screen.getByRole("link", { name }).getAttribute("title")).toBe(name);
     }
-    // The rail keeps New chat as an icon button.
-    const newChat = screen.getByRole("button", { name: "New chat" });
-    expect(newChat.getAttribute("title")).toBe("New chat");
-    await user.click(newChat);
+    // New chat stays reachable in the rail as the first icon.
+    await user.click(screen.getByRole("link", { name: "New chat" }));
     expect(router.state.location.pathname).toBe("/chat");
     await user.click(expand);
     expect(screen.getByText("GPSRC Data Hub")).toBeTruthy();
@@ -124,7 +140,7 @@ describe("AppShell", () => {
     renderShell("/upload");
     for (let i = 0; i < 2; i++) {
       expect(screen.getByRole("link", { name: "Upload" }).getAttribute("aria-current")).toBe("page");
-      expect(screen.getByRole("link", { name: "Chat" }).getAttribute("aria-current")).toBeNull();
+      expect(screen.getByRole("link", { name: "New chat" }).getAttribute("aria-current")).toBeNull();
       if (i === 0) await user.click(screen.getByRole("button", { name: "Collapse navigation" }));
     }
   });

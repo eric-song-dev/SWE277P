@@ -63,7 +63,7 @@ test("midterm screenshots", async ({ page }) => {
 
   await test.step("chat answer with the SQL", async () => {
     await page.goto("/chat");
-    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("link", { name: "New chat" }).click();
     await ask(
       page,
       "How many unique people attended Bagel Breakfast, October?",
@@ -82,7 +82,7 @@ test("midterm screenshots", async ({ page }) => {
   });
 
   await test.step("clarifying question", async () => {
-    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("link", { name: "New chat" }).click();
     await ask(
       page,
       "How many people attended events this year?",

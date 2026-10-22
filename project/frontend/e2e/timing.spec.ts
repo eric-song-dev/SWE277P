@@ -47,7 +47,7 @@ for (const q of QUESTIONS) {
   test(`${q.id}: question to downloaded Excel under 60 s`, async ({ page }) => {
     test.setTimeout(LIMIT_MS + 60_000);
     await page.goto("/chat");
-    await page.getByRole("button", { name: "New chat" }).click();
+    await page.getByRole("link", { name: "New chat" }).click();
     await page.getByLabel("Answering with").click();
     await page.getByRole("option", { name: PROFILE!, exact: true }).click();
 

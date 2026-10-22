@@ -6,22 +6,23 @@ import ChatIcon from "@mui/icons-material/Chat";
 import SettingsIcon from "@mui/icons-material/Settings";
 import TableChartIcon from "@mui/icons-material/TableChart";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import AddIcon from "@mui/icons-material/Add";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router";
+import { NavLink, Outlet } from "react-router";
 import { apiGet } from "../api/client";
 import type { MeOut } from "../api/types";
 import ConversationList from "../features/chat/ConversationList";
 import { tokens } from "./theme";
 
+// "New chat" opens the /chat draft; the first question creates the conversation. It is the current
+// page only on the draft itself: an open conversation is marked in "Recent questions" instead.
 const NAV = [
-  { to: "/chat", label: "Chat", icon: <ChatIcon fontSize="small" /> },
-  { to: "/upload", label: "Upload", icon: <UploadFileIcon fontSize="small" /> },
-  { to: "/dataset", label: "Dataset", icon: <TableChartIcon fontSize="small" /> },
-  { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" /> },
+  { to: "/chat", label: "New chat", icon: <ChatIcon fontSize="small" />, end: true },
+  { to: "/upload", label: "Upload", icon: <UploadFileIcon fontSize="small" />, end: false },
+  { to: "/dataset", label: "Dataset", icon: <TableChartIcon fontSize="small" />, end: false },
+  { to: "/settings", label: "Settings", icon: <SettingsIcon fontSize="small" />, end: false },
 ];
 
 const whiteRing = { outline: "2px solid #FFFFFF", outlineOffset: "2px" };
@@ -33,7 +34,6 @@ const RAIL_WIDTH = 72;
 
 export default function AppShell() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => apiGet<MeOut>("/api/me"), retry: false });
-  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const toggleLabel = collapsed ? "Expand navigation" : "Collapse navigation";
 
@@ -111,6 +111,7 @@ export default function AppShell() {
               key={item.to}
               component={NavLink}
               to={item.to}
+              end={item.end}
               aria-label={item.label}
               title={item.label}
               sx={{
@@ -139,27 +140,7 @@ export default function AppShell() {
             </ButtonBase>
           ))}
         </Box>
-        {collapsed ? (
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center", pt: "20px" }}>
-            <ButtonBase
-              aria-label="New chat"
-              title="New chat"
-              onClick={() => void navigate("/chat")}
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: "8px",
-                color: "#FFFFFF",
-                transition: "background-color 120ms ease",
-                "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
-              }}
-            >
-              <AddIcon fontSize="small" />
-            </ButtonBase>
-          </Box>
-        ) : (
-          <ConversationList />
-        )}
+        {collapsed ? <Box sx={{ flex: 1 }} /> : <ConversationList />}
         {!collapsed && (
           <Typography
             sx={{

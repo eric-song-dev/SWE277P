@@ -26,7 +26,7 @@ test("upload, ask, export", async ({ page }) => {
   await ensureBagelImported(page);
 
   await page.goto("/chat");
-  await page.getByRole("button", { name: "New chat" }).click();
+  await page.getByRole("link", { name: "New chat" }).click();
   await page.getByRole("textbox").fill("How many unique people attended Bagel Breakfast, October?");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("grid")).toContainText("38");

@@ -1,17 +1,15 @@
 import Box from "@mui/material/Box";
-import ButtonBase from "@mui/material/ButtonBase";
 import List from "@mui/material/List";
 import ListItemButton from "@mui/material/ListItemButton";
 import Typography from "@mui/material/Typography";
-import { NavLink, useNavigate } from "react-router";
+import { NavLink } from "react-router";
 import { tokens } from "../../app/theme";
 import { useConversations } from "./useConversations";
 
 // "Recent questions" in the side nav, on every page. It fills the nav's free height and scrolls
-// inside it, so the nav links above and the footer below stay put.
+// inside it, so the nav links above and the footer below stay put. "New chat" is the first nav link.
 export default function ConversationList() {
   const conversations = useConversations();
-  const navigate = useNavigate();
 
   return (
     <Box
@@ -19,33 +17,13 @@ export default function ConversationList() {
       aria-labelledby="recent-questions"
       sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", mt: "28px", px: 2 }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, pl: 1.5, pr: 0.5, pb: 1 }}>
-        <Typography
-          id="recent-questions"
-          component="h2"
-          sx={{ fontSize: 15, fontWeight: 600, color: tokens.navMuted, whiteSpace: "nowrap" }}
-        >
-          Recent questions
-        </Typography>
-        {/* /chat is a draft; the first question creates the conversation. */}
-        <ButtonBase
-          onClick={() => void navigate("/chat")}
-          sx={{
-            flexShrink: 0,
-            minHeight: 32,
-            px: 1,
-            borderRadius: "6px",
-            fontSize: 15,
-            fontWeight: 600,
-            color: "#FFFFFF",
-            whiteSpace: "nowrap",
-            transition: "background-color 120ms ease",
-            "&:hover": { bgcolor: "rgba(255,255,255,0.12)" },
-          }}
-        >
-          New chat
-        </ButtonBase>
-      </Box>
+      <Typography
+        id="recent-questions"
+        component="h2"
+        sx={{ pl: 1.5, pb: 1, fontSize: 15, fontWeight: 600, color: tokens.navMuted, whiteSpace: "nowrap" }}
+      >
+        Recent questions
+      </Typography>
       <Box
         sx={{
           flex: 1,
