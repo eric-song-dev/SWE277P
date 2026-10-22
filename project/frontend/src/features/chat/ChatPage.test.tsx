@@ -678,9 +678,13 @@ describe("ChatPage", () => {
     expect(screen.getAllByRole("combobox", { name: "Answering with" })).toHaveLength(1);
   });
 
-  it("keeps a Chat heading for screen readers", async () => {
+  it("shows a visible Chat heading in the bar, left of the model select", async () => {
     renderPage("/chat");
-    expect(await screen.findByRole("heading", { level: 1, name: "Chat" })).toBeInTheDocument();
+    const heading = await screen.findByRole("heading", { level: 1, name: "Chat" });
+    expect(getComputedStyle(heading).position).not.toBe("absolute");
+    const select = await screen.findByRole("combobox", { name: "Answering with" });
+    expect(heading.closest("header")).toContainElement(select);
+    expect(heading.compareDocumentPosition(select) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("draws the model row as a white bar with a line toward the conversation, at full height while loading", async () => {
@@ -690,7 +694,7 @@ describe("ChatPage", () => {
     expect(style.backgroundColor).toBe("rgb(255, 255, 255)");
     expect(style.borderBottomWidth).toBe("1px");
     expect(style.borderBottomStyle).toBe("solid");
-    expect(style.minHeight).toBe("58px");
+    expect(style.minHeight).toBe("59px");
   });
 
   it("marks the open conversation under Recent questions", async () => {

@@ -6,7 +6,7 @@ import Typography from "@mui/material/Typography";
 import { useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import type { FileRejection } from "react-dropzone";
-import PageHeader from "../../app/PageHeader";
+import Page from "../../app/Page";
 import { tokens } from "../../app/theme";
 import FilePreviewCard from "./FilePreviewCard";
 import UnloadableImportCard from "./UnloadableImportCard";
@@ -53,8 +53,7 @@ export default function UploadPage() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: ACCEPT });
 
   return (
-    <>
-      <PageHeader title="Upload" />
+    <Page title="Upload">
       <Stack spacing={2} sx={{ maxWidth: 720, px: "40px", py: "28px" }}>
         <Box
           {...getRootProps()}
@@ -107,6 +106,6 @@ export default function UploadPage() {
           />
         ))}
       </Stack>
-    </>
+    </Page>
   );
 }

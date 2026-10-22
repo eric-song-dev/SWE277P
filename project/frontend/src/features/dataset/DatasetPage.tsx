@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Link as RouterLink } from "react-router";
 import { ApiError, apiDownload } from "../../api/client";
 import type { ImportFileOut } from "../../api/types";
-import PageHeader from "../../app/PageHeader";
+import Page from "../../app/Page";
 import { gridSx, tokens } from "../../app/theme";
 import { useImportHistory } from "../upload/useImports";
 
@@ -117,31 +117,30 @@ export default function DatasetPage() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Dataset"
-        actions={
-          <>
-            <Button
-              variant="contained"
-              startIcon={<DownloadIcon />}
-              disabled={downloading}
-              onClick={() => download("xlsx")}
-            >
-              Download full dataset (.xlsx)
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<DownloadIcon />}
-              disabled={downloading}
-              onClick={() => download("csv")}
-              sx={{ borderColor: tokens.control }}
-            >
-              Download full dataset (.csv)
-            </Button>
-          </>
-        }
-      />
+    <Page
+      title="Dataset"
+      actions={
+        <>
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            disabled={downloading}
+            onClick={() => download("xlsx")}
+          >
+            Download full dataset (.xlsx)
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            disabled={downloading}
+            onClick={() => download("csv")}
+            sx={{ borderColor: tokens.control }}
+          >
+            Download full dataset (.csv)
+          </Button>
+        </>
+      }
+    >
       <Stack spacing={2} sx={{ px: "40px", py: "28px" }}>
         {error && <Alert severity="error">{error}</Alert>}
         {history.isError && <Alert severity="error">{history.error.message}</Alert>}
@@ -167,6 +166,6 @@ export default function DatasetPage() {
           </Box>
         )}
       </Stack>
-    </>
+    </Page>
   );
 }

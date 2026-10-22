@@ -11,9 +11,9 @@ const SCREENSHOTS = path.resolve(import.meta.dirname, "../../docs/screenshots");
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
-// The shell fills the window and its panes scroll on their own: the main area and, on Chat, the
-// conversation pane.
-const PANES = `Array.from(document.querySelectorAll('main, section[aria-label="Conversation"]'))`;
+// The shell fills the window and only the panes under the header bars scroll: a page's body and, on
+// Chat, the conversation pane.
+const PANES = `Array.from(document.querySelectorAll('main, [data-page-body], section[aria-label="Conversation"]'))`;
 
 async function shoot(page: Page, name: string, minHeight = 900) {
   // A window-sized capture of the whole page: grow the window until no pane scrolls.

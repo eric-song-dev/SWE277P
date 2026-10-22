@@ -10,6 +10,7 @@ import { ApiError } from "../../api/client";
 import type { LlmProfileOut } from "../../api/types";
 import { useProfiles } from "../settings/useProfiles";
 import Composer from "./Composer";
+import PageHeader from "../../app/PageHeader";
 import { tokens } from "../../app/theme";
 import ProfileSelect from "./ProfileSelect";
 import ShareResultsSwitch from "./ShareResultsSwitch";
@@ -188,35 +189,17 @@ export default function ChatPage() {
     }
   }
 
-  // The page fills the shell's main area: a slim model row and the question box stay put, and only
-  // the conversation pane between them scrolls. Both are white bands with a line toward the pane, like
-  // the other pages' headers, so the pane's content slides under a clear edge. The model row keeps
-  // its full height (the select's) while the models load or when there are none.
+  // The page fills the shell's main area: the header bar (with the model select) and the question box
+  // stay put, and only the conversation pane between them scrolls, under the bar's bottom line.
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box
-        component="header"
-        sx={{
-          flexShrink: 0,
-          minHeight: 58,
-          boxSizing: "border-box",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          px: "32px",
-          py: "12px",
-          bgcolor: "#FFFFFF",
-          borderBottom: `1px solid ${tokens.border}`,
-        }}
-      >
-        {/* The page keeps its heading for screen readers; the nav already shows where you are. */}
-        <Typography variant="h1" sx={VISUALLY_HIDDEN}>
-          Chat
-        </Typography>
-        {profile && profiles.data && (
-          <ProfileSelect profiles={profiles.data} value={profile.id} onChange={chooseProfile} />
-        )}
-      </Box>
+      <PageHeader
+        title="Chat"
+        actions={
+          profile &&
+          profiles.data && <ProfileSelect profiles={profiles.data} value={profile.id} onChange={chooseProfile} />
+        }
+      />
       <Box
         component="section"
         aria-label="Conversation"
@@ -251,13 +234,3 @@ export default function ChatPage() {
     </Box>
   );
 }
-
-const VISUALLY_HIDDEN = {
-  position: "absolute",
-  width: 1,
-  height: 1,
-  m: 0,
-  overflow: "hidden",
-  clip: "rect(0 0 0 0)",
-  whiteSpace: "nowrap",
-} as const;

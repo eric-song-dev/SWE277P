@@ -37,8 +37,9 @@ export default function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const toggleLabel = collapsed ? "Expand navigation" : "Collapse navigation";
 
-  // The shell fills the window: the side panel and the main area each scroll on their own, so the
-  // nav (and the chat's question box) never move with the page.
+  // The shell fills the window and never scrolls as a whole: the side panel scrolls its list, and
+  // each page scrolls only its body under its header bar (Page, and Chat's conversation pane), so
+  // the nav, the header bars and the chat's question box never move.
   return (
     <Box sx={{ display: "flex", height: "100dvh", overflow: "hidden" }}>
       <Box
@@ -157,7 +158,7 @@ export default function AppShell() {
       </Box>
       <Box
         component="main"
-        sx={{ flex: 1, minWidth: 0, height: "100%", overflowY: "auto", overscrollBehavior: "contain", bgcolor: tokens.page }}
+        sx={{ flex: 1, minWidth: 0, height: "100%", overflow: "hidden", bgcolor: tokens.page }}
       >
         <Suspense fallback={<CircularProgress size={24} aria-label="Loading page" sx={{ m: 4 }} />}>
           <Outlet />
