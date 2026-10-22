@@ -63,7 +63,7 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
   2. Press Enter on "Collapse navigation", Tab to a rail icon, press Enter. Press Shift+Tab back to the toggle and press Space to expand.
   3. On Chat, Tab to Question, type "How many unique people attended Bagel Breakfast, October?", Tab to the switch, press Space twice, Tab to Send, press Enter.
   4. Tab into the answer card: open "Show the SQL query" with Enter, press Enter on "Copy", then on "Download CSV (.csv)".
-  5. Go to Upload with the keyboard. Tab to the drop zone, press Enter, and check the file chooser opens. Cancel it. Upload `Header Only.csv` (any way), then Tab through the page.
+  5. Go to Upload with the keyboard. Tab to the drop zone, press Enter, and check the file chooser opens. Cancel it. Upload `Edwards Site Visit - No Shows.xlsx` (any way), then Tab through the page.
   6. Go to Settings. Press Enter on "Add AI model", Tab through the dialog to the end and on. Check focus stays in the dialog. Press Escape and check where focus lands.
   7. Go to Dataset and Tab through the downloads and the grid.
 

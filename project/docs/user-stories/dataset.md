@@ -33,14 +33,14 @@ The list of imported files and the full-dataset download. Format, stacks and rec
   - "Download full dataset (.xlsx)" saves `hub-dataset-<YYYYMMDD-HHMM>.xlsx`, and "Download full dataset (.csv)" saves `hub-dataset-<YYYYMMDD-HHMM>.csv`, with the current local date and time. Both buttons are disabled while a download runs.
   - Both files have the 19 columns of the GPSRC Data Project template, with the template's exact header text, from "Student Worker" to "Notes" (including its spellings, such as "Sponsor/Host/Parnters").
   - Both files have 293 data rows and 79 distinct NetIDs.
-  - "On Campus Groups?" is "Yes" for CampusGroups rows and "No" for 12twenty rows. The Student ID column is filled for CampusGroups rows.
+  - "On Campus Groups?" is "Yes" for CampusGroups rows and "No" for 12twenty rows. Student ID is filled for every CampusGroups row whose source export has one. A blank Student ID in the source stays blank.
   - Every row's Notes starts with its source:
     - "Source: CampusGroups export";
     - or "Source: 12twenty export; 12twenty does not supply Student/Employee ID or domestic/international status".
   - Rows with missing data add "INCOMPLETE: …". The November Bagel Breakfast row without a NetID reads "Source: CampusGroups export; INCOMPLETE: NetID missing".
   - The Excel file opens without a repair warning.
 - **Walk:**
-  1. Use a stack where only the samples are imported: Task 12's stack before any upload, or a fresh replay stack with `app.samples` loaded.
+  1. Use a stack where only the samples are imported: the stack from README walk order step 1, or a fresh replay stack with `app.samples` loaded.
   2. Click "Download full dataset (.xlsx)", then "Download full dataset (.csv)". Note the names.
   3. Open both. Compare the headers with `../data/GPSRC Data Project Template.xlsx` (outside `project/`).
   4. Count the data rows and the distinct NetIDs (for example a pivot or `cut` on the CSV), and read a few Notes, including the November row without a NetID.

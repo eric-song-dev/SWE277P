@@ -26,6 +26,7 @@ The AI writes the SQL, so an answer can be wrong even when it looks reasonable. 
 - **Blank values.** Grouping by a column that can be blank (school, department, affiliation) leaves out the records where it is blank. The AI is asked to say so; check the note.
 - **"Last term" needs more than one term.** The sample data has one term, so "last term" gives a clarifying question there. This was checked outside the benchmark only.
 - **Large results.** The table shows at most 1,000 rows. A single-answer export holds up to 100,000 rows (`EXPORT_ROW_CAP`), and a notice appears when it is cut. A query that takes more than 5 seconds is stopped.
+- The "How I read your question" note can sometimes use a database column name, such as person_key, instead of plain words. The answer itself is not affected.
 - **Prompt text in data.** Free-text fields such as Department could contain text that tries to steer the AI summary. The summary is display-only and never used to write SQL, and the table shows the real data, but a summary could be misled.
 
 ## AI providers
@@ -37,7 +38,7 @@ The AI writes the SQL, so an answer can be wrong even when it looks reasonable. 
 
 ## Imports and identity
 
-- **A person listed twice in one file is flagged only at commit.** The upload preview counts every row, including the second row of a person who appears twice. Only the Commit step flags that second row `duplicate_in_event` and skips it. The commit summary then shows "Duplicates in event", and the "N rows imported" count is lower than the preview's row count.
+- **A person listed twice in one file.** The preview shows how many rows are "Duplicate in this event". The commit is the final check, so its "N rows imported" count can still differ from the preview.
 - **Committed imports cannot be edited or deleted.** If you commit the wrong event name, term or date, the Hub cannot fix it. Check the form before you click Commit. You can only discard a file before committing. Editing event details and deleting a committed import are in the backlog. Until then, the team must correct the database directly.
 - **Dot-name and `@hs.uci.edu` addresses (12twenty).** 12twenty exports have no NetID, so the Hub derives one only from emails that look exactly like `netid@uci.edu`. `first.last@uci.edu` or `name@hs.uci.edu` get no NetID and the flag "Non-standard email, NetID not derived". The same person then matches CampusGroups records only if the email is identical. Otherwise they appear as two people, which makes "unique people" counts too high. This is why uncertain cases are flagged and not merged.
 - **Matching is exact.** Misspelled names or a person using two different emails and no NetID in either file are counted as two people. Names are never used to match.
@@ -56,7 +57,7 @@ All staff share one built-in user, so everyone sees the same conversations.
 
 - **No screenshots yet.** The UI is restyled in S6, so the docs describe screens by labels.
 - **Tested in Chromium (Playwright).** One export in Safari has not been tried yet.
-- **A dropped connection can show two cards.** If the stream breaks during a question, the Hub saves the question and may also show the "Connection lost" card after a refresh.
+- If the Hub server itself stops while it is answering a question, that question is not saved. The page shows "Connection lost. Retry."; retry it once the Hub is running again.
 - **Pages are plain HTTP on localhost.** There is no HTTPS, because nothing leaves the computer.
 - **No CI** and **no automatic backups**. See the [setup guide](setup-guide.md#7-back-up-and-restore).
 - **Not built** (out of scope or backlog): reconciling registration with attendance, certificates, charts and dashboards, multiple accounts, hosting on a UCI server, UCI single sign-on, live links to CampusGroups, 12twenty or Zoom. See the backlog in the [handoff guide](handoff.md#backlog).

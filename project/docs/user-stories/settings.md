@@ -136,7 +136,7 @@ machine: Name "Unreachable", Provider "Custom (OpenAI-compatible)", Base URL
   2. In Settings, click "Delete" on "Temp B", then "Cancel". Click "Delete" again, then "Delete". Check Chat's list, and reopen the conversation from step 1.
   3. Make "Temp A" the default, then delete it. Check which card is now "Default" ("Demo", the oldest).
   4. Delete every remaining model. Read Settings and Chat.
-  5. Recreate "Demo" (README `curl`, or ST-01's form).
+  5. Recreate "Demo" (README `curl`, or ST-01's form), then recreate "Unreachable" (see the top of this file).
 
 ### ST-08 Turn result sharing off
 - **Who:** the GPSRC director after the sponsor decides a provider may not see personal data
