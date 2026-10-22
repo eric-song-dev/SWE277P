@@ -4,18 +4,25 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 ## Current status
 
-- **Session:** S6 (2026-10-21) is **in progress, paused after Task 11** (the user stopped for the day).
+- **Session:** S6 (2026-10-21) is **in progress, paused in Task 15** (the user stopped for the day).
   - Plan: `docs/plans/2026-10-21-s6-ui-user-stories.md`, run subagent-driven.
-  - Tasks 1–11 are done and committed (`0005498`..`131d609`), each with a passing task review:
+  - **Tasks 1–11** are done (`0005498`..`131d609`), each with a passing task review:
     - the redesign on every page (Tasks 1–6);
     - the three S5 carry-overs (Tasks 7–9);
     - four new Demo questions (Task 10);
-    - 63 user stories in `docs/user-stories/` plus `scripts/story_files.py` (Task 11).
-  - Task 12 (walk the Shell and Chat stories) was started and stopped before it recorded anything. Its partial output was deleted and the `hub-replay` stack removed.
-  - **Resume at Task 12.** The controller's ledger, with every ruling and the deferred minors for the final review, is `SWE277P/.superpowers/sdd/2026-10-21-s6-ui-user-stories/progress.md` (git-ignored, on this machine only).
-  - One early observation for the re-walk: with the api stopped, requests through nginx hung about 40 s before returning 502 (SH-04, CH-15).
-- **Phase:** the MVP meets its acceptance criteria; S6 is UI and UX work on top. `bash scripts/acceptance.sh` has not been re-run since S5 (Task 17 does it).
-- **Next:** Tasks 12–17 of the S6 plan (walkthrough, fixes, screenshots and docs, final verification).
+    - 63 user stories plus `scripts/story_files.py` (Task 11).
+  - **Tasks 12–14, the walkthrough,** are done (`bc4509a`, `0b6202a`, `755c77f`). The record is `docs/user-stories/walkthrough-2026-10-21.md`:
+    - 67 rows: 42 Pass, 25 Fail;
+    - 32 findings, W-1…W-32, all still "Open" in the record.
+  - **Task 15, the fixes,** is part done. Each fix group was reviewed:
+    - G1 shell and nginx (`122f674`..`a8e60d5`): page-not-found page, nginx connect and DNS timeouts, nav hover;
+    - G2a chat thread and composer (`5df4a8d`..`3358045`): scroll to a new question, type while answering, Send at the right, conversation list scrolling, titles;
+    - G2b answer card (`75c8c4d`): "Copied", "More than N rows", repair attempt number, saved AI errors;
+    - G3 dataset and grids (`ea70450`..`a13984a`): ellipsis, narrow-column sort, grid focus ring.
+  - **Resume at Task 15 G4.** The rest of Task 15 is G4 (Upload), G5 (import backend and the Dataset Rows column), G6 (Settings), G7 (story defects and known limitations), then the re-walk of the touched stories and the record update. Tasks 16 and 17 follow.
+  - The fix briefs and the controller's ledger, with every ruling and the deferred minors for the final review, are in `SWE277P/.superpowers/sdd/2026-10-21-s6-ui-user-stories/`. That folder is git-ignored and exists only on this machine.
+- **Phase:** the MVP meets its acceptance criteria; S6 is UI and UX work on top. Vitest has 201 tests. `bash scripts/acceptance.sh` has not been re-run since S5; Task 17 does it.
+- **Next:** finish Task 15 (G4–G7 and the re-walk), then Tasks 16 and 17.
 
 ## Done in S5
 
@@ -146,3 +153,4 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - S4 follow-up (2026-10-21): verified the DeepSeek seed model, designed and approved the UI redesign, and added S6.
 - S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. The final review's fix wave closed a traceback leak under uvicorn. `acceptance.sh` is green.
 - S6 part 1 (2026-10-21): wrote the S6 plan, then ran Tasks 1–11, each reviewed: the redesign, the three S5 carry-overs, the Demo questions and 63 user stories. Vitest has 185 tests and pytest 906. Paused before the walkthrough (Task 12).
+- S6 part 2 (2026-10-21): walked all 63 stories (replay with the Demo model, plus main with DeepSeek), which gave 67 rows and 32 findings. Then fixed groups G1–G3 of Task 15, each reviewed. Vitest has 201 tests. Paused before G4.
