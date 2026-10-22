@@ -4,7 +4,8 @@
 - **Mockup:** https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs. The first artboard, "A. Campus blue and gold", is the approved design. Press Play on it to try the nav collapse, the hover states and the share switch.
 - **Revision (2026-10-21, after S6):** the artboard "A2. Conversations in the nav" on the same canvas is approved and supersedes A for the shell and the Chat page: recent questions in a 280 px side nav whose first link is "New chat", a slim "Answering with" row instead of the Chat page header, a caution line on every summary, no line under the question box, and a shell that fills the window so the nav and the question box never move. The sections below describe A2 where it differs from A.
 - **Revision (2026-10-22):** the model row became a white bar with a bottom border (artboard "D2. White bar with a line, like the other page headers", chosen over a bare line and a line shown only after scrolling). Before, the conversation scrolled under a row of the same color, so text was cut at an invisible edge.
-- **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` (A) and `2026-10-21-chat-mockup-a2.dc.html` (A2) in this folder. They render only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
+- **Revision (2026-10-22, later):** every page now has the same slim header bar (artboard "E1. One slim header bar on every page"): 59 px, a visible 20 px title on the left (Chat included), compact 34 px buttons on the right, and the bar stays put while only the body below it scrolls.
+- **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` (A), `2026-10-21-chat-mockup-a2.dc.html` (A2) and `2026-10-22-header-bar-mockup-e1.dc.html` (E1, the header bar on every page) in this folder. They render only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
 - **Scope:** visual design and copy only. Every behavior, API call and test-relevant role stays as built in S4 (spec §4.3 "Details settled in S4").
 
 ## Why this direction
@@ -87,7 +88,7 @@ Contrast is checked:
 - **Top bar:** none. The left nav carries the brand.
 - **Window:** the shell fills the window (`100dvh`) and the page itself never scrolls or rubber-bands (`overscroll-behavior: none` on `html` and `body`). The side nav runs the full height; the main area scrolls on its own (on Chat, only the conversation pane does).
 - **Side nav:** 280 px wide, navy background.
-  - **Brand block:** 88 px tall, the same height as the page header. It holds "GPSRC Data Hub" (19 px / 700, never wraps) and below it "Graduate & Postdoctoral Scholar Resource Center" (13 px, navMuted).
+  - **Brand block:** 88 px tall. It holds "GPSRC Data Hub" (19 px / 700, never wraps) and below it "Graduate & Postdoctoral Scholar Resource Center" (13 px, navMuted).
   - **Collapse button:** to the right of the wordmark. It is a 40×40 icon button with **no border**: icon navMuted at rest; on hover or focus, a `rgba(255,255,255,0.12)` background and a white icon. Its `aria-label` and title are "Collapse navigation" or "Expand navigation", with `aria-expanded` set.
   - **Collapsed state:** a 72 px rail with icons only. Each link keeps an `aria-label` and a hover title. The state is kept in memory only, not in localStorage (localStorage holds only the last selected profile id).
   - **Nav links:** New chat, Upload, Dataset and Settings, each icon plus label (New chat keeps the chat icon). "New chat" opens the `/chat` draft and is the current page only there; an open conversation `/chat/:id` is marked in Recent questions instead, so no page link is current then.
@@ -99,12 +100,12 @@ Contrast is checked:
     - The list fills the nav's free height and scrolls inside it, with a thin `rgba(255,255,255,0.3)` scrollbar. It is a `nav` landmark named by its heading. Empty: "No conversations yet."; failed: "Could not load your conversations." (14 px, navMuted).
     - **Collapsed rail:** the list is hidden; the "New chat" icon is the first link.
   - **Bottom:** "Signed in as {display_name}", or "Not connected" when `/api/me` fails, above a `rgba(255,255,255,0.14)` divider.
-- **Page header (Upload, Dataset, Settings, Page not found):** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right. Chat has no page header, only a slimmer white model row (below).
+- **Page header (every page, Chat included):** a white bar with a 1 px bottom border, 59 px tall on every page (a 34 px control, 12 px vertical padding and the line), with 40 px side padding. The title (h1, 20 px / 700, navy) is on the left and the page's actions on the right. Buttons in the bar are compact: 34 px tall, 4/14 px padding, 15 px text, 18 px icons, 8 px apart. The bar never scrolls: below it, the page body is the only part that scrolls (`overscroll-behavior: contain`), so the main area itself never scrolls.
 
 ## Chat page
 
-- **Layout:** the page fills the main area as three rows: the model row and the question box stay put, and only the conversation pane between them scrolls (`overscroll-behavior: contain`). The conversations are in the side nav (Shell above); there is no conversation column.
-- **Model row:** no page header and no visible title. A slim white bar holds, on the right, an "Answering with" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 160 px wide, 6 px vertical padding, control border. The bar has padding 12/32, at least 58 px height (so it does not jump while the models load or when there are none) and a 1 px border at the bottom, like the page header on other pages and mirroring the question box band's top border. The conversation scrolls under that edge. An `h1` "Chat" stays for screen readers only.
+- **Layout:** the page fills the main area as three rows: the header bar and the question box stay put, and only the conversation pane between them scrolls (`overscroll-behavior: contain`). The conversations are in the side nav (Shell above); there is no conversation column.
+- **Header bar:** the page header above, titled "Chat". On the right it holds an "Answering with" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 160 px wide, 6 px vertical padding, control border. The bar keeps its height while the models load or when there are none, and its bottom line mirrors the question box band's top border. The conversation scrolls under that edge.
 - **Thread:**
   - centered, at most 880 px wide, padding 20/40/32;
   - a question and its answer sit 12 px apart, and two question–answer pairs sit 32 px apart;

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>E1. One slim header bar on every page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#255799}a:hover{color:#1B3D6D}
+</style>
+</helmet>
+<div style="width: 1224px; height: 1080px; box-sizing: border-box; padding: 32px; display: flex; flex-direction: column; gap: 32px; background: #FFFFFF; font-family: 'Source Sans 3', 'Segoe UI', sans-serif; color: #002244; font-size: 16px; line-height: 1.5">
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 14px; font-weight: 600; color: #555759">Chat</div>
+    <div style="width: 1160px; height: 200px; box-sizing: border-box; border: 1px solid #C2CCDA; border-radius: 12px; overflow: hidden; background: #F3F6FA; display: flex; flex-direction: column">
+      <header style="flex: 0 0 auto; min-height: 58px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 12px 40px; background: #FFFFFF; border-bottom: 1px solid #D3DCE8">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1B3D6D">Chat</h1>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <label for="model-e1" style="font-size: 15px; font-weight: 600; color: #555759">Answering with</label>
+          <div style="position: relative; display: flex">
+            <select id="model-e1" style="appearance: none; -webkit-appearance: none; font: inherit; font-size: 15px; font-weight: 600; line-height: 1.4; padding: 6px 36px 6px 12px; min-width: 160px; border: 1px solid #7B8FAE; border-radius: 8px; background: #FFFFFF; color: #002244"><option>DeepSeek</option><option>DeepSeek Pro</option></select>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#555759" stroke-width="2" aria-hidden="true" style="position: absolute; right: 12px; top: 50%; margin-top: -8px; pointer-events: none"><path d="M6 9l6 6 6-6"></path></svg>
+          </div>
+        </div>
+      </header>
+      <div style="flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 20px 40px 0">
+        <div style="max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px">
+          <p style="align-self: flex-end; margin: 0; max-width: 75%; padding: 10px 16px; border-radius: 18px 18px 4px 18px; background: #255799; color: #FFFFFF">List the emails of everyone who attended any Bagel Breakfast.</p>
+          <article style="background: #FFFFFF; border: 1px solid #D3DCE8; border-radius: 12px; padding: 24px">
+            <div style="font-size: 13px; color: #555759">AI-generated summary. Check it against the table.</div>
+            <p style="margin: 4px 0 0; font-size: 18px; line-height: 1.45">The query returned 55 distinct email addresses for everyone who attended any Bagel Breakfast.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 14px; font-weight: 600; color: #555759">Upload</div>
+    <div style="width: 1160px; height: 200px; box-sizing: border-box; border: 1px solid #C2CCDA; border-radius: 12px; overflow: hidden; background: #F3F6FA; display: flex; flex-direction: column">
+      <header style="flex: 0 0 auto; min-height: 58px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 12px 40px; background: #FFFFFF; border-bottom: 1px solid #D3DCE8">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1B3D6D">Upload</h1>
+      </header>
+      <div style="flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 28px 40px 0">
+        <button type="button" style="width: 640px; box-sizing: border-box; font: inherit; padding: 32px; border: 2px dashed #7B8FAE; border-radius: 12px; background: #FFFFFF; color: #002244; cursor: pointer">Drop CSV or Excel files here, or click to choose. (.csv, .xlsx, .xlsm)</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 14px; font-weight: 600; color: #555759">Dataset</div>
+    <div style="width: 1160px; height: 200px; box-sizing: border-box; border: 1px solid #C2CCDA; border-radius: 12px; overflow: hidden; background: #F3F6FA; display: flex; flex-direction: column">
+      <header style="flex: 0 0 auto; min-height: 58px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 12px 40px; background: #FFFFFF; border-bottom: 1px solid #D3DCE8">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1B3D6D">Dataset</h1>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <button type="button" style="font: inherit; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 5px 14px; border-radius: 8px; border: 1px solid #255799; background: #255799; color: #FFFFFF; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download full dataset (.xlsx)</button>
+          <button type="button" style="font: inherit; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 5px 14px; border-radius: 8px; border: 1px solid #7B8FAE; background: #FFFFFF; color: #255799; cursor: pointer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"></path></svg>Download full dataset (.csv)</button>
+        </div>
+      </header>
+      <div style="flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 28px 40px 0">
+        <div style="background: #FFFFFF; border: 1px solid #D3DCE8; border-radius: 10px; overflow: hidden">
+          <table style="width: 100%; border-collapse: collapse; font-size: 15px">
+            <thead>
+              <tr style="background: #EDF2F8; color: #1B3D6D">
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">File</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Event</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Term</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Platform</th>
+                <th scope="col" style="text-align: right; padding: 10px 16px; font-weight: 600">Rows</th>
+                <th scope="col" style="text-align: right; padding: 10px 16px; font-weight: 600">Flags</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Uploaded by</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Uploaded at</th>
+                <th scope="col" style="text-align: left; padding: 10px 16px; font-weight: 600">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">LinkedIn Info Session.xlsx</td><td style="padding: 9px 16px">LinkedIn Info Session</td><td style="padding: 9px 16px">Fall 2026</td><td style="padding: 9px 16px">12twenty</td><td style="padding: 9px 16px; text-align: right">34</td><td style="padding: 9px 16px; text-align: right">3</td><td style="padding: 9px 16px">GPSRC Staff</td><td style="padding: 9px 16px">10/20/2026, 5:27 PM</td><td style="padding: 9px 16px">Committed</td></tr>
+              <tr style="border-top: 1px solid #E3E9F1"><td style="padding: 9px 16px">Health Careers Mixer.xlsx</td><td style="padding: 9px 16px">Health Careers Mixer</td><td style="padding: 9px 16px">Fall 2026</td><td style="padding: 9px 16px">12twenty</td><td style="padding: 9px 16px; text-align: right">45</td><td style="padding: 9px 16px; text-align: right">0</td><td style="padding: 9px 16px">GPSRC Staff</td><td style="padding: 9px 16px">10/20/2026, 5:27 PM</td><td style="padding: 9px 16px">Committed</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 14px; font-weight: 600; color: #555759">Settings</div>
+    <div style="width: 1160px; height: 200px; box-sizing: border-box; border: 1px solid #C2CCDA; border-radius: 12px; overflow: hidden; background: #F3F6FA; display: flex; flex-direction: column">
+      <header style="flex: 0 0 auto; min-height: 58px; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; padding: 12px 40px; background: #FFFFFF; border-bottom: 1px solid #D3DCE8">
+        <h1 style="margin: 0; font-size: 20px; font-weight: 700; line-height: 1.3; color: #1B3D6D">Settings</h1>
+        <button type="button" style="font: inherit; font-size: 15px; font-weight: 600; min-height: 34px; padding: 5px 14px; border-radius: 8px; border: 1px solid #255799; background: #255799; color: #FFFFFF; cursor: pointer">Add AI model</button>
+      </header>
+      <div style="flex: 1 1 auto; min-height: 0; overflow: hidden; padding: 28px 40px 0">
+        <article style="width: 640px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #D3DCE8; border-radius: 12px; padding: 20px 24px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+            <h2 style="margin: 0 8px 0 0; font-size: 18px; font-weight: 700; color: #1B3D6D">DeepSeek</h2>
+            <span style="font-size: 13px; padding: 1px 10px; border-radius: 999px; border: 1px solid #7B8FAE">Default</span>
+            <span style="font-size: 13px; padding: 1px 10px; border-radius: 999px; border: 1px solid #7B8FAE">AI can see results</span>
+          </div>
+          <div style="margin-top: 6px; color: #555759">DeepSeek · deepseek-flash</div>
+        </article>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1224,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

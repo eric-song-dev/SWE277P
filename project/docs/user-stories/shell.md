@@ -10,7 +10,7 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Acceptance criteria:**
   - The navy side nav shows "GPSRC Data Hub", below it "Graduate & Postdoctoral Scholar Resource Center", and the links "New chat", "Upload", "Dataset" and "Settings", each with an icon.
   - Opening `http://127.0.0.1:8083/` lands on `/chat`.
-  - Clicking a link changes the address to `/chat`, `/upload`, `/dataset` or `/settings`. Upload, Dataset and Settings show a white header whose h1 is the page name; the chat page shows the "Answering with" row and keeps an h1 "Chat" for screen readers only.
+  - Clicking a link changes the address to `/chat`, `/upload`, `/dataset` or `/settings`. Every page shows the same slim white header bar whose h1 is the page name ("Chat", "Upload", "Dataset", "Settings"); on the chat page the bar also holds "Answering with".
   - Only the current page's link has the 3 px gold bar on its left, a lighter background and white bold text, and only it has `aria-current="page"`.
   - Hovering any link lightens its background.
   - The browser's Back and Forward buttons move between the visited pages, and the highlighted link follows.
