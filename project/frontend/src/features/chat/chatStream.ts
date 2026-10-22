@@ -74,7 +74,8 @@ const SAVED_ERRORS: Record<string, string> = {
   query_failed: "The query failed to run.",
   invalid_llm_reply: "The AI's reply couldn't be understood.",
   internal_error: "Something went wrong on the server.",
-  // Same wording as backend/app/llm/errors.py, so a saved turn reads like the live error.
+  // Wording follows backend/app/llm/errors.py so a saved turn reads like the live error.
+  // llm_unavailable is one shared line: the backend has three different messages for that code.
   llm_auth_failed: "The AI provider rejected the API key. Check this profile in Settings.",
   llm_rate_limited: "The AI provider is rate-limiting requests. Wait a moment and try again.",
   llm_unavailable: "Could not reach the AI provider, or it had an error. Try again in a moment.",

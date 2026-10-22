@@ -105,9 +105,17 @@ describe("AnswerCard", () => {
       turn,
       result: { columns: ["name"], rows: [["Ada Lovelace"]], row_count: 1000, truncated: true },
     });
-    expect(screen.getByText("Showing the first 1000 rows. Download the file to get all rows.")).toBeInTheDocument();
-    expect(screen.getByText("More than 1000 rows")).toBeInTheDocument();
-    expect(screen.queryByText("1000 rows")).not.toBeInTheDocument();
+    expect(screen.getByText("Showing the first 1,000 rows. Download the file to get all rows.")).toBeInTheDocument();
+    expect(screen.getByText("More than 1,000 rows")).toBeInTheDocument();
+    expect(screen.queryByText("1,000 rows")).not.toBeInTheDocument();
+  });
+
+  it("puts a thousands separator in a footer count of 1000 or more", () => {
+    renderCard({
+      turn,
+      result: { columns: ["name"], rows: [["Ada Lovelace"]], row_count: 2500, truncated: false },
+    });
+    expect(screen.getByText("2,500 rows")).toBeInTheDocument();
   });
 
   it("shows the interpretation and assumptions as bullets; null assumptions are none", () => {

@@ -60,8 +60,9 @@ const outlinedSx = {
 } as const;
 
 function rowsLabel(n: number, truncated: boolean) {
-  if (truncated) return `More than ${n} rows`;
-  return n === 1 ? "1 row" : `${n} rows`;
+  const count = n.toLocaleString("en-US");
+  if (truncated) return `More than ${count} rows`;
+  return n === 1 ? "1 row" : `${count} rows`;
 }
 
 export default function AnswerCard({ turn, result, onShowResults, showResultsPending, rerun, resultsError }: Props) {
@@ -107,7 +108,7 @@ export default function AnswerCard({ turn, result, onShowResults, showResultsPen
           {rerun && <Typography sx={{ fontSize: 15, fontWeight: 600, color: tokens.muted }}>Re-run on current data</Typography>}
           <ResultGrid result={result} />
           {result.truncated && (
-            <Alert severity="info">Showing the first {result.row_count} rows. Download the file to get all rows.</Alert>
+            <Alert severity="info">Showing the first {result.row_count.toLocaleString("en-US")} rows. Download the file to get all rows.</Alert>
           )}
         </Stack>
       )}
