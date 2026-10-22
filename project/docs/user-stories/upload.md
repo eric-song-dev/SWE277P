@@ -259,7 +259,7 @@ file in the state its story needs (README, "Upload walk order"). `<story-files>`
 - **Stack:** replay (Demo), after UP-01 (the October Bagel Breakfast is committed)
 - **Acceptance criteria:**
   - `LinkedIn Info Session.xlsx` gives "12twenty", "34 rows", "NetID missing: 1" and "Email missing: 1".
-  - The preview tells that one row has neither a NetID nor an email, so the person cannot be matched (for example "Email/NetID unavailable: 1"), not only the two separate counts (expected; spec silent).
+  - The preview tells that one row has neither a NetID nor an email, so the person cannot be matched (for example "Email/NetID unavailable: 1"), not only the two separate counts (expected; spec §6, `missing_identity`).
   - After Commit, the summary shows "34 rows imported", "Unlinked 1" and "Flagged rows" of at least 1.
   - `Bagel Breakfast - November.csv` gives "CampusGroups", "31 rows" and "NetID missing: 1". After Commit, the summary shows "31 rows imported" and "Linked by email 1": the row without a NetID was matched to an October attendee by email.
   - In the full dataset download:

@@ -149,7 +149,7 @@ If something goes wrong, the card shows a short message and a **Retry** button. 
 
 Values that start with `=`, `+`, `-` or `@` are saved as plain text, so Excel does not run them as formulas.
 
-The **Dataset** page also lists every file that was imported: file name, event, term, platform, rows, flags, who uploaded it and when, and the status (Committed or Pending). "Rows" is the number of rows the file added to the dataset. A Pending file links back to the Upload page.
+The **Dataset** page also lists every file that was imported: file name, event, term, platform, rows, flags, who uploaded it and when, and the status (Committed or Pending). "Rows" is the number of rows the file added to the dataset. For a Pending file, it is the number of rows the file holds. A Pending file links back to the Upload page.
 
 ![The Dataset page after a commit](screenshots/06-dataset.png)
 

@@ -38,7 +38,7 @@ The AI writes the SQL, so an answer can be wrong even when it looks reasonable. 
 
 ## Imports and identity
 
-- **A person listed twice in one file.** The preview shows how many rows are "Duplicate in this event". The commit is the final check, so its "N rows imported" count can still differ from the preview.
+- **A person listed twice in one file.** The preview shows how many rows are "Duplicate in this event". The commit is the final check, so the commit imports the preview's rows minus the duplicates it finds. It can find a few more than the preview counts, because it also checks people already in the Hub. Then "N rows imported" is lower than the preview's number.
 - **Committed imports cannot be edited or deleted.** If you commit the wrong event name, term or date, the Hub cannot fix it. Check the form before you click Commit. You can only discard a file before committing. Editing event details and deleting a committed import are in the backlog. Until then, the team must correct the database directly.
 - **Dot-name and `@hs.uci.edu` addresses (12twenty).** 12twenty exports have no NetID, so the Hub derives one only from emails that look exactly like `netid@uci.edu`. `first.last@uci.edu` or `name@hs.uci.edu` get no NetID and the flag "Non-standard email, NetID not derived". The same person then matches CampusGroups records only if the email is identical. Otherwise they appear as two people, which makes "unique people" counts too high. This is why uncertain cases are flagged and not merged.
 - **Matching is exact.** Misspelled names or a person using two different emails and no NetID in either file are counted as two people. Names are never used to match.
