@@ -6,6 +6,11 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 - **Sessions:** S1–S6 are complete. S6 (2026-10-21) finished the planned build.
 - **Phase:** the MVP meets its acceptance criteria. Every row of `bash scripts/acceptance.sh` passes except A7 (login, deferred). The UI has the approved redesign, every user story has a recorded walkthrough result, and every problem the walk found is fixed or left with a reason.
+- **After S6 (2026-10-21):** the user approved a revision of the shell and Chat page, artboard "A2" on the design canvas (`docs/design/2026-10-21-ui-redesign.md`, "Revision"). Built and checked in a browser:
+  - "Recent questions" with "New chat" moved into a 280 px side nav, on every page;
+  - Chat lost its conversation column and header for a slim "Answering with" row;
+  - every summary has a caution line, and the line under the question box is gone;
+  - the shell fills the window, so the nav, the model row and the question box stay put and the page never rubber-bands.
 - **Next:** no session is planned. The work left is the sponsor demo and the open issues below.
 
 ## Done in S6
@@ -58,11 +63,11 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
   - at migration `0005`, with the 10 sample imports (293 rows, 79 NetIDs);
   - profiles: id 1 "DeepSeek" (`deepseek-flash`, default, sharing on) and id 2 "DeepSeek Pro" (`deepseek-v4-pro`, sharing off, the same stored key);
   - chat turns from the walks and the timing runs.
-- **Main stack:** it was left running at the final code (`e897787`) on 127.0.0.1:8080. It was started with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d`.
+- **Main stack:** it was left running at the final code (after the A2 revision) on 127.0.0.1:8080. It was started with `docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d`.
 - **Tests at the end of S6** (`bash scripts/acceptance.sh`, exit 0):
   - ruff check and format: clean;
   - pytest: 917 passed, 65 of them acceptance;
-  - Vitest: 218 passed (21 files), also under a `zh_CN` locale;
+  - Vitest: 218 passed (21 files), also under a `zh_CN` locale; 222 after the A2 revision;
   - oxlint and build: clean;
   - Playwright e2e: 5 passed;
   - `npm run e2e:screenshots`: passed;
@@ -70,10 +75,11 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - **Benchmark (S5, unchanged):** DeepSeek 20/20 and holdout 10/10; DeepSeek Pro 19/20. See `docs/benchmark-results.md`.
 - **Patterns to keep:**
   - Upload cards live in `UploadProvider`, above the routes, in memory only.
-  - The chat's live turn belongs to one conversation (`useChatStream` owner `{id, created, reached}`). The sent turn gets a min-height from the measured composer band (`--composer-height`).
+  - The chat's live turn belongs to one conversation (`useChatStream` owner `{id, created, reached}`). The sent turn gets a min-height from the measured conversation pane (`--thread-height`).
+  - The shell fills the window (`100dvh`): the side nav and the main area scroll on their own, and on Chat only the conversation pane scrolls. A layout check in e2e must measure the pane, not the window.
   - Grid styles are shared in `gridSx`. Header, cell and scroll-area focus rings are inset (offset −2 px).
   - Unhandled errors go through `_UnhandledErrorMiddleware`. Client mocks keep the real `ApiError`. MUI 9 `Stack` layout props go in `sx`.
-  - Screenshots use `shoot()` in `e2e/screenshots.spec.ts`. It sizes the window to the page, because a full-page capture draws the sticky nav and the sticky question box wrong.
+  - Screenshots use `shoot()` in `e2e/screenshots.spec.ts`. It grows the window until no pane scrolls, then captures the window.
 
 ## Before the sponsor demo (week 7)
 
@@ -94,7 +100,6 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
   - The upload store re-renders on every keystroke.
   - The timing spec fails slowly on an unknown profile name.
   - Committed upload cards have no Dismiss; they clear on reload.
-  - The first send in a new chat scrolls the page header away.
   - Grid ring values repeat in `gridSx`.
   - The size text rounds odd limits oddly ("1024 KB" just under 1 MiB).
 
@@ -120,3 +125,4 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - S4 follow-up (2026-10-21): verified the DeepSeek seed model, designed and approved the UI redesign, and added S6.
 - S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. `acceptance.sh` is green.
 - S6 (2026-10-21): built the redesign, fixed the S5 carry-overs, wrote 63 user stories and walked them (67 rows, 37 findings), fixed 34 findings and left 3 with reasons, re-walked, regenerated the screenshots and guides, then a final review and one fix wave. `acceptance.sh` is green: pytest 917, Vitest 218, e2e 5, timing 3.
+- After S6 (2026-10-21): built the approved A2 revision (recent questions in the side nav, the "Answering with" row, a caution line on every summary, a fixed window-filling shell), tested it in a browser on a replay stack and on main, and refreshed the design doc, spec, guide, stories and screenshots. Vitest 222, e2e 5.
