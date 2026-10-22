@@ -327,13 +327,39 @@ See [known limitations](docs/known-limitations.md) for the full list.
 
 ## Contributing
 
-- Read [`CLAUDE.md`](CLAUDE.md) and [`PROGRESS.md`](PROGRESS.md) first. Where the [spec](docs/specs/2026-10-20-data-hub-design.md) disagrees with other documents, the spec wins.
+Every developer on the team must follow these two rules.
+
+### 1. Follow the rules in `CLAUDE.md`
+
+All development follows the rules in [`CLAUDE.md`](CLAUDE.md), whether you write the code yourself or with an AI coding agent. Read it and [`PROGRESS.md`](PROGRESS.md) before you start. Where the [spec](docs/specs/2026-10-20-data-hub-design.md) disagrees with other documents, the spec wins. The rules you will meet most often:
+
 - Make one commit per logical change, using [Conventional Commits](https://www.conventionalcommits.org/) in English with an imperative subject, for example `fix(chat): reject non-SELECT SQL`.
 - Run the lint and tests for the code you changed before committing. `bash scripts/acceptance.sh` runs everything.
 - Stage files by path. The current git root is the course folder above `project/`, so never use `git add -A` there.
 - Add every new environment variable to `.env.example`. If the api needs it, also add it to the api `environment:` list in `docker-compose.yml`.
 - Never commit `.env`, API keys or real student data. Tests, fixtures and prompts use synthetic data only.
 - After any change to a prompt or a model, run the benchmark again, holdout set included.
+
+### 2. Install the team's plugins in your AI coding agent
+
+Install these plugins in your AI coding agent. **superpowers** matters most: it sets the team's way of working (brainstorm, write a plan, test first, review, verify before saying a task is done). In Claude Code, install each plugin with the `/plugin` command. When all of them are installed, the `enabledPlugins` block in `~/.claude/settings.json` looks like this:
+
+```json
+{
+  "enabledPlugins": {
+    "frontend-design@anthropic-plugin-directory": true,
+    "context7@anthropic-plugin-directory": true,
+    "skill-creator@anthropic-plugin-directory": true,
+    "code-review-anthropics@anthropic-plugin-directory": true,
+    "claude-md-management@anthropic-plugin-directory": true,
+    "code-simplifier@anthropic-plugin-directory": true,
+    "playwright@anthropic-plugin-directory": true,
+    "vercel@anthropic-plugin-directory": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "superpowers@anthropic-plugin-directory": true
+  }
+}
+```
 
 ## Team
 
