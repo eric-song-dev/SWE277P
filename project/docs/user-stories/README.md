@@ -59,14 +59,14 @@ works too. It reads `backend/sample_data/exports/` and writes:
 
 | File | What it is | Used by |
 |---|---|---|
-| `Header Only.csv` | the header row of `Bagel Breakfast - October.csv`, nothing else | UP-08, UP-09, SH-03 |
+| `Header Only.csv` | the header row of `Bagel Breakfast - October.csv`, nothing else | UP-08, UP-09 |
 | `Unknown Format.csv` | headers `Name,Mail,Event` and two made-up rows | UP-03, UP-07, UP-09 |
 | `Notes.txt` | one line of text | UP-09 |
 | `Bagel Breakfast - October (copy).csv` | the October CSV with CRLF line endings switched to LF: new bytes, same cells | UP-05, UP-10 |
 | `Duplicate Person.csv` | `Postdoc Wellness Lunch.csv` with its first attendee row appended again | UP-15 |
 | `Pending Then Broken.csv` | `Cover Letters for Academic Jobs.csv` renamed (same bytes); its stored copy is damaged in UP-14 | UP-14, UP-19 |
 | `Over Size Limit.csv` | the October CSV with its attendee rows repeated to 21,804 bytes, over a 20,000-byte limit | UP-10 |
-| `Edwards Site Visit - No Shows.xlsx` | `Edwards Life Science Site Visit.xlsx` with "Attended?" set to NO in rows 3 and 5 | UP-02, SH-07 |
+| `Edwards Site Visit - No Shows.xlsx` | `Edwards Life Science Site Visit.xlsx` with "Attended?" set to NO in rows 3 and 5 | UP-02, SH-03, SH-07 |
 
 The stories call this folder `<story-files>`. The ten sample exports themselves are in
 `backend/sample_data/exports/`.
