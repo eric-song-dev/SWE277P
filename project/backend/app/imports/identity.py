@@ -121,6 +121,10 @@ def count_in_file_duplicates(keys: Iterable[tuple[str | None, str | None]]) -> i
             continue
         if netid:
             if netid in netids:
+                # The linker adds this row's new email to the person, so a later row with that
+                # email and no NetID repeats the person too.
+                if email and email not in email_netid:
+                    email_netid[email] = netid
                 duplicates += 1
                 continue
             netids.add(netid)

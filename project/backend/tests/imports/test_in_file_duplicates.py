@@ -19,6 +19,7 @@ OCT = "Bagel Breakfast - October.csv"
     ("keys", "expected"),
     [
         ([("ab1", "a@uci.edu"), ("ab1", "x@gmail.com")], 1),
+        ([("ab1", "a@uci.edu"), ("ab1", "x@gmail.com"), (None, "x@gmail.com")], 2),
         ([("ab1", "a@uci.edu"), (None, "a@uci.edu")], 1),
         ([(None, "a@uci.edu"), ("ab1", "a@uci.edu")], 1),
         ([("ab1", "a@uci.edu"), ("cd2", "a@uci.edu")], 0),
