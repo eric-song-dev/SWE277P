@@ -92,12 +92,13 @@ export default function AnswerCard({ turn, result, onShowResults, showResultsPen
 
       {v.analysis && (
         <Box>
-          {v.llmAnalysis && (
-            <Typography sx={{ fontSize: 13, color: tokens.muted }}>
-              AI-generated summary. Check it against the table.
-            </Typography>
-          )}
-          <Typography sx={{ fontSize: 18, lineHeight: 1.45, mt: v.llmAnalysis ? "4px" : 0, whiteSpace: "pre-wrap" }}>
+          {/* Every summary carries a caution: the AI wrote it, or the AI wrote the query behind it. */}
+          <Typography sx={{ fontSize: 13, color: tokens.muted }}>
+            {v.llmAnalysis
+              ? "AI-generated summary. Check it against the table."
+              : "The AI wrote the query, so check the SQL."}
+          </Typography>
+          <Typography sx={{ fontSize: 18, lineHeight: 1.45, mt: "4px", whiteSpace: "pre-wrap" }}>
             {v.analysis}
           </Typography>
         </Box>

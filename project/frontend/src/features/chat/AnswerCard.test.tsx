@@ -76,9 +76,10 @@ describe("AnswerCard", () => {
     }
   });
 
-  it("does not label a local summary", () => {
+  it("labels a local summary as built from AI-written SQL", () => {
     renderCard({ turn: { ...turn, analysis_text: "people: 38", analysis_source: "local" }, result });
     expect(screen.getByText("people: 38")).toBeInTheDocument();
+    expect(screen.getByText("The AI wrote the query, so check the SQL.")).toBeInTheDocument();
     expect(screen.queryByText(/AI-generated summary/)).not.toBeInTheDocument();
   });
 

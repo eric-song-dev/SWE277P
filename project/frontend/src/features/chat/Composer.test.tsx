@@ -21,15 +21,14 @@ function setup(onSend: (q: string) => boolean = () => true, busy = false) {
 }
 
 describe("Composer", () => {
-  it("shows the placeholder and the disclaimer", () => {
+  it("shows the placeholder and no disclaimer under the box", () => {
     const { box } = setup();
     expect(box).toHaveAttribute(
       "placeholder",
       "Ask a question about your data",
     );
-    expect(
-      screen.getByText("AI can make mistakes. Double-check important answers."),
-    ).toBeInTheDocument();
+    // Each answer card carries its own caution line instead.
+    expect(screen.queryByText(/AI can make mistakes/)).not.toBeInTheDocument();
   });
 
   it("sends the trimmed text on Enter and clears it", async () => {

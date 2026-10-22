@@ -100,16 +100,6 @@ export default function Composer({ disabled, busy, onSend, toolbar }: Props) {
           </Button>
         </Box>
       </Box>
-      <Typography
-        sx={{
-          mt: "8px",
-          textAlign: "center",
-          fontSize: 13,
-          color: tokens.muted,
-        }}
-      >
-        AI can make mistakes. Double-check important answers.
-      </Typography>
     </Box>
   );
 }
