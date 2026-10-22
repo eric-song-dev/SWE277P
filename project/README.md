@@ -30,6 +30,7 @@ The full steps, including how to make the secrets, back up, and upgrade, are in 
 | [Data dictionary](docs/data-dictionary.md) | Wondering what each column means or how an export maps to the dataset |
 | [Known limitations](docs/known-limitations.md) | Deciding how far to trust an answer, or what is not done yet |
 | [Handoff guide](docs/handoff.md) | Taking over the code: architecture, tests, extension points, backlog, moving to OIT |
+| [Backlog](docs/backlog.md) | Planning the next work: requested features and known bugs, with what each needs |
 | [Spec](docs/specs/2026-10-20-data-hub-design.md) | Needing the full design and its reasons |
 | [Benchmark results](docs/benchmark-results.md) | Checking how well the chatbot answered the benchmark questions |
 | [`CLAUDE.md`](CLAUDE.md), [`PROGRESS.md`](PROGRESS.md) | Working on the code with Claude Code: commands, rules, current state |

@@ -111,6 +111,7 @@ From spec section 3, plus what the S5 and S6 plans left:
 - API key rotation (changing `HUB_SECRET_KEY`).
 - S6, the UI redesign and the user-story walkthrough (`docs/design/2026-10-21-ui-redesign.md`). It also refreshes the screenshots and the label names in the user guide.
 - Verify ZotGPT (base URL, JSON output, model names), then widen the response-format detection or merge consecutive user messages if the gateway needs it.
+- The items in [`backlog.md`](backlog.md), requested 2026-10-22: B1 deleting a conversation and a retention setting, B2 a Downloads page for AI results, B3 an Insights button on Dataset, and B4 the bug where a second download of an imported event becomes a new event.
 - Confirm with the sponsor: result sharing (D1), waitlisted registrants, whether "students" includes postdocs, the Notes wording. Add the sponsor's own dummy exports as test files when they arrive.
 
 Out of scope unless the sponsor changes it: reconciling registration with attendance, certificates, charts and dashboards, live links to the platforms, UCI single sign-on.

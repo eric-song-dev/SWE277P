@@ -60,7 +60,7 @@ project/
   README.md  CLAUDE.md  PROGRESS.md  docker-compose.yml  docker-compose.dev.yml  .env.example
   scripts/             acceptance.sh (final acceptance run), story_files.py (edge-case upload files for the user stories)
   db/init/             Postgres init scripts (app and read-only roles)
-  docs/*.md            handoff guides (setup, user, data dictionary, known limitations, handoff) and benchmark-results.md
+  docs/*.md            handoff guides (setup, user, data dictionary, known limitations, handoff), backlog.md and benchmark-results.md
   docs/specs/          design specs
   docs/plans/          implementation plans
   docs/design/         approved visual design and its mockup source (UI redesign, built in S6)

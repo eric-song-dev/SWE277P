@@ -53,6 +53,7 @@ Success is the charter's MOV, automated as acceptance tests (Section 14):
 - editing event details or deleting a committed import
 - attaching a second file to an existing event
 - API key rotation
+- the items in `docs/backlog.md` (2026-10-22): deleting a conversation and a retention setting (B1), a Downloads page for AI results (B2), an Insights button on Dataset (B3), and warning about a second download of an imported event (B4, a bug)
 
 **Out of scope:** as in `CLAUDE.md` (reconciliation, certificates, charts, cloud or OIT hosting, SSO, live platform APIs, real student data).
 
