@@ -12,7 +12,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
   - every summary has a caution line, and the line under the question box is gone;
   - the shell fills the window, so the nav, the model row and the question box stay put and the page never rubber-bands.
 - **Sponsor walkthrough (2026-10-22):** the sponsor's requests from the 2026-10-21 meeting were walked as SP-01 … SP-14 (`docs/user-stories/walkthrough-2026-10-22.md`): 8 Pass, 5 Pass with a caveat, 1 Gap. The benchmark scored 20/20 again and question to Excel took 4–7 s. Nothing was fixed; the findings are under "Open issues".
-- **Next:** no session is planned. The work left is the sponsor demo and the open issues below.
+- **Next:** no session is planned. The work left is the sponsor demo, the open issues below, and the backlog in `docs/backlog.md` (B1–B4, requested 2026-10-22; each needs a design draft for the user before code).
 
 ## Done in S6
 
@@ -91,13 +91,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 ## Open issues and blockers
 
 - **Sponsor walkthrough findings** (`docs/user-stories/walkthrough-2026-10-22.md`):
-  - SF-1 (high): a second download of an imported event commits as a new event with no warning, and Chat then double-counts it. Committed imports cannot be removed.
-    - **Deferred:** the user will fix it later (2026-10-22). A design comes first, for the user to review.
-    - **Planned direction:**
-      1. The upload preview warns when an event with the same name and term exists, or when most of the file's people are already in one event. Staff then choose to replace the old import, add a new event anyway, or cancel.
-      2. A committed import can be deleted.
-    - **Repro:** upload a CampusGroups export, then a copy of it with a few rows removed, and keep the prefilled name and term. Ask "Which event had the most attendees this term?".
-    - Staff are warned in `docs/known-limitations.md` ("One file per event").
+  - SF-1 (high): a second download of an imported event commits as a new event with no warning, and Chat then double-counts it. Committed imports cannot be removed. Deferred by the user; it is backlog item B4 (`docs/backlog.md`), with the scenario, repro and planned fix.
   - SF-2: event date is optional, so date-range answers silently leave undated events out (main has no dates at all).
   - SF-3: main's four 12twenty events lack the attendance-source note that `events.json` now sets. Fix the dev DB before the demo.
   - SF-4: with result sharing off, summaries are "unique_people: 79", not sentences. It depends on D1.
@@ -108,6 +102,11 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - **Missing sponsor files.** The two separate dummy exports have not arrived. When they do, add them as fixtures and check "last term" on data with more than one term.
 - **Sponsor questions:** Should waitlisted CampusGroups registrants count as attendees? Is the Notes wording acceptable? Do "students" include postdocs?
 - **Known limitations:** `docs/known-limitations.md`.
+- **Backlog (requested 2026-10-22), details in `docs/backlog.md`:**
+  - B1: delete a conversation by hand, and a retention setting in Settings (never, 6, 3 or 1 month).
+  - B2: a "Downloads" or "Library" page in the side nav listing the AI results to download.
+  - B3: an "Insights" button on Dataset that opens a chat with a preset question.
+  - B4 (bug, high): SF-1 above.
 - **Backlog (minor):**
   - The term order is defined in three places.
   - The upload store re-renders on every keystroke.
