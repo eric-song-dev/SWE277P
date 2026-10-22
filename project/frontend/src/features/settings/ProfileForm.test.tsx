@@ -222,6 +222,20 @@ describe("ProfileForm", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("keeps the form-level error for other base_url 422s", async () => {
+    const user = userEvent.setup();
+    renderForm(openaiProfile);
+    await user.type(await screen.findByLabelText(/^Name/), "x");
+    vi.mocked(apiSend).mockRejectedValueOnce(
+      new ApiError(422, "validation_error", "Request validation failed", [
+        { loc: ["body", "base_url"], msg: "Input should be a valid URL, relative URL without a base", type: "url_parsing" },
+      ]),
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Request validation failed");
+    expect(screen.queryByText(CREDS_MSG)).not.toBeInTheDocument();
+  });
+
   it("lists every reported model on open and filters only after typing", async () => {
     const user = userEvent.setup();
     renderForm(

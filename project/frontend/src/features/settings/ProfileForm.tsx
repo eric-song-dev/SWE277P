@@ -28,12 +28,14 @@ function hasCredentials(value: string): boolean {
   }
 }
 
-// A 422 whose details point at base_url (FastAPI: [{loc: ["body", "base_url"], msg, type}]).
-function pointsAtBaseUrl(err: ApiError): boolean {
+// A 422 whose detail is the credentials error (FastAPI: [{loc: ["body", "base_url"], msg, type}]).
+function isCredentialsError(err: ApiError): boolean {
   return (
     err.status === 422 &&
     Array.isArray(err.details) &&
-    err.details.some((d) => Array.isArray(d?.loc) && d.loc.includes("base_url"))
+    err.details.some(
+      (d) => Array.isArray(d?.loc) && d.loc.includes("base_url") && String(d.msg).includes("username or password"),
+    )
   );
 }
 
@@ -130,7 +132,7 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
         onSuccess: onClose,
         onError: (err) => {
           if (err instanceof ApiError && err.code === "profile_name_taken") setNameError(err.message);
-          else if (err instanceof ApiError && pointsAtBaseUrl(err)) setBaseUrlError(CREDENTIALS_MESSAGE);
+          else if (err instanceof ApiError && isCredentialsError(err)) setBaseUrlError(CREDENTIALS_MESSAGE);
           else setFormError(err instanceof Error ? err.message : "Could not save the AI model.");
         },
       },
