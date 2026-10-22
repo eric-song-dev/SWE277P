@@ -226,7 +226,7 @@ Files are read as raw cell grids (`csv` module, openpyxl) rather than with panda
 4. If nothing matches but the row has a NetID or email, create a person and record its identifiers.
 5. If the row has neither, set `person_id` to NULL, use `match_method = none`, and flag `missing_identity`.
 
-After linking, any new email is added to the person unless another person already owns it, in which case the row is flagged `email_owned_by_other`. A second row for the same person in the same event is skipped and flagged `duplicate_in_event`. The preview's flag counts include `duplicate_in_event` for rows that repeat a person within the file under the same rules restricted to the file (NetID, then email, including the NetID-attach case), so staff see them before commit; the commit, which also knows people already in the database, is authoritative. (Decided in S6.)
+After linking, any new email is added to the person unless another person already owns it, in which case the row is flagged `email_owned_by_other`. A second row for the same person in the same event is skipped and flagged `duplicate_in_event`. The preview's flag counts include `duplicate_in_event` for rows that repeat a person within the file under the same rules restricted to the file (NetID, then email, including the NetID-attach case), and `missing_identity` for rows with neither a NetID nor an email, so staff see them before commit; the commit, which also knows people already in the database, is authoritative. (Decided in S6.)
 
 Details settled in S2:
 

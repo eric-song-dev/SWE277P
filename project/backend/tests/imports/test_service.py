@@ -390,3 +390,12 @@ def test_list_reports_rows_each_committed_file_added(db_session, user):
     by_id = {f.id: f for f in list_imports(db_session)}
     assert (by_id[s.import_id].row_count, by_id[s.import_id].imported_rows) == (2, 1)
     assert (by_id[pending.id].row_count, by_id[pending.id].imported_rows) == (31, None)
+
+
+def test_preview_counts_rows_with_neither_netid_nor_email(db_session, user):
+    linkedin = preview_upload(
+        db_session, "LinkedIn Info Session.xlsx", sample_bytes("LinkedIn Info Session.xlsx"), user
+    )
+    assert linkedin.flag_counts["missing_identity"] == 1
+    october = preview_upload(db_session, OCT, sample_bytes(OCT), user)
+    assert "missing_identity" not in october.flag_counts

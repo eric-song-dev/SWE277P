@@ -63,6 +63,8 @@ def _preview_from(
     counts: Counter[str] = Counter(f.code for row in result.rows for f in row.flags)
     if n := count_in_file_duplicates((r.netid, r.email) for r in result.rows):
         counts["duplicate_in_event"] = n
+    if n := sum(1 for r in result.rows if not r.netid and not r.email):
+        counts["missing_identity"] = n
     if result.skipped:
         counts["not_attended_skipped"] = len(result.skipped)
     draft = adapter.prefill(file_name, result)
