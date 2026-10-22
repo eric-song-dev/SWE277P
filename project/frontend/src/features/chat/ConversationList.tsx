@@ -46,7 +46,18 @@ export default function ConversationList() {
           New chat
         </ButtonBase>
       </Box>
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", pb: 1.5 }}>
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          pb: 1.5,
+          // A thin, light scrollbar; the default grey bar stands out on navy.
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(255,255,255,0.3) transparent",
+        }}
+      >
         {conversations.isError && (
           <Typography sx={{ px: 1.5, fontSize: 14, color: tokens.navMuted }}>Could not load your conversations.</Typography>
         )}
