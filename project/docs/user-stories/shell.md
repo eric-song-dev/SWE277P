@@ -8,13 +8,13 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Story:** As a staff member, I want to see the four pages in one place and always know which one I am on, so that I can get to Upload, Chat, Dataset or Settings without hunting.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - The navy side nav shows "GPSRC Data Hub", below it "Graduate & Postdoctoral Scholar Resource Center", and the links "Chat", "Upload", "Dataset" and "Settings", each with an icon.
+  - The navy side nav shows "GPSRC Data Hub", below it "Graduate & Postdoctoral Scholar Resource Center", and the links "New chat", "Upload", "Dataset" and "Settings", each with an icon.
   - Opening `http://127.0.0.1:8083/` lands on `/chat`.
-  - Clicking a link changes the address to `/chat`, `/upload`, `/dataset` or `/settings`, and the page shows a white header whose h1 is "Chat", "Upload", "Dataset" or "Settings".
+  - Clicking a link changes the address to `/chat`, `/upload`, `/dataset` or `/settings`. Upload, Dataset and Settings show a white header whose h1 is the page name; the chat page shows the "Answering with" row and keeps an h1 "Chat" for screen readers only.
   - Only the current page's link has the 3 px gold bar on its left, a lighter background and white bold text, and only it has `aria-current="page"`.
   - Hovering any link lightens its background.
   - The browser's Back and Forward buttons move between the visited pages, and the highlighted link follows.
-  - Opening `/chat/<id>` of an existing conversation highlights "Chat".
+  - Opening `/chat/<id>` of an existing conversation highlights that conversation under "Recent questions"; "New chat" is highlighted only on `/chat`.
   - The browser tab reads "GPSRC Data Hub".
 - **Walk:**
   1. On the replay stack with the samples loaded, open `http://127.0.0.1:8083/`. Check the address is `/chat`, the brand text, and the four links.
@@ -22,7 +22,7 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
   3. Hover each link and watch the background.
   4. In DevTools Elements, check that only the current link has `aria-current="page"`.
   5. Press Back three times and Forward once. Check the address, h1 and highlighted link each time.
-  6. Ask "How many unique people attended Bagel Breakfast, October?" so the address becomes `/chat/<id>`. Check that "Chat" is still highlighted.
+  6. Ask "How many unique people attended Bagel Breakfast, October?" so the address becomes `/chat/<id>`. Check that the new conversation is highlighted under "Recent questions" and "New chat" no longer is.
 
 ### SH-02 Collapse and expand the nav
 - **Who:** a GPSRC staff member who wants more room for a wide result table
@@ -30,8 +30,8 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
   - A borderless icon button to the right of "GPSRC Data Hub" has the tooltip and accessible name "Collapse navigation" and `aria-expanded="true"`.
-  - Clicking it shrinks the nav to a 72 px rail of icons only. The brand text, "Recent questions" and the "Signed in as …" line are hidden, a "+" icon button named "New chat" sits under the page icons, and the button now reads "Expand navigation" with `aria-expanded="false"`.
-  - In the rail, hovering an icon shows its page name ("Chat", "Upload", "Dataset", "Settings") as a tooltip. Each icon link keeps its accessible name, and the current page keeps its gold bar and `aria-current="page"`.
+  - Clicking it shrinks the nav to a 72 px rail of icons only. The brand text, "Recent questions" and the "Signed in as …" line are hidden, and the button now reads "Expand navigation" with `aria-expanded="false"`.
+  - In the rail, hovering an icon shows its page name ("New chat", "Upload", "Dataset", "Settings") as a tooltip. Each icon link keeps its accessible name, and the current page keeps its gold bar and `aria-current="page"`.
   - The page content moves left and gets the extra width. Nothing overlaps, and no horizontal scrollbar appears.
   - The nav stays collapsed while moving between pages.
   - After a full reload the nav is expanded again (the state is kept in memory only).
@@ -49,7 +49,7 @@ Format, stacks and recording: [README.md](README.md). Window 1440×900 unless a 
 - **Story:** As a keyboard user, I want every control to be reachable with Tab and to show clearly where I am, so that I can do everything without a mouse.
 - **Stack:** replay (Demo)
 - **Acceptance criteria:**
-  - From a fresh page load, Tab reaches "Collapse navigation" first, then Chat, Upload, Dataset and Settings, then "New chat" and the conversation links under "Recent questions", then the page's own controls in reading order.
+  - From a fresh page load, Tab reaches "Collapse navigation" first, then New chat, Upload, Dataset and Settings, then the conversation links under "Recent questions", then the page's own controls in reading order.
   - Every focused element in the nav shows a 2 px white focus ring. Every focused element outside the nav shows a 2 px `#255799` ring with a 2 px offset. No control is focused without a visible ring.
   - Enter on a nav link opens its page. Enter or Space on "Collapse navigation" collapses and expands the nav.
   - On Chat, after the nav, the order is: the "Answering with" select, the controls inside the answer cards (if any), then Question, then "Let AI see the results", then Send. The question box shows the ring while typing, and the switch and Send each show their own ring.

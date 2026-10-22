@@ -17,7 +17,7 @@ docker compose up --build -d
 docker compose exec api python -m app.samples    # optional: load the fake sample data
 ```
 
-Then open http://127.0.0.1:8080. In **Settings**, click **Add AI model** to connect an AI provider, then ask questions in **Chat**. Stop it with `docker compose down` (your data stays).
+Then open http://127.0.0.1:8080. In **Settings**, click **Add AI model** to connect an AI provider, then click **New chat** and ask a question. Stop it with `docker compose down` (your data stays).
 
 The full steps, including how to make the secrets, back up, and upgrade, are in the [setup guide](docs/setup-guide.md).
 

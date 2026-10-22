@@ -314,7 +314,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Stack:** replay (Demo), before any profile exists
 - **Acceptance criteria:**
   - `/chat` shows "Add an AI model in Settings to start." with a "Go to Settings" link.
-  - There is no question box and no "Answering with" select. "Recent questions" in the side nav shows "New chat" and "No conversations yet.".
+  - There is no question box and no "Answering with" select. "Recent questions" in the side nav shows "No conversations yet.".
   - "Go to Settings" opens `/settings`, which shows "No AI models yet. Add one to start asking questions." and "Add AI model".
   - After a model is added (ST-01), Chat shows the question box with that model selected, without a reload.
 - **Walk:**
@@ -344,13 +344,13 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   - With 20 or more conversations, "Recent questions" in the side nav shows them all, most recently used first. Each title takes at most two lines, cut with "…" when longer.
   - Hovering a cut-off title shows the full title (expected; spec silent).
   - The list scrolls inside the nav while the page links above it and "Signed in as …" below it stay in place.
-  - "Recent questions" and "New chat" stay visible above the list while it scrolls (expected; spec silent).
+  - The "Recent questions" heading and the "New chat" link stay visible above the list while it scrolls (expected; spec silent).
   - In a thread of 12 or more questions, only the conversation pane scrolls; the "Answering with" row and the question box stay in place, and the page itself never scrolls or bounces.
   - After a question is sent in a long thread, the new question and its answer are scrolled into view without manual scrolling (expected; spec silent).
   - Reopening the long conversation shows all its questions in order.
 - **Walk:**
   1. Create 20 conversations with the README's loop ("Make many conversations").
-  2. Reload `/chat`. Check the order, the titles and the hover. Scroll the list hard and watch "New chat", the page links and "Signed in as …".
+  2. Reload `/chat`. Check the order, the titles and the hover. Scroll the list hard and watch its heading, the page links (with "New chat") and "Signed in as …".
   3. In one conversation, ask 12 questions, cycling through the Demo questions (the "Show the SQL query" bars stay closed). Watch where the view is after each send, and scroll the thread hard both ways while watching the question box and the "Answering with" row.
   4. Open another conversation, then reopen the long one, and check its order.
 

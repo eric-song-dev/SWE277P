@@ -4,13 +4,13 @@ For GPSRC staff. This guide shows how to add an event's attendee list to the Hub
 
 Screens are described by their button and field names. Names in quotes are what you see on screen.
 
-The Hub has four pages, listed in the navigation on the left: **Chat**, **Upload**, **Dataset** and **Settings**. Click the arrows at the top of the navigation (**Collapse navigation** / **Expand navigation**) to shrink it to icons and give the page more room. Hover over an icon to see the page name. Below the pages, **Recent questions** lists your conversations on every page, newest first; click one to open it, or click **New chat** to start a new one (when the navigation is shrunk, use the **+** icon). Long titles are cut after two lines; hover to read the whole title. The navigation and the Chat question box stay in place while the rest of the page scrolls. At the bottom it says who you are signed in as, or "Not connected" when the Hub cannot be reached. If you open an address that does not exist, the page says "Page not found".
+The Hub has four pages, listed in the navigation on the left: **New chat** (the chat page), **Upload**, **Dataset** and **Settings**. Click the arrows at the top of the navigation (**Collapse navigation** / **Expand navigation**) to shrink it to icons and give the page more room. Hover over an icon to see the page name. Below the pages, **Recent questions** lists your conversations on every page, newest first; click one to open it, or click **New chat** at the top of the navigation to start a new one. Long titles are cut after two lines; hover to read the whole title. The navigation and the Chat question box stay in place while the rest of the page scrolls. At the bottom it says who you are signed in as, or "Not connected" when the Hub cannot be reached. If you open an address that does not exist, the page says "Page not found".
 
 ## The idea in one minute
 
 1. **Upload** the file that CampusGroups or 12twenty gave you, as it is. Do not edit it first.
 2. Check the event details, then click **Commit**. The rows are added to one permanent dataset.
-3. In **Chat**, ask a question in plain English. The Hub shows the answer and the SQL query (the database instruction an AI wrote to get it), so you can check how the answer was made.
+3. In **New chat**, ask a question in plain English. The Hub shows the answer and the SQL query (the database instruction an AI wrote to get it), so you can check how the answer was made.
 4. Download the result as an Excel or CSV file.
 
 ## 1. Upload an event
@@ -94,7 +94,7 @@ The data dictionary lists the underlying flag codes: [data-dictionary.md](data-d
 
 ## 2. Ask questions
 
-1. Open **Chat**. The page opens on a new conversation.
+1. Click **New chat** in the navigation. The page opens on a new conversation.
 2. Pick the AI model in the **Answering with** drop-down at the top right. The default is chosen for you. If the list is empty, add a model in **Settings** first (see the [setup guide](setup-guide.md#6-add-an-ai-model)).
 3. Type your question in the box ("Ask a question about your data") and click **Send**. Press Enter to send, or Shift+Enter for a new line. A question can be up to 2,000 characters.
 4. Watch the progress line: "Writing SQL", "Checking the query", "Running the query", and "Analyzing results" when sharing is on. The conversation scrolls your question to the top and leaves room for the answer; the question box stays at the bottom.
@@ -103,7 +103,7 @@ The data dictionary lists the underlying flag codes: [data-dictionary.md](data-d
 
 While an answer is being written you can already type your next question. **Send** waits until the answer is done.
 
-To start a different topic, click **New chat** in the navigation. Your old conversations stay under **Recent questions**.
+To start a different topic, click **New chat** again. Your old conversations stay under **Recent questions**; click one to go back to it.
 
 ### Asking good questions
 

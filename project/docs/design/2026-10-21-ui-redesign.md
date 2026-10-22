@@ -2,7 +2,7 @@
 
 - **Date:** 2026-10-21. Approved by the user after S4 and built in **S6**.
 - **Mockup:** https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs. The first artboard, "A. Campus blue and gold", is the approved design. Press Play on it to try the nav collapse, the hover states and the share switch.
-- **Revision (2026-10-21, after S6):** the artboard "A2. Conversations in the nav" on the same canvas is approved and supersedes A for the shell and the Chat page: recent questions in a 280 px side nav, a slim "Answering with" row instead of the Chat page header, a caution line on every summary, no line under the question box, and a shell that fills the window so the nav and the question box never move. The sections below describe A2 where it differs from A.
+- **Revision (2026-10-21, after S6):** the artboard "A2. Conversations in the nav" on the same canvas is approved and supersedes A for the shell and the Chat page: recent questions in a 280 px side nav whose first link is "New chat", a slim "Answering with" row instead of the Chat page header, a caution line on every summary, no line under the question box, and a shell that fills the window so the nav and the question box never move. The sections below describe A2 where it differs from A.
 - **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` (A) and `2026-10-21-chat-mockup-a2.dc.html` (A2) in this folder. They render only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
 - **Scope:** visual design and copy only. Every behavior, API call and test-relevant role stays as built in S4 (spec §4.3 "Details settled in S4").
 
@@ -36,7 +36,7 @@ The guide's rules:
 
 | Token | Hex | Official name | Use |
 |---|---|---|---|
-| primary | `#255799` | UCI Blue | primary buttons, user question bubbles, switch on, links, focus ring, the "New chat" hover fill |
+| primary | `#255799` | UCI Blue | primary buttons, user question bubbles, switch on, links, focus ring, the A design's "New chat" hover fill |
 | gold | `#FECC07` | UCI Gold | **only** the 3 px active-page bar in the side nav |
 | navy | `#1B3D6D` | Dark Blue | side nav background, page titles, section headings, table header text, selected conversation text |
 | ink | `#002244` | Darkest Blue | body text, text on light buttons |
@@ -89,14 +89,14 @@ Contrast is checked:
   - **Brand block:** 88 px tall, the same height as the page header. It holds "GPSRC Data Hub" (19 px / 700, never wraps) and below it "Graduate & Postdoctoral Scholar Resource Center" (13 px, navMuted).
   - **Collapse button:** to the right of the wordmark. It is a 40×40 icon button with **no border**: icon navMuted at rest; on hover or focus, a `rgba(255,255,255,0.12)` background and a white icon. Its `aria-label` and title are "Collapse navigation" or "Expand navigation", with `aria-expanded` set.
   - **Collapsed state:** a 72 px rail with icons only. Each link keeps an `aria-label` and a hover title. The state is kept in memory only, not in localStorage (localStorage holds only the last selected profile id).
-  - **Nav links:** Chat, Upload, Dataset and Settings, each icon plus label.
+  - **Nav links:** New chat, Upload, Dataset and Settings, each icon plus label (New chat keeps the chat icon). "New chat" opens the `/chat` draft and is the current page only there; an open conversation `/chat/:id` is marked in Recent questions instead, so no page link is current then.
     - Active: a 3 px gold left border, a `rgba(255,255,255,0.10)` background, white 600 text.
     - Inactive: navText.
   - **Recent questions:** below the nav links (28 px gap), on every page.
-    - **Header row:** "Recent questions" (15 px / 600, navMuted) on the left and a "New chat" text button (15 px / 600, white, no icon; hover `rgba(255,255,255,0.12)`) on the right, both on one line. "New chat" opens the `/chat` draft.
+    - **Heading:** "Recent questions" (15 px / 600, navMuted), on one line. There is no button beside it; "New chat" is the first nav link.
     - **Items:** one link per conversation, most recently updated first: 15 px, line height 1.4, padding 8/12, radius 8, navText; at most two lines, then "…", with the full title as the hover title. Hover `rgba(255,255,255,0.08)`. The open conversation has a `rgba(255,255,255,0.14)` background with white 600 text and `aria-current="page"`; the gold bar stays for the current page only.
     - The list fills the nav's free height and scrolls inside it, with a thin `rgba(255,255,255,0.3)` scrollbar. It is a `nav` landmark named by its heading. Empty: "No conversations yet."; failed: "Could not load your conversations." (14 px, navMuted).
-    - **Collapsed rail:** the list is hidden; a 44×44 "+" icon button ("New chat" as its `aria-label` and title) sits below the links.
+    - **Collapsed rail:** the list is hidden; the "New chat" icon is the first link.
   - **Bottom:** "Signed in as {display_name}", or "Not connected" when `/api/me` fails, above a `rgba(255,255,255,0.14)` divider.
 - **Page header (Upload, Dataset, Settings, Page not found):** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right. Chat has no page header (below).
 
