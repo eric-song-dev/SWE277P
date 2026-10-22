@@ -11,6 +11,7 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
   - Chat lost its conversation column and header for a slim "Answering with" row;
   - every summary has a caution line, and the line under the question box is gone;
   - the shell fills the window, so the nav, the model row and the question box stay put and the page never rubber-bands.
+- **Sponsor walkthrough (2026-10-22):** the sponsor's requests from the 2026-10-21 meeting were walked as SP-01 … SP-14 (`docs/user-stories/walkthrough-2026-10-22.md`): 8 Pass, 5 Pass with a caveat, 1 Gap. The benchmark scored 20/20 again and question to Excel took 4–7 s. Nothing was fixed; the findings are under "Open issues".
 - **Next:** no session is planned. The work left is the sponsor demo and the open issues below.
 
 ## Done in S6
@@ -89,6 +90,12 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 
 ## Open issues and blockers
 
+- **Sponsor walkthrough findings** (`docs/user-stories/walkthrough-2026-10-22.md`):
+  - SF-1 (high): a second download of an imported event commits as a new event with no warning, and Chat then double-counts it. Committed imports cannot be removed. Needs a design.
+  - SF-2: event date is optional, so date-range answers silently leave undated events out (main has no dates at all).
+  - SF-3: main's four 12twenty events lack the attendance-source note that `events.json` now sets. Fix the dev DB before the demo.
+  - SF-4: with result sharing off, summaries are "unique_people: 79", not sentences. It depends on D1.
+  - SF-5 … SF-9 are minor or for discussion: gendered readings, one summary over-claim, no roster for service gaps, no row filter on Dataset, raw column names in chat downloads.
 - **D1 is provisional.** The LLM sees query results, and the sponsor must confirm this. Sharing can be switched off per profile.
 - **ZotGPT is unknown.** Its base URL, JSON-mode support and model names must be verified by 10/28.
 - **Only one provider is benchmarked.** Both profiles are DeepSeek models.
@@ -126,3 +133,4 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 - S5 (2026-10-21): revised the plan against the S3/S4 code, then ran 11 tasks plus 10b, each reviewed. Added the holdout; the benchmark scored 20/20 and 10/10, the second profile 19/20, and A10 took about 5 s. Did the hardening sweep, the replay (no bugs) and the handoff docs. `acceptance.sh` is green.
 - S6 (2026-10-21): built the redesign, fixed the S5 carry-overs, wrote 63 user stories and walked them (67 rows, 37 findings), fixed 34 findings and left 3 with reasons, re-walked, regenerated the screenshots and guides, then a final review and one fix wave. `acceptance.sh` is green: pytest 917, Vitest 218, e2e 5, timing 3.
 - After S6 (2026-10-21): built the approved A2 revision (recent questions in the side nav, the "Answering with" row, a caution line on every summary, a fixed window-filling shell), tested it in a browser on a replay stack and on main, and refreshed the design doc, spec, guide, stories and screenshots. Vitest 222, e2e 5.
+- Sponsor walkthrough (2026-10-22): walked the 10/21 meeting's requests on main (read-only) and a throwaway DeepSeek stack. 14 stories, 9 findings recorded, nothing fixed. Benchmark 20/20, acceptance 65, timing 3.
