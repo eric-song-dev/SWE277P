@@ -91,7 +91,13 @@ Read this after `CLAUDE.md` at the start of every session (see "Rule #2" there).
 ## Open issues and blockers
 
 - **Sponsor walkthrough findings** (`docs/user-stories/walkthrough-2026-10-22.md`):
-  - SF-1 (high): a second download of an imported event commits as a new event with no warning, and Chat then double-counts it. Committed imports cannot be removed. Needs a design.
+  - SF-1 (high): a second download of an imported event commits as a new event with no warning, and Chat then double-counts it. Committed imports cannot be removed.
+    - **Deferred:** the user will fix it later (2026-10-22). A design comes first, for the user to review.
+    - **Planned direction:**
+      1. The upload preview warns when an event with the same name and term exists, or when most of the file's people are already in one event. Staff then choose to replace the old import, add a new event anyway, or cancel.
+      2. A committed import can be deleted.
+    - **Repro:** upload a CampusGroups export, then a copy of it with a few rows removed, and keep the prefilled name and term. Ask "Which event had the most attendees this term?".
+    - Staff are warned in `docs/known-limitations.md` ("One file per event").
   - SF-2: event date is optional, so date-range answers silently leave undated events out (main has no dates at all).
   - SF-3: main's four 12twenty events lack the attendance-source note that `events.json` now sets. Fix the dev DB before the demo.
   - SF-4: with result sharing off, summaries are "unique_people: 79", not sentences. It depends on D1.
