@@ -683,6 +683,16 @@ describe("ChatPage", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Chat" })).toBeInTheDocument();
   });
 
+  it("draws the model row as a white bar with a line toward the conversation, at full height while loading", async () => {
+    renderPage("/chat");
+    const row = (await screen.findByRole("heading", { level: 1, name: "Chat" })).closest("header")!;
+    const style = getComputedStyle(row);
+    expect(style.backgroundColor).toBe("rgb(255, 255, 255)");
+    expect(style.borderBottomWidth).toBe("1px");
+    expect(style.borderBottomStyle).toBe("solid");
+    expect(style.minHeight).toBe("58px");
+  });
+
   it("marks the open conversation under Recent questions", async () => {
     renderPage("/chat/1");
     const list = await screen.findByRole("navigation", { name: "Recent questions" });

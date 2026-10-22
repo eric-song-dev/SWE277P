@@ -189,12 +189,25 @@ export default function ChatPage() {
   }
 
   // The page fills the shell's main area: a slim model row and the question box stay put, and only
-  // the conversation pane between them scrolls.
+  // the conversation pane between them scrolls. Both are white bands with a line toward the pane, like
+  // the other pages' headers, so the pane's content slides under a clear edge. The model row keeps
+  // its full height (the select's) while the models load or when there are none.
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Box
         component="header"
-        sx={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", px: "32px", py: "12px" }}
+        sx={{
+          flexShrink: 0,
+          minHeight: 58,
+          boxSizing: "border-box",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          px: "32px",
+          py: "12px",
+          bgcolor: "#FFFFFF",
+          borderBottom: `1px solid ${tokens.border}`,
+        }}
       >
         {/* The page keeps its heading for screen readers; the nav already shows where you are. */}
         <Typography variant="h1" sx={VISUALLY_HIDDEN}>
@@ -218,7 +231,7 @@ export default function ChatPage() {
             boxSizing: "border-box",
             gap: 2,
             px: "40px",
-            pt: "8px",
+            pt: "20px",
             pb: "32px",
           }}
         >
