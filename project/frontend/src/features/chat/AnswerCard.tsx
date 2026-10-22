@@ -96,7 +96,7 @@ export default function AnswerCard({ turn, result, onShowResults, showResultsPen
           <Typography sx={{ fontSize: 13, color: tokens.muted }}>
             {v.llmAnalysis
               ? "AI-generated summary. Check it against the table."
-              : "The AI wrote the query, so check the SQL."}
+              : "The AI wrote the SQL, so check it."}
           </Typography>
           <Typography sx={{ fontSize: 18, lineHeight: 1.45, mt: "4px", whiteSpace: "pre-wrap" }}>
             {v.analysis}

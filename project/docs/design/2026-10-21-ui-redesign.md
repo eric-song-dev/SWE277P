@@ -110,7 +110,7 @@ Contrast is checked:
   - **user question:** a right-aligned UCI Blue bubble with white text, at most 75% wide;
   - **clarifying question:** a left-aligned white bubble with a border.
 - **Answer card:** white, 1 px border, radius 12, padding 24, sections 20 px apart, in this order:
-  1. a caution line (13 px, muted) above every summary: "AI-generated summary. Check it against the table." when the AI wrote it (`source == "llm"`), else "The AI wrote the query, so check the SQL."; then the summary at 18 px;
+  1. a caution line (13 px, muted) above every summary: "AI-generated summary. Check it against the table." when the AI wrote it (`source == "llm"`), else "The AI wrote the SQL, so check it."; then the summary at 18 px;
   2. the result table, inside a bordered container with radius 10: header row tableHead with navy 600 text, rows divided by divider lines;
   3. "How I read your question" (16 px / 700 navy) with bullet points;
   4. a full-width "Show the SQL query" bar (44 px, subtle background, chevron), collapsed by default, with Copy inside;

@@ -154,7 +154,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Acceptance criteria:**
   - The switch starts on for "Demo", with "On: the AI reads the results to summarize them. PII (such as emails and names) may be shared with the AI.".
   - Turned off, it reads "Off: the AI sees only your question. You get the results without an AI summary.".
-  - A question asked with the switch off gets a summary built on this computer, under the line "The AI wrote the query, so check the SQL." instead of "AI-generated summary. Check it against the table.": "unique_people: 38" for the CH-01 question.
+  - A question asked with the switch off gets a summary built on this computer, under the line "The AI wrote the SQL, so check it." instead of "AI-generated summary. Check it against the table.": "unique_people: 38" for the CH-01 question.
   - The switch stays off when the first question turns `/chat` into `/chat/<id>`, and stays off for the follow-up. "Of those, how many are international?" gets "international_people: 8".
   - "New chat" resets the switch to on.
   - Opening another conversation from the list resets it to on.
@@ -176,7 +176,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
   - With "Demo No Share" selected, the switch is off and greyed out, and the helper reads "Off: the AI sees only your question. You get the results without an AI summary.". This holds even right after "Demo" had the switch on.
   - Hovering the switch or its label shows "This AI model isn't allowed to receive results. Change it in Settings.".
   - Clicking the switch or the label does not turn it on.
-  - A question asked with "Demo No Share" gets a summary built on this computer, under the line "The AI wrote the query, so check the SQL.": "unique_people: 38".
+  - A question asked with "Demo No Share" gets a summary built on this computer, under the line "The AI wrote the SQL, so check it.": "unique_people: 38".
   - Choosing "Demo" again turns the switch back on and enables it.
 - **Walk:**
   1. Create "Demo No Share" (README). On `/chat` with "Demo" selected, check the switch is on.
@@ -359,7 +359,7 @@ starts on. The Demo questions it knows (matched anywhere in the question, any ca
 - **Story:** As the director, I want correct answers to the questions I actually ask, with the reading stated, so that I can use the numbers in reports.
 - **Stack:** main (DeepSeek). Not walked on replay: the Demo model only knows its scripted questions.
 - **Acceptance criteria:**
-  - "How many unique people attended at least one event in Fall 2026?", asked with the switch off: 79. The summary is built on this computer, under "The AI wrote the query, so check the SQL."
+  - "How many unique people attended at least one event in Fall 2026?", asked with the switch off: 79. The summary is built on this computer, under "The AI wrote the SQL, so check it."
   - Its follow-up "Break that down by school, highest first.": School of Engineering 16 first; Biological Sciences, Social Sciences, Social Ecology, Humanities, Physical Sciences, Medicine and Paul Merage School of Business 8 each; School of Information and Computer Sciences 7. The one attendee with a blank school is left out (as the stated assumption says) or shown as a blank row with 1.
   - "Which event had the fewest attendees?": Postdoc Wellness Lunch, 18.
   - "List the names and emails of the postdocs who attended the Postdoc Wellness Lunch.", asked with the switch on: 8 rows of names and emails. The summary starts with "AI-generated summary. Check it against the table.", and every number in it matches the table.

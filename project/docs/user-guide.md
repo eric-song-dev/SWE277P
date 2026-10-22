@@ -129,7 +129,7 @@ What the chat can and cannot answer: it knows who attended which event, their na
 
 Each question gets one answer card. From top to bottom:
 
-- **The summary.** When sharing is on (see section 4), the AI writes a short summary with a note "AI-generated summary. Check it against the table." When sharing is off, the Hub writes a plain one, such as "42 rows" or "No matching records.", with the note "The AI wrote the query, so check the SQL."
+- **The summary.** When sharing is on (see section 4), the AI writes a short summary with a note "AI-generated summary. Check it against the table." When sharing is off, the Hub writes a plain one, such as "42 rows" or "No matching records.", with the note "The AI wrote the SQL, so check it."
 - **The result table.** This is the answer. The table is the authority: if the summary and the table disagree, trust the table. It shows up to 1,000 rows. When the result is cut off, the footer says "More than 1,000 rows". Download the file to get them all.
 - **How I read your question.** One or more plain sentences saying how the AI understood you, and what it assumed (for example, "Students" means everyone GPSRC serves, postdocs included, or "This term" means Fall 2026). Read this first when an answer looks strange. If an assumption is wrong, say so in a follow-up.
 - **Show the SQL query.** Click it to see the database instruction that was run. The Hub always shows it so you can check the work, or hand it to someone technical. **Copy** copies it and briefly shows "Copied".
