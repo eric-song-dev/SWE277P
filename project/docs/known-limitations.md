@@ -44,6 +44,8 @@ The AI writes the SQL, so an answer can be wrong even when it looks reasonable. 
 - **Matching is exact.** Misspelled names or a person using two different emails and no NetID in either file are counted as two people. Names are never used to match.
 - **Pending files.** The form text you typed is lost when you reload the browser page. The file stays on the Upload page.
 - **One file per event.** A second file for the same event is a new event. Attaching a file to an existing event is in the backlog.
+  - This includes a second download of an export already imported, for example one taken after a few more check-ins. Its rows differ, so it is not a "Duplicate". The Hub gives no warning and records a second event with the same name and term. Everyone in both files is then counted twice for that event: head counts and "which event had the most attendees" come out too high. Counts of distinct people stay right.
+  - Since a committed import cannot be deleted, upload each event's export once. Check the Dataset page first. A warning for this case is planned (walkthrough finding SF-1).
 - **Upload the native export.** A file opened and re-saved in Excel without changes is still recognized as a duplicate. A file with edits is a different file, and it is rejected if the column names no longer match.
 - The 12twenty `Registration Date` is never used as the event date, because it is the date people signed up.
 
