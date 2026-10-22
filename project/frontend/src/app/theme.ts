@@ -96,6 +96,8 @@ export const gridSx: SxProps<Theme> = {
   fontSize: 15,
   "& .MuiDataGrid-columnHeaders": {
     backgroundColor: tokens.tableHead,
+    // The last header's resize handle and (hidden) menu button stick out past the right edge and would add sideways scroll.
+    overflow: "hidden",
   },
   "& .MuiDataGrid-columnHeader": {
     backgroundColor: tokens.tableHead,

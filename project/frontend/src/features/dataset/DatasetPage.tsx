@@ -49,11 +49,11 @@ const columns: GridColDef<ImportFileOut>[] = [
     field: "row_count",
     headerName: "Rows",
     type: "number",
-    width: 70,
+    width: 88,
     disableColumnMenu: true,
     valueGetter: (_, row) => row.imported_rows ?? row.row_count,
   },
-  { field: "flag_count", headerName: "Flags", type: "number", width: 70, disableColumnMenu: true },
+  { field: "flag_count", headerName: "Flags", type: "number", width: 88, disableColumnMenu: true },
   {
     field: "uploaded_by",
     headerName: "Uploaded by",
@@ -69,7 +69,18 @@ const columns: GridColDef<ImportFileOut>[] = [
     width: 170,
     // A Date, so the column sorts by time; only the display is localized.
     valueGetter: (_, row) => new Date(row.uploaded_at),
-    valueFormatter: (value: Date) => value.toLocaleString(),
+    // No seconds, so a two-digit hour still fits; the cell's title holds the full time.
+    valueFormatter: (value: Date) =>
+      value.toLocaleString(undefined, {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+    renderCell: ({ row, formattedValue }) => (
+      <span title={new Date(row.uploaded_at).toLocaleString()}>{String(formattedValue ?? "")}</span>
+    ),
   },
   {
     field: "status",

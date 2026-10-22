@@ -180,7 +180,7 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
           )}
           <Autocomplete
             freeSolo
-            forcePopupIcon
+            forcePopupIcon={(probe.data?.models ?? []).length > 0}
             options={probe.data?.models ?? []}
             inputValue={model}
             // Show every model on open; filter only once the user has typed since opening (reset on close).

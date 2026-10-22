@@ -78,3 +78,32 @@ test("a send in a long conversation scrolls the question to the top", async ({ p
   const bandTop = (await box.boundingBox())!.y;
   expect(cardTop).toBeLessThan(bandTop);
 });
+
+// W-35/W-36: the Dataset grid fits at 1440x900 and the Rows and Flags titles stay whole next to their sort arrow.
+test("the Dataset grid fits and keeps the Rows and Flags titles whole", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/dataset");
+  const grid = page.getByRole("grid");
+  await expect(grid.getByRole("gridcell").first()).toBeVisible(); // the happy path's import is listed
+
+  const noSideScroll = await page
+    .locator(".MuiDataGrid-virtualScroller")
+    .evaluate((el) => el.scrollWidth <= el.clientWidth);
+  expect(noSideScroll).toBe(true);
+
+  const gridBox = (await grid.boundingBox())!;
+  const status = (await grid.getByRole("columnheader", { name: "Status" }).boundingBox())!;
+  expect(status.x).toBeGreaterThanOrEqual(gridBox.x);
+  expect(status.x + status.width).toBeLessThanOrEqual(gridBox.x + gridBox.width + 0.5);
+
+  for (const name of ["Rows", "Flags"]) {
+    const header = grid.getByRole("columnheader", { name });
+    await header.click(); // sorts by this column, so its arrow shows
+    await expect(header).toHaveAttribute("aria-sort", "ascending");
+    await page.mouse.move(0, 0);
+    const whole = await header
+      .locator(".MuiDataGrid-columnHeaderTitle")
+      .evaluate((el) => el.scrollWidth <= el.clientWidth);
+    expect(whole, `${name} title is cut`).toBe(true);
+  }
+});

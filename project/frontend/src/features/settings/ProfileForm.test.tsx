@@ -133,8 +133,22 @@ describe("ProfileForm", () => {
   it("offers model suggestions from the last successful test", async () => {
     const user = userEvent.setup();
     renderForm(openaiProfile, { ok: true, json_mode: true, models: ["gpt-4.1-mini", "gpt-4.1"], error: null, latency_ms: 80 });
-    await user.click(await screen.findByRole("combobox", { name: /^Model/ }));
+    const combobox = await screen.findByRole("combobox", { name: /^Model/ });
+    await user.click(await screen.findByRole("button", { name: "Open" })); // the arrow is there, since there are names
     expect(await screen.findByRole("option", { name: "gpt-4.1-mini" })).toBeInTheDocument();
+    expect(combobox).toBeInTheDocument();
+  });
+
+  it("shows no dropdown arrow on the Model field when there are no names to suggest", async () => {
+    renderForm(null);
+    await screen.findByRole("combobox", { name: /^Model/ });
+    expect(screen.queryByRole("button", { name: "Open" })).not.toBeInTheDocument();
+  });
+
+  it("shows no dropdown arrow when the last test listed no names", async () => {
+    renderForm(openaiProfile, { ok: true, json_mode: true, models: [], error: null, latency_ms: 1 });
+    await screen.findByRole("combobox", { name: /^Model/ });
+    expect(screen.queryByRole("button", { name: "Open" })).not.toBeInTheDocument();
   });
 
   it("shows a taken name on the Name field and keeps the dialog open", async () => {

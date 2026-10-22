@@ -113,7 +113,19 @@ describe("DatasetPage", () => {
       .filter((cell) => cell.getAttribute("data-field") === "file_name")
       .map((cell) => cell.textContent);
     expect(files).toEqual(["mixer.xlsx", "career-fair.csv", "panel.csv"]);
-    expect(screen.getByText(new Date("2026-10-08T17:30:00Z").toLocaleString())).toBeInTheDocument();
+    expect(screen.getByTitle(new Date("2026-10-08T17:30:00Z").toLocaleString())).toBeInTheDocument();
+  });
+
+  it("shows the upload time without seconds and keeps the full time in the title", async () => {
+    // Built from a local Date so the shown clock time is 10:30 in any time zone.
+    const at = new Date(2026, 10, 3, 10, 30, 0);
+    vi.mocked(apiGet).mockResolvedValueOnce([{ ...imports[0], uploaded_at: at.toISOString() }]);
+    renderPage();
+    await screen.findByText("career-fair.csv");
+    const cell = document.querySelector<HTMLElement>('[role="gridcell"][data-field="uploaded_at"]')!;
+    expect(cell.textContent).toMatch(/10:30\sAM$/);
+    expect(cell.textContent).not.toMatch(/10:30:/);
+    expect(within(cell).getByTitle(/10:30:00\sAM$/)).toBeInTheDocument(); // the full time, with seconds
   });
 
   it("has a level 1 Dataset heading and download icons on both downloads", async () => {
