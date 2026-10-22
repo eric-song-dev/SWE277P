@@ -56,7 +56,8 @@ def test_preview_then_commit(db_session, user):
         ),
         user,
     )
-    assert s.inserted == 38 and s.linked_by_netid + s.linked_by_email + s.unlinked == 38
+    assert s.inserted == 38
+    assert s.linked_by_netid + s.linked_by_email + s.new_people + s.unlinked == 38
     event = db_session.get(Event, s.event_id)
     assert event.academic_year == "2026-27" and event.on_campus_groups is True
     assert event.created_by == user.id and event.student_worker == user.display_name
@@ -112,6 +113,24 @@ def test_second_file_links_to_people_from_first(db_session, user):
     assert second.new_people < second.inserted
     assert count(db_session, Person) == people + second.new_people
     assert second.linked_by_netid > 0
+
+
+def test_empty_hub_links_nobody(db_session, user):
+    s = commit_after_preview(db_session, OCT, sample_bytes(OCT), user)
+    assert (s.linked_by_netid, s.linked_by_email, s.new_people) == (0, 0, 38)
+
+
+def test_linked_counts_cover_only_people_who_already_existed(db_session, user):
+    commit_after_preview(db_session, OCT, sample_bytes(OCT), user)
+    before = set(db_session.scalars(select(Person.id)))
+    second = commit_after_preview(db_session, NOV, sample_bytes(NOV), user, name="Nov")
+    person_ids = db_session.scalars(
+        select(Attendance.person_id).where(Attendance.import_file_id == second.import_id)
+    ).all()
+    existing_rows = sum(1 for pid in person_ids if pid in before)
+    assert existing_rows > 0
+    assert second.linked_by_netid + second.linked_by_email == existing_rows
+    assert second.linked_by_netid + second.linked_by_email + second.new_people == second.inserted
 
 
 def test_summary_counts_and_flags(db_session, user):

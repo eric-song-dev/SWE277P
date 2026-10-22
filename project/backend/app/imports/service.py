@@ -242,7 +242,8 @@ def commit_import(
         flags = [*row.flags, *link.flags]
         record_flags(session, record.id, attendance.id, row.source_row, flags)
         inserted += 1
-        methods[link.method] += 1
+        if not link.created:  # a person this commit created is counted in new_people only
+            methods[link.method] += 1
         flagged_rows += bool(flags)
 
     for skipped in result.skipped:
