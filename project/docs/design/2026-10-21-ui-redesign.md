@@ -3,6 +3,7 @@
 - **Date:** 2026-10-21. Approved by the user after S4 and built in **S6**.
 - **Mockup:** https://claude.ai/artifact/Xbq6MdmGMZdmT39wnmBQfs. The first artboard, "A. Campus blue and gold", is the approved design. Press Play on it to try the nav collapse, the hover states and the share switch.
 - **Revision (2026-10-21, after S6):** the artboard "A2. Conversations in the nav" on the same canvas is approved and supersedes A for the shell and the Chat page: recent questions in a 280 px side nav whose first link is "New chat", a slim "Answering with" row instead of the Chat page header, a caution line on every summary, no line under the question box, and a shell that fills the window so the nav and the question box never move. The sections below describe A2 where it differs from A.
+- **Revision (2026-10-22):** the model row became a white bar with a bottom border (artboard "D2. White bar with a line, like the other page headers", chosen over a bare line and a line shown only after scrolling). Before, the conversation scrolled under a row of the same color, so text was cut at an invisible edge.
 - **Mockup source:** `2026-10-21-chat-mockup-a.dc.html` (A) and `2026-10-21-chat-mockup-a2.dc.html` (A2) in this folder. They render only inside the Design artifact, but every exact value (color, size, spacing, copy) is written in its inline styles, so read it as the reference when a value below is unclear.
 - **Scope:** visual design and copy only. Every behavior, API call and test-relevant role stays as built in S4 (spec §4.3 "Details settled in S4").
 
@@ -98,14 +99,14 @@ Contrast is checked:
     - The list fills the nav's free height and scrolls inside it, with a thin `rgba(255,255,255,0.3)` scrollbar. It is a `nav` landmark named by its heading. Empty: "No conversations yet."; failed: "Could not load your conversations." (14 px, navMuted).
     - **Collapsed rail:** the list is hidden; the "New chat" icon is the first link.
   - **Bottom:** "Signed in as {display_name}", or "Not connected" when `/api/me` fails, above a `rgba(255,255,255,0.14)` divider.
-- **Page header (Upload, Dataset, Settings, Page not found):** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right. Chat has no page header (below).
+- **Page header (Upload, Dataset, Settings, Page not found):** white, 88 px tall, with a bottom border. The title (h1) is on the left and the page actions on the right. Chat has no page header, only a slimmer white model row (below).
 
 ## Chat page
 
 - **Layout:** the page fills the main area as three rows: the model row and the question box stay put, and only the conversation pane between them scrolls (`overscroll-behavior: contain`). The conversations are in the side nav (Shell above); there is no conversation column.
-- **Model row:** no white header bar and no visible title. A slim row (padding 12/32, page background, no border) holds, on the right, an "Answering with" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 160 px wide, 6 px vertical padding, control border. An `h1` "Chat" stays for screen readers only.
+- **Model row:** no page header and no visible title. A slim white bar holds, on the right, an "Answering with" label (15 px / 600, muted) and a select styled to match: native arrow hidden, a chevron icon inside on the right, 600 weight, at least 160 px wide, 6 px vertical padding, control border. The bar has padding 12/32, at least 58 px height (so it does not jump while the models load or when there are none) and a 1 px border at the bottom, like the page header on other pages and mirroring the question box band's top border. The conversation scrolls under that edge. An `h1` "Chat" stays for screen readers only.
 - **Thread:**
-  - centered, at most 880 px wide, padding 8/40/32;
+  - centered, at most 880 px wide, padding 20/40/32;
   - a question and its answer sit 12 px apart, and two question–answer pairs sit 32 px apart;
   - **user question:** a right-aligned UCI Blue bubble with white text, at most 75% wide;
   - **clarifying question:** a left-aligned white bubble with a border.
