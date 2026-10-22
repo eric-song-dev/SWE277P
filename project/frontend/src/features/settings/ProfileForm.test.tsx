@@ -190,4 +190,55 @@ describe("ProfileForm", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
     await vi.waitFor(() => expect(client.getQueryData(["llm-probe", 1])).toBeUndefined());
   });
+
+  const CREDS_MSG = "The base URL must not contain a username or password. Put the key in the API key field.";
+
+  it("refuses a base URL with credentials at the field without sending a request", async () => {
+    const user = userEvent.setup();
+    renderForm(openaiProfile);
+    const url = await screen.findByLabelText(/Base URL/);
+    await user.clear(url);
+    await user.type(url, "https://user:pass@example.com/v1");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(CREDS_MSG)).toBeInTheDocument();
+    expect(url).toBeInvalid();
+    expect(apiSend).not.toHaveBeenCalled();
+    await user.type(url, "x");
+    expect(screen.queryByText(CREDS_MSG)).not.toBeInTheDocument();
+  });
+
+  it("shows the same message when the server rejects base_url", async () => {
+    const user = userEvent.setup();
+    renderForm(openaiProfile);
+    await user.type(await screen.findByLabelText(/^Name/), "x");
+    vi.mocked(apiSend).mockRejectedValueOnce(
+      new ApiError(422, "validation_error", "Request validation failed", [
+        { loc: ["body", "base_url"], msg: "Value error, base_url must not contain a username or password", type: "value_error" },
+      ]),
+    );
+    await user.click(screen.getByRole("button", { name: /save/i }));
+    expect(await screen.findByText(CREDS_MSG)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Base URL/)).toBeInvalid();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("lists every reported model on open and filters only after typing", async () => {
+    const user = userEvent.setup();
+    renderForm(
+      { ...openaiProfile, model: "deepseek-flash" },
+      { ok: true, json_mode: true, models: ["deepseek-flash", "deepseek-v4-pro"], error: null, latency_ms: 5 },
+    );
+    const model = await screen.findByRole("combobox", { name: /^Model/ });
+    await user.click(screen.getByRole("button", { name: /open/i }));
+    expect(await screen.findByRole("option", { name: "deepseek-flash" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "deepseek-v4-pro" })).toBeInTheDocument();
+    await user.clear(model);
+    await user.type(model, "pro");
+    expect(screen.getByRole("option", { name: "deepseek-v4-pro" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "deepseek-flash" })).not.toBeInTheDocument();
+    // Closing resets: the next open lists everything again, even with "pro" in the field.
+    await user.keyboard("{Escape}");
+    await user.click(screen.getByRole("button", { name: /open/i }));
+    expect(await screen.findByRole("option", { name: "deepseek-flash" })).toBeInTheDocument();
+  });
 });

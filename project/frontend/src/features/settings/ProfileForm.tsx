@@ -17,6 +17,26 @@ import type { LlmProfileIn, LlmProfileOut, LlmProfilePatch, PresetOut } from "..
 import { tokens } from "../../app/theme";
 import { usePresets, useProbeResult, useSaveProfile } from "./useProfiles";
 
+const CREDENTIALS_MESSAGE = "The base URL must not contain a username or password. Put the key in the API key field.";
+
+function hasCredentials(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.username !== "" || url.password !== "";
+  } catch {
+    return false; // Not a URL we can parse; the normal validation handles it.
+  }
+}
+
+// A 422 whose details point at base_url (FastAPI: [{loc: ["body", "base_url"], msg, type}]).
+function pointsAtBaseUrl(err: ApiError): boolean {
+  return (
+    err.status === 422 &&
+    Array.isArray(err.details) &&
+    err.details.some((d) => Array.isArray(d?.loc) && d.loc.includes("base_url"))
+  );
+}
+
 interface Props {
   profile: LlmProfileOut | null;
   onClose: () => void;
@@ -50,6 +70,8 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
   const [apiKey, setApiKey] = useState("");
   const [share, setShare] = useState(profile?.share_results_with_llm ?? initial?.share_results_default ?? false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [baseUrlError, setBaseUrlError] = useState<string | null>(null);
+  const [typedModel, setTypedModel] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const preset = presets.find((p) => p.key === presetKey);
@@ -97,12 +119,18 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
   function submit() {
     setNameError(null);
     setFormError(null);
+    setBaseUrlError(null);
+    if (!isFake && hasCredentials(baseUrl.trim())) {
+      setBaseUrlError(CREDENTIALS_MESSAGE);
+      return;
+    }
     save.mutate(
       { id: profile?.id, body: buildBody() },
       {
         onSuccess: onClose,
         onError: (err) => {
           if (err instanceof ApiError && err.code === "profile_name_taken") setNameError(err.message);
+          else if (err instanceof ApiError && pointsAtBaseUrl(err)) setBaseUrlError(CREDENTIALS_MESSAGE);
           else setFormError(err instanceof Error ? err.message : "Could not save the AI model.");
         },
       },
@@ -140,14 +168,26 @@ function FormBody({ profile, presets, onClose }: Props & { presets: PresetOut[] 
               label="Base URL"
               required={needsUrl}
               value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
+              onChange={(e) => {
+                setBaseUrl(e.target.value);
+                setBaseUrlError(null);
+              }}
+              error={baseUrlError !== null}
+              helperText={baseUrlError}
             />
           )}
           <Autocomplete
             freeSolo
+            forcePopupIcon
             options={probe.data?.models ?? []}
             inputValue={model}
-            onInputChange={(_, value) => setModel(value)}
+            // Show every model on open; filter only once the user has typed since opening (reset on close).
+            filterOptions={typedModel ? undefined : (options) => options}
+            onClose={() => setTypedModel(false)}
+            onInputChange={(_, value, reason) => {
+              if (reason === "input") setTypedModel(true);
+              setModel(value);
+            }}
             renderInput={(params) => <TextField {...params} label="Model" required />}
           />
           {!isFake && (
