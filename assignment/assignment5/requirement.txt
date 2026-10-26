@@ -1,0 +1,35 @@
+Assignment 5: Work Breakdown Structure
+Due: Tue Oct 27, 2026 4:00pm
+75 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+The Work Breakdown Structure (WBS) is an important and widely used tool for planning projects. Once we have a clear understanding of the work products we call scope, we can use the WBS process to create work packages that include phases, deliverables, activities or tasks, and milestones.  This WBS becomes the foundation for developing the detailed baseline project plan that yields the project schedule and budget.
+
+Start with this WBS template and fill in as much detail as you can at this point. This is a document that will grow and get refined as the project proceeds. For now, your WBS should at least include:
+
+1) The team deliverables for all of your capstone-related classes this quarter
+
+2) All work tasks for the current sprint, broken down into use cases/user stories (other sprints can have "placeholder" work items, like "develop product increment" that spans the current sprint period.)
+
+**Important notes:
+
+From now on, keep track of your time! In future versions of this WBS, you will be asked to include actual time taken for each task.
+Consider this a "living document" that will grow over the course of your project. Each time you plan a new sprint, do a WBS for that sprint and record your time for each work task from the last sprint. Remember, you will turn this in for future assignments.
+SWE 272P Assignment 4: Work Breakdown Structure
+Criteria	Comments	Points
+Clear, Focused, Understandable
+view longer description
+Comment
+/15 pts
+Thorough, Detailed
+view longer description
+Comment
+/50 pts
+Professional
+view longer description
+Comment
+/10 pts
+
