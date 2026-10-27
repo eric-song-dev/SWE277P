@@ -1,0 +1,29 @@
+%%{init: {"flowchart": {"nodeSpacing": 36, "rankSpacing": 30}}}%%
+flowchart TB
+    staff["<b>GPSRC Staff</b><br/><i>[Person]</i><br/>upload, ask, download"]
+    files["<b>CampusGroups / 12twenty</b><br/><i>[External]</i><br/>attendee export files<br/>(no live link)"]
+
+    subgraph host["One GPSRC computer · Docker Compose"]
+        direction LR
+        spa["<b>Web Client</b><br/><i>[React 19, MUI]</i><br/>Upload · Chat ·<br/>Dataset · Settings"]
+        nginx["<b>Web Server</b><br/><i>[Nginx]</i><br/>127.0.0.1 only"]
+        api["<b>API Application</b><br/><i>[FastAPI, LangGraph]</i><br/>import + identity linking,<br/>chatbot graph, SQL guard,<br/>Excel/CSV export"]
+        db[("<b>Database</b><br/><i>[PostgreSQL 16]</i><br/>hub_app: read-write<br/>chatbot_ro: read-only,<br/>attendance_view only")]
+        spa -->|"HTTP"| nginx
+        nginx -->|"/api"| api
+        api -->|"SQL"| db
+    end
+
+    llm["<b>AI Provider</b><br/><i>[External]</i><br/>OpenAI-compatible API:<br/>ZotGPT · OpenAI · DeepSeek"]
+
+    staff -->|"uses in browser"| host
+    files -.->|"uploaded unchanged"| host
+    host -->|"HTTPS: schema + question → SQL<br/>(results only if staff allow)"| llm
+
+    classDef person fill:#1B3D6D,stroke:#002244,color:#fff
+    classDef container fill:#255799,stroke:#1B3D6D,color:#fff
+    classDef external fill:#8a8a8a,stroke:#6b6b6b,color:#fff
+    class staff person
+    class spa,nginx,api,db container
+    class files,llm external
+    style host fill:#F3F6FA,stroke:#7B8FAE,stroke-dasharray: 5 4

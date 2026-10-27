@@ -1,0 +1,53 @@
+Midterm Report
+Due: Mon Nov 2, 2026 11:59pm
+10 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+Report Structure
+Project Overview (½ page)
+Brief summary of project purpose and goals
+
+Sponsor and stakeholder information
+
+Current Scope and Objectives (½ page)
+Updated system scope
+
+Primary use cases or user stories
+
+Key success metrics or deliverables
+
+System Design (1–1.5 pages)
+Updated high-level architecture (C4 or 4+1)
+
+Technology stack
+
+Key design decisions and rationale
+
+Progress Summary (1–1.5 pages)
+Milestones achieved to date
+
+Features implemented or models trained
+
+Prototype or demo summary (include screenshots or diagrams if available)
+
+Challenges and Risk Management (½–1 page)
+Technical, logistical, or data-related issues encountered
+
+Mitigation strategies and lessons learned
+
+Next Steps (½ page)
+Planned work for the remainder of the term
+
+Timeline or updated Gantt chart (optional)
+
+Formatting
+3–5 pages (excluding cover page and appendices)
+
+PDF format
+
+Use visuals where appropriate (architecture diagram, timeline, etc.)
+
+Professional, concise, and well-organized

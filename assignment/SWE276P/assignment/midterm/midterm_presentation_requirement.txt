@@ -1,0 +1,62 @@
+Midterm Presentation
+Due: Mon Nov 2, 2026 11:59pm
+20 Points Possible
+Attempt 1
+In Progress
+NEXT UP: Submit Assignment
+
+Unlimited Attempts Allowed
+Presentation Outline
+Title Slide (30 sec)
+Project title
+
+Team members and roles
+
+Sponsor name and organization
+
+Problem & Objectives (1 min)
+Briefly restate the problem or need being addressed
+
+Project goals and success criteria
+
+System Overview & Design (2 min)
+High-level architecture (C4 or 4+1 summary diagram)
+
+Technology stack
+
+Key components or models implemented
+
+Progress to Date (2 min)
+Completed milestones or features
+
+Demos, prototypes, or preliminary results
+
+Integration or testing progress
+
+Challenges & Lessons Learned (1 min)
+Technical or organizational challenges encountered
+
+How the team addressed or plans to address them
+
+Next Steps & Timeline (1.5 min)
+Upcoming development tasks or deliverables
+
+Updated timeline or milestones
+
+Any risks or dependencies
+
+Closing (30 sec)
+Summary of key accomplishments
+
+Acknowledgment of sponsor(s)
+
+Invite questions or feedback
+
+Presentation Tips
+Use 5–7 slides total — simple visuals, minimal text.
+
+Every team member should speak briefly.
+
+Focus on progress and direction, not just theory.
+
+Keep visuals accessible for both technical and non-technical audiences.
